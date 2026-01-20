@@ -57,19 +57,10 @@ namespace Engine3.Test.Graphics {
 
 			Vk.CmdBindPipeline(graphicsCommandBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, graphicsPipeline);
 
-			VkViewport viewport = new() { x = 0, y = 0, width = SwapChain.Extent.width, height = SwapChain.Extent.height, minDepth = 0, maxDepth = 1, };
-			VkRect2D scissor = new() { offset = new(0, 0), extent = SwapChain.Extent, };
-			Vk.CmdSetViewport(graphicsCommandBuffer, 0, 1, &viewport);
-			Vk.CmdSetScissor(graphicsCommandBuffer, 0, 1, &scissor);
+			VkH.CmdSetViewport(graphicsCommandBuffer, 0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			VkH.CmdSetScissor(graphicsCommandBuffer, SwapChain.Extent, new(0, 0));
 
-			VkBuffer[] vertexBuffers = [ vertexBuffer, ];
-			ulong[] offsets = [ 0, ];
-
-			fixed (VkBuffer* vertexBuffersPtr = vertexBuffers) {
-				fixed (ulong* offsetsPtr = offsets) {
-					Vk.CmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffersPtr, offsetsPtr); // TODO 2
-				}
-			}
+			VkH.CmdBindVertexBuffer(graphicsCommandBuffer, vertexBuffer, 0);
 
 			Vk.CmdDraw(graphicsCommandBuffer, (uint)vertices.Length, 1, 0, 0);
 		}

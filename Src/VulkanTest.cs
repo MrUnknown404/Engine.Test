@@ -16,10 +16,9 @@ namespace Engine3.Test {
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
 
 	// # where i'm at
-	// https://vulkan-tutorial.com/Uniform_buffers/Descriptor_set_layout_and_buffer
+	// https://vulkan-tutorial.com/Texture_mapping/Images
 
 	// TODO fix white screen while resizing
-	// TODO make repo for this
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

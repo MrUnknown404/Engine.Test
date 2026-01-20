@@ -1,10 +1,8 @@
 using System.Numerics;
 using System.Reflection;
-using Engine3.Exceptions;
 using Engine3.Graphics;
 using Engine3.Graphics.Test;
 using Engine3.Graphics.Vulkan;
-using JetBrains.Annotations;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
 
@@ -47,106 +45,40 @@ namespace Engine3.Test.Graphics {
 		}
 
 		public override void Setup() {
-			descriptorSetLayout = CreateDescriptorSetLayout(LogicalDevice, 0, VkShaderStageFlagBits.ShaderStageVertexBit);
+			descriptorSetLayout = VkH.CreateDescriptorSetLayout(LogicalDevice, 0, VkShaderStageFlagBits.ShaderStageVertexBit);
 
 			CreateGraphicsPipeline(LogicalDevice, SwapChain.ImageFormat, [ descriptorSetLayout.Value, ], "GLSL.Test", ShaderLanguage.Glsl, assembly, out VkPipeline graphicsPipeline, out VkPipelineLayout pipelineLayout);
 			this.graphicsPipeline = graphicsPipeline;
 			this.pipelineLayout = pipelineLayout;
 
-			// vertex buffers
-			CreateBufferAndMemoryUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, vertices, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, out VkBuffer vertexBuffer,
-				out VkDeviceMemory vertexBufferMemory);
-
-			this.vertexBuffer = vertexBuffer;
-			this.vertexBufferMemory = vertexBufferMemory;
-
-			// index buffers
-			CreateBufferAndMemoryUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, indices, VkBufferUsageFlagBits.BufferUsageIndexBufferBit, out VkBuffer indexBuffer,
-				out VkDeviceMemory indexBufferMemory);
-
-			this.indexBuffer = indexBuffer;
-			this.indexBufferMemory = indexBufferMemory;
+			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, vertices, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, out vertexBuffer, out vertexBufferMemory);
+			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, indices, VkBufferUsageFlagBits.BufferUsageIndexBufferBit, out indexBuffer, out indexBufferMemory);
 
 			uint uniformBufferSize = TestUniformBufferObject.Size;
+			CreateUniformBuffers();
 
-			// uniform buffers
-			fixed (void** uniformBufferMapped = uniformBuffersMapped) {
-				for (int i = 0; i < MaxFramesInFlight; i++) {
-					VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
-						VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, uniformBufferSize, out uniformBuffers[i], out uniformBuffersMemory[i]);
-
-					Vk.MapMemory(LogicalDevice, uniformBuffersMemory[i], 0, uniformBufferSize, 0, &uniformBufferMapped[i]); // TODO 2
-				}
-			}
-
-			// descriptor pool
-			descriptorPool = CreateDescriptorPool(LogicalDevice, MaxFramesInFlight);
-			CreateDescriptorSets(LogicalDevice, descriptorPool.Value, descriptorSetLayout.Value, MaxFramesInFlight, descriptorSets);
-
-			for (int i = 0; i < MaxFramesInFlight; i++) {
-				VkDescriptorBufferInfo descriptorBufferInfo = new() { buffer = uniformBuffers[i], offset = 0, range = uniformBufferSize, };
-				VkWriteDescriptorSet writeDescriptorSet = new() {
-						dstSet = descriptorSets[i],
-						dstBinding = 0,
-						dstArrayElement = 0,
-						descriptorType = VkDescriptorType.DescriptorTypeUniformBuffer,
-						descriptorCount = 1,
-						pBufferInfo = &descriptorBufferInfo,
-						pImageInfo = null,
-						pTexelBufferView = null,
-				};
-
-				Vk.UpdateDescriptorSets(LogicalDevice, 1, &writeDescriptorSet, 0, null);
-			}
+			descriptorPool = VkH.CreateDescriptorPool(LogicalDevice, MaxFramesInFlight);
+			VkH.CreateDescriptorSets(LogicalDevice, descriptorPool.Value, descriptorSetLayout.Value, descriptorSets, MaxFramesInFlight, uniformBufferSize, uniformBuffers);
 
 			return;
 
-			static void CreateBufferAndMemoryUsingStagingBuffer<T>(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool transferPool, VkQueue transferQueue, T[] bufferData, VkBufferUsageFlagBits bufferUsage,
-				out VkBuffer buffer, out VkDeviceMemory bufferMemory) where T : unmanaged {
-				ulong bufferSize = (ulong)(sizeof(T) * bufferData.Length);
+			void CreateUniformBuffers() {
+				fixed (void** uniformBufferMapped = uniformBuffersMapped) {
+					for (int i = 0; i < MaxFramesInFlight; i++) {
+						VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
+							VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, uniformBufferSize, out uniformBuffers[i], out uniformBuffersMemory[i]);
 
-				VkH.CreateBufferAndMemory(physicalDevice, logicalDevice, VkBufferUsageFlagBits.BufferUsageTransferSrcBit,
-					VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, bufferSize, out VkBuffer stagingBuffer, out VkDeviceMemory stagingBufferMemory);
-
-				VkH.MapMemory(logicalDevice, stagingBufferMemory, bufferData);
-
-				VkH.CreateBufferAndMemory(physicalDevice, logicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | bufferUsage, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, bufferSize, out buffer,
-					out bufferMemory);
-
-				VkH.CopyBuffer(logicalDevice, transferQueue, transferPool, stagingBuffer, buffer, bufferSize);
-
-				Vk.DestroyBuffer(logicalDevice, stagingBuffer, null);
-				Vk.FreeMemory(logicalDevice, stagingBufferMemory, null);
-			}
-		}
-
-		[MustUseReturnValue]
-		private static VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice logicalDevice, uint binding, VkShaderStageFlagBits shaderStageFlags) {
-			VkDescriptorSetLayoutBinding uboLayoutBinding = new() { binding = binding, descriptorType = VkDescriptorType.DescriptorTypeUniformBuffer, descriptorCount = 1, stageFlags = shaderStageFlags, };
-			VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = new() { bindingCount = 1, pBindings = &uboLayoutBinding, };
-
-			VkDescriptorSetLayout layout;
-			return Vk.CreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, null, &layout) != VkResult.Success ? throw new VulkanException("Failed to create descriptor set layout") : layout;
-		}
-
-		[MustUseReturnValue]
-		private static VkDescriptorPool CreateDescriptorPool(VkDevice logicalDevice, uint maxFramesInFlight) {
-			VkDescriptorPoolSize descriptorPoolSize = new() { descriptorCount = maxFramesInFlight, };
-			VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = new() { poolSizeCount = 1, pPoolSizes = &descriptorPoolSize, maxSets = maxFramesInFlight, };
-
-			VkDescriptorPool descriptorPool;
-			return Vk.CreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, null, &descriptorPool) != VkResult.Success ? throw new VulkanException("Failed to create descriptor pool") : descriptorPool;
-		}
-
-		private static void CreateDescriptorSets(VkDevice logicalDevice, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, uint maxFramesInFlight, VkDescriptorSet[] descriptorSets) {
-			VkDescriptorSetLayout[] layouts = new VkDescriptorSetLayout[maxFramesInFlight];
-			for (int i = 0; i < maxFramesInFlight; i++) { layouts[i] = descriptorSetLayout; }
-
-			fixed (VkDescriptorSetLayout* layoutsPtr = layouts) {
-				fixed (VkDescriptorSet* descriptorSetsPtr = descriptorSets) {
-					VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = new() { descriptorPool = descriptorPool, descriptorSetCount = maxFramesInFlight, pSetLayouts = layoutsPtr, };
-					if (Vk.AllocateDescriptorSets(logicalDevice, &descriptorSetAllocateInfo, descriptorSetsPtr) != VkResult.Success) { throw new VulkanException("Failed to allocation descriptor sets"); }
+						Vk.MapMemory(LogicalDevice, uniformBuffersMemory[i], 0, uniformBufferSize, 0, &uniformBufferMapped[i]); // TODO 2
+					}
 				}
+			}
+
+			static void CreateBufferUsingStagingBuffer<T>(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool transferPool, VkQueue transferQueue, T[] bufferData, VkBufferUsageFlagBits bufferUsage,
+				out VkBuffer? buffer, out VkDeviceMemory? bufferMemory) where T : unmanaged {
+				VkH.CreateBufferUsingStagingBuffer(physicalDevice, logicalDevice, transferPool, transferQueue, bufferData, bufferUsage, out VkBuffer vertexBuffer, out VkDeviceMemory vertexBufferMemory);
+
+				buffer = vertexBuffer;
+				bufferMemory = vertexBufferMemory;
 			}
 		}
 
@@ -174,7 +106,7 @@ namespace Engine3.Test.Graphics {
 		protected override void UpdateUniformBuffer(float delta) {
 			testUniformBufferObject.Projection = Matrix4x4.CreatePerspective(MathH.ToRadians(45f), (float)SwapChain.Extent.width / SwapChain.Extent.height, 0.5f, 10); // TODO invert y? ubo.proj[1][1] *= -1;
 			testUniformBufferObject.View = Matrix4x4.CreateLookAt(new(2, 2, 2), new(0, 0, 0), Vector3.UnitZ);
-			testUniformBufferObject.Model = Matrix4x4.CreateRotationX(FrameCount / 1000f * MathH.ToRadians(90f)); // TODO FrameCount/N is wrong. fix
+			testUniformBufferObject.Model = Matrix4x4.CreateRotationX(FrameCount / 1000f * MathH.ToRadians(90f)); // TODO currently affected by frame rate
 
 			byte[] data = testUniformBufferObject.CollectBytes();
 			fixed (void* dataPtr = data) { Buffer.MemoryCopy(dataPtr, uniformBuffersMapped[CurrentFrame], (ulong)data.Length, (ulong)data.Length); }
@@ -187,20 +119,10 @@ namespace Engine3.Test.Graphics {
 
 			Vk.CmdBindPipeline(graphicsCommandBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, graphicsPipeline);
 
-			VkViewport viewport = new() { x = 0, y = 0, width = SwapChain.Extent.width, height = SwapChain.Extent.height, minDepth = 0, maxDepth = 1, };
-			VkRect2D scissor = new() { offset = new(0, 0), extent = SwapChain.Extent, };
-			Vk.CmdSetViewport(graphicsCommandBuffer, 0, 1, &viewport);
-			Vk.CmdSetScissor(graphicsCommandBuffer, 0, 1, &scissor);
+			VkH.CmdSetViewport(graphicsCommandBuffer, 0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			VkH.CmdSetScissor(graphicsCommandBuffer, SwapChain.Extent, new(0, 0));
 
-			VkBuffer[] vertexBuffers = [ vertexBuffer, ];
-			ulong[] offsets = [ 0, ];
-
-			fixed (VkBuffer* vertexBuffersPtr = vertexBuffers) {
-				fixed (ulong* offsetsPtr = offsets) {
-					Vk.CmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffersPtr, offsetsPtr); // TODO 2
-				}
-			}
-
+			VkH.CmdBindVertexBuffer(graphicsCommandBuffer, vertexBuffer, 0);
 			Vk.CmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VkIndexType.IndexTypeUint32);
 
 			VkDescriptorSet descriptorSet = CurrentDescriptorSet;
@@ -221,8 +143,8 @@ namespace Engine3.Test.Graphics {
 			foreach (VkBuffer uniformBuffer in uniformBuffers) { Vk.DestroyBuffer(LogicalDevice, uniformBuffer, null); }
 
 			foreach (VkDeviceMemory uniformBufferMemory in uniformBuffersMemory) {
+				//Vk.UnmapMemory(LogicalDevice, uniformBufferMemory); // i don't think i need to call this?
 				Vk.FreeMemory(LogicalDevice, uniformBufferMemory, null);
-				// Vk.UnmapMemory(LogicalDevice, uniformBufferMemory); // TODO do i need to call this?
 			}
 
 			if (this.descriptorPool is { } descriptorPool) { Vk.DestroyDescriptorPool(LogicalDevice, descriptorPool, null); }

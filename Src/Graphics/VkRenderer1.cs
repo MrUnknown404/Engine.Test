@@ -40,12 +40,12 @@ namespace Engine3.Test.Graphics {
 		}
 
 		public override void Setup() {
-			uint uniformBufferSize = TestUniformBufferObject.Size;
-			CreateUniformBuffers();
-
 			VkShaderModule vertexShaderModule = VkH.CreateShaderModule(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Vertex, shaderAssembly);
 			VkShaderModule fragmentShaderModule = VkH.CreateShaderModule(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Fragment, shaderAssembly);
 			ShaderCreateInfo[] shaderCreateInfos = [ new(LogicalDevice, vertexShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit), ];
+
+			uint uniformBufferSize = TestUniformBufferObject.Size;
+			CreateUniformBuffers();
 
 			using (GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) { CullMode = VkCullModeFlagBits.CullModeNone, }) {
 				builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers, uniformBufferSize);
@@ -63,7 +63,7 @@ namespace Engine3.Test.Graphics {
 						VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
 							VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, uniformBufferSize, out uniformBuffers[i], out uniformBuffersMemory[i]);
 
-						Vk.MapMemory(LogicalDevice, uniformBuffersMemory[i], 0, uniformBufferSize, 0, &uniformBufferMapped[i]); // TODO 2
+						Vk.MapMemory(LogicalDevice, uniformBuffersMemory[i], 0, uniformBufferSize, 0, &uniformBufferMapped[i]);
 					}
 				}
 			}
@@ -74,27 +74,6 @@ namespace Engine3.Test.Graphics {
 
 				buffer = vertexBuffer;
 				bufferMemory = vertexBufferMemory;
-			}
-		}
-
-		/*
-		   Wait for the previous frame to finish
-		   Acquire an image from the swap chain
-		   Record a command buffer which draws the scene onto that image
-		   Submit the recorded command buffer
-		   Present the swap chain image
-		 */
-		protected override void DrawFrame(float delta) {
-			if (!CanRender) { return; }
-
-			// TODO if i want to move BeginFrame/EndFrame/PresentFrame out of this method, i'll need to redo things
-
-			if (AcquireNextImage(out uint swapChainImageIndex)) {
-				BeginFrame(CurrentGraphicsCommandBuffer, swapChainImageIndex);
-				DrawFrame(CurrentGraphicsCommandBuffer, delta);
-				UpdateUniformBuffer(delta);
-				EndFrame(CurrentGraphicsCommandBuffer, swapChainImageIndex);
-				PresentFrame(swapChainImageIndex);
 			}
 		}
 
@@ -109,7 +88,7 @@ namespace Engine3.Test.Graphics {
 			fixed (void* dataPtr = data) { Buffer.MemoryCopy(dataPtr, uniformBuffersMapped[CurrentFrame], (ulong)data.Length, (ulong)data.Length); }
 		}
 
-		private void DrawFrame(VkCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void DrawFrame(VkCommandBuffer graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 			if (this.indexBuffer is not { } indexBuffer) { return; }
@@ -123,7 +102,7 @@ namespace Engine3.Test.Graphics {
 			Vk.CmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VkIndexType.IndexTypeUint32);
 
 			VkDescriptorSet descriptorSet = CurrentDescriptorSet;
-			Vk.CmdBindDescriptorSets(graphicsCommandBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, graphicsPipeline.Layout, 0, 1, &descriptorSet, 0, null); // TODO 2
+			Vk.CmdBindDescriptorSets(graphicsCommandBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, graphicsPipeline.Layout, 0, 1, &descriptorSet, 0, null);
 
 			Vk.CmdDrawIndexed(graphicsCommandBuffer, (uint)indices.Length, 1, 0, 0, 0);
 		}

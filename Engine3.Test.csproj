@@ -5,6 +5,7 @@
 		<LangVersion>preview</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<WarningsAsErrors>nullable</WarningsAsErrors>
 		<RootNamespace>Engine3.Test</RootNamespace>
 		<AssemblyName>Engine3.Test</AssemblyName>
 		<DebugType>embedded</DebugType>

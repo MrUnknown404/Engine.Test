@@ -1,6 +1,6 @@
 #version 460
 
-layout (location = 0) in vec2 inPosition;
+layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inColor;
 
 layout (location = 0) out vec3 fragColor;
@@ -12,6 +12,6 @@ layout (binding = 0) uniform UniformBufferObject {
 } ubo;
 
 void main() {
-	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPosition, 0, 1);
+	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPosition, 1);
 	fragColor = inColor;
 }

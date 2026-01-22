@@ -35,22 +35,26 @@ namespace Engine3.Test.Graphics {
 			uniformBuffersMemory = new VkDeviceMemory[MaxFramesInFlight];
 			uniformBuffersMapped = new void*[MaxFramesInFlight];
 
-			camera = new PerspectiveCamera((float)SwapChain.Extent.width / SwapChain.Extent.height, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
+			camera = new PerspectiveCamera((float)SwapChain.Extent.width / SwapChain.Extent.height, 0.5f, 10f) { Position = new(0, 0, 3), YawDegrees = 270, };
 			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
 		}
 
 		public override void Setup() {
-			VkShaderModule vertexShaderModule = VkH.CreateShaderModule(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Vertex, shaderAssembly);
-			VkShaderModule fragmentShaderModule = VkH.CreateShaderModule(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Fragment, shaderAssembly);
-			ShaderCreateInfo[] shaderCreateInfos = [ new(LogicalDevice, vertexShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit), ];
+			ShaderModule vertexShaderModule = new(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Vertex, shaderAssembly);
+			ShaderModule fragmentShaderModule = new(LogicalDevice, "GLSL.Test", ShaderLanguage.Glsl, ShaderType.Fragment, shaderAssembly);
+			ShaderStageInfo[] shaderCreateInfos = [
+					new(LogicalDevice, vertexShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit),
+			];
 
 			uint uniformBufferSize = TestUniformBufferObject.Size;
 			CreateUniformBuffers();
 
-			using (GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) { CullMode = VkCullModeFlagBits.CullModeNone, }) {
-				builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers, uniformBufferSize);
-				graphicsPipeline = builder.MakePipeline();
-			}
+			GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) { CullMode = VkCullModeFlagBits.CullModeNone, };
+			builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers, uniformBufferSize);
+			graphicsPipeline = builder.MakePipeline();
+
+			vertexShaderModule.Cleanup();
+			fragmentShaderModule.Cleanup();
 
 			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, vertices, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, out vertexBuffer, out vertexBufferMemory);
 			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, indices, VkBufferUsageFlagBits.BufferUsageIndexBufferBit, out indexBuffer, out indexBufferMemory);
@@ -102,7 +106,9 @@ namespace Engine3.Test.Graphics {
 			Vk.CmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VkIndexType.IndexTypeUint32);
 
 			VkDescriptorSet descriptorSet = CurrentDescriptorSet;
-			Vk.CmdBindDescriptorSets(graphicsCommandBuffer, VkPipelineBindPoint.PipelineBindPointGraphics, graphicsPipeline.Layout, 0, 1, &descriptorSet, 0, null);
+			VkBindDescriptorSetsInfo bindDescriptorSetsInfo = new() { layout = graphicsPipeline.Layout, descriptorSetCount = 1, pDescriptorSets = &descriptorSet, stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, };
+
+			Vk.CmdBindDescriptorSets2(graphicsCommandBuffer, &bindDescriptorSetsInfo);
 
 			Vk.CmdDrawIndexed(graphicsCommandBuffer, (uint)indices.Length, 1, 0, 0, 0);
 		}

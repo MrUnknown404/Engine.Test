@@ -17,11 +17,17 @@ namespace Engine3.Test.Graphics {
 		public VkRenderer2(VkWindow window, byte maxFramesInFlight, Assembly shaderAssembly) : base(window, maxFramesInFlight) => this.shaderAssembly = shaderAssembly;
 
 		public override void Setup() {
-			VkShaderModule vertexShaderModule = VkH.CreateShaderModule(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
-			VkShaderModule fragmentShaderModule = VkH.CreateShaderModule(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Fragment, shaderAssembly);
-			ShaderCreateInfo[] shaderCreateInfos = [ new(LogicalDevice, vertexShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit), ];
+			ShaderModule vertexShaderModule = new(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
+			ShaderModule fragmentShaderModule = new(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Fragment, shaderAssembly);
+			ShaderStageInfo[] shaderCreateInfos = [
+					new(LogicalDevice, vertexShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit),
+			];
 
-			using (GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions())) { graphicsPipeline = builder.MakePipeline(); }
+			GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions());
+			graphicsPipeline = builder.MakePipeline();
+
+			vertexShaderModule.Cleanup();
+			fragmentShaderModule.Cleanup();
 
 			VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
 				(ulong)(sizeof(TestVertex) * vertices.Length), out VkBuffer vertexBuffer, out VkDeviceMemory vertexBufferMemory);

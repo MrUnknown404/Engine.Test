@@ -10,6 +10,7 @@
 		<AssemblyName>Engine3.Test</AssemblyName>
 		<DebugType>embedded</DebugType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
 	</PropertyGroup>
 
 	<!-- Includes -->

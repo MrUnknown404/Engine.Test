@@ -1,8 +1,9 @@
 using Engine3.Graphics;
+using Engine3.Utils.Versions;
 
 namespace Engine3.Test {
 	public class ConsoleTest : GameClient {
-		public ConsoleTest() : base("Console Test", new(0, 0, 0), GraphicsApi.Console) { }
+		public ConsoleTest() : base("Console Test", new Version4Interweaved(0, 0, 0), GraphicsApi.Console) { }
 
 		protected override void Update() { }
 		protected override void Cleanup() { }

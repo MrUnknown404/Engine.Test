@@ -2,6 +2,7 @@ using Engine3.Exceptions;
 using Engine3.Graphics;
 using Engine3.Graphics.Vulkan;
 using Engine3.Test.Graphics;
+using Engine3.Utils.Versions;
 using NLog;
 using OpenTK.Platform;
 
@@ -18,7 +19,7 @@ namespace Engine3.Test {
 	// https://vulkan-tutorial.com/Texture_mapping/Images
 
 	// TODO fix white screen while resizing
-	// TODO look into using IDisposable more
+	// TODO look into using IDisposable more?
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -26,7 +27,7 @@ namespace Engine3.Test {
 		public Window? MainWindow { get; set; }
 		public Window? Window2 { get; set; }
 
-		public VulkanTest() : base("Vulkan Test", new(0, 0, 0), new VulkanGraphicsApiHints()) => OnSetupFinishedEvent += OnSetupFinished;
+		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0), new VulkanGraphicsApiHints()) => OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
 			Logger.Debug("Making Main Window...");

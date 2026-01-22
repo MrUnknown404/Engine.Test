@@ -14,7 +14,7 @@ namespace Engine3.Test {
 #pragma warning disable CS0162 // Unreachable code detected
 			GameClient gameClient = TestGraphicsApi switch {
 					GraphicsApi.Console => new ConsoleTest(),
-					GraphicsApi.OpenGL => new OpenGLTest(),
+					GraphicsApi.OpenGL => new OpenGLTest { DisabledCallbackIds = [ 131185, ], },
 					GraphicsApi.Vulkan => new VulkanTest {
 							EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 					},

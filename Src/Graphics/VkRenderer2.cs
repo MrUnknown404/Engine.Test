@@ -8,8 +8,7 @@ namespace Engine3.Test.Graphics {
 	public unsafe class VkRenderer2 : VkRenderer {
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBuffer? vertexBuffer;
-		private VkDeviceMemory? vertexBufferMemory;
+		private VkBufferObject? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly shaderAssembly;
@@ -29,34 +28,30 @@ namespace Engine3.Test.Graphics {
 			vertexShaderModule.Destroy();
 			fragmentShaderModule.Destroy();
 
-			VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
-				(ulong)(sizeof(TestVertex) * vertices.Length), out VkBuffer vertexBuffer, out VkDeviceMemory vertexBufferMemory);
+			vertexBuffer = new(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
+				(ulong)(sizeof(TestVertex) * vertices.Length));
 
-			VkH.MapMemory(LogicalDevice, vertexBufferMemory, vertices);
-
-			this.vertexBuffer = vertexBuffer;
-			this.vertexBufferMemory = vertexBufferMemory;
+			vertexBuffer.Copy(vertices);
 		}
 
-		protected override void RecordCommandBuffer(VkCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 
-			graphicsPipeline.CmdBind(graphicsCommandBuffer);
+			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
-			VkH.CmdSetViewport(graphicsCommandBuffer, 0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			VkH.CmdSetScissor(graphicsCommandBuffer, SwapChain.Extent, new(0, 0));
+			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));
 
-			VkH.CmdBindVertexBuffer(graphicsCommandBuffer, vertexBuffer, 0);
+			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer.Buffer, 0);
 
-			Vk.CmdDraw(graphicsCommandBuffer, (uint)vertices.Length, 1, 0, 0);
+			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}
 
 		protected override void Destroy() {
 			Vk.DeviceWaitIdle(LogicalDevice);
 
-			if (this.vertexBuffer is { } vertexBuffer) { Vk.DestroyBuffer(LogicalDevice, vertexBuffer, null); }
-			if (this.vertexBufferMemory is { } vertexBufferMemory) { Vk.FreeMemory(LogicalDevice, vertexBufferMemory, null); }
+			vertexBuffer?.Destroy();
 
 			graphicsPipeline?.Destroy();
 

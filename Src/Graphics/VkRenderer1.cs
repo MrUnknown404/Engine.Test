@@ -53,8 +53,8 @@ namespace Engine3.Test.Graphics {
 			builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers, uniformBufferSize);
 			graphicsPipeline = builder.MakePipeline();
 
-			vertexShaderModule.Cleanup();
-			fragmentShaderModule.Cleanup();
+			vertexShaderModule.Destroy();
+			fragmentShaderModule.Destroy();
 
 			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, vertices, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, out vertexBuffer, out vertexBufferMemory);
 			CreateBufferUsingStagingBuffer(PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, indices, VkBufferUsageFlagBits.BufferUsageIndexBufferBit, out indexBuffer, out indexBufferMemory);
@@ -86,13 +86,13 @@ namespace Engine3.Test.Graphics {
 
 			testUniformBufferObject.Projection = camera.CreateProjectionMatrix();
 			testUniformBufferObject.View = camera.CreateViewMatrix();
-			testUniformBufferObject.Model = Matrix4x4.CreateRotationX(FrameCount / 1000f * MathH.ToRadians(90f)); // TODO currently affected by frame rate
+			testUniformBufferObject.Model = Matrix4x4.CreateRotationY(FrameCount / 1000f * MathH.ToRadians(90f)); // TODO currently affected by frame rate
 
 			byte[] data = testUniformBufferObject.CollectBytes();
 			fixed (void* dataPtr = data) { Buffer.MemoryCopy(dataPtr, uniformBuffersMapped[CurrentFrame], (ulong)data.Length, (ulong)data.Length); }
 		}
 
-		protected override void DrawFrame(VkCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(VkCommandBuffer graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 			if (this.indexBuffer is not { } indexBuffer) { return; }
@@ -113,7 +113,7 @@ namespace Engine3.Test.Graphics {
 			Vk.CmdDrawIndexed(graphicsCommandBuffer, (uint)indices.Length, 1, 0, 0, 0);
 		}
 
-		protected override void Cleanup() {
+		protected override void Destroy() {
 			Vk.DeviceWaitIdle(LogicalDevice);
 
 			if (this.vertexBuffer is { } vertexBuffer) { Vk.DestroyBuffer(LogicalDevice, vertexBuffer, null); }
@@ -129,9 +129,9 @@ namespace Engine3.Test.Graphics {
 				Vk.FreeMemory(LogicalDevice, uniformBufferMemory, null);
 			}
 
-			graphicsPipeline?.Cleanup();
+			graphicsPipeline?.Destroy();
 
-			base.Cleanup();
+			base.Destroy();
 		}
 	}
 }

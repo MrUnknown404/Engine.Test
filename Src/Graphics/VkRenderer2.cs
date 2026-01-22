@@ -26,8 +26,8 @@ namespace Engine3.Test.Graphics {
 			GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions());
 			graphicsPipeline = builder.MakePipeline();
 
-			vertexShaderModule.Cleanup();
-			fragmentShaderModule.Cleanup();
+			vertexShaderModule.Destroy();
+			fragmentShaderModule.Destroy();
 
 			VkH.CreateBufferAndMemory(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
 				(ulong)(sizeof(TestVertex) * vertices.Length), out VkBuffer vertexBuffer, out VkDeviceMemory vertexBufferMemory);
@@ -38,7 +38,7 @@ namespace Engine3.Test.Graphics {
 			this.vertexBufferMemory = vertexBufferMemory;
 		}
 
-		protected override void DrawFrame(VkCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(VkCommandBuffer graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 
@@ -52,15 +52,15 @@ namespace Engine3.Test.Graphics {
 			Vk.CmdDraw(graphicsCommandBuffer, (uint)vertices.Length, 1, 0, 0);
 		}
 
-		protected override void Cleanup() {
+		protected override void Destroy() {
 			Vk.DeviceWaitIdle(LogicalDevice);
 
 			if (this.vertexBuffer is { } vertexBuffer) { Vk.DestroyBuffer(LogicalDevice, vertexBuffer, null); }
 			if (this.vertexBufferMemory is { } vertexBufferMemory) { Vk.FreeMemory(LogicalDevice, vertexBufferMemory, null); }
 
-			graphicsPipeline?.Cleanup();
+			graphicsPipeline?.Destroy();
 
-			base.Cleanup();
+			base.Destroy();
 		}
 	}
 }

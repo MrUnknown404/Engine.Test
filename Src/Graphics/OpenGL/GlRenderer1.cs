@@ -19,7 +19,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 
 		private GlShaderObject? vertexShader;
 		private GlShaderObject? fragmentShader;
-		private GlProgramPipeline? programPipeline;
+		private ProgramPipeline? programPipeline;
 
 		private Camera? camera;
 

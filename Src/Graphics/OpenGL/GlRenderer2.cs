@@ -14,7 +14,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 
 		private GlShaderObject? vertexShader;
 		private GlShaderObject? fragmentShader;
-		private GlProgramPipeline? programPipeline;
+		private ProgramPipeline? programPipeline;
 
 		private readonly TestVertex[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];

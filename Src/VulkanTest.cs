@@ -1,9 +1,9 @@
-using Engine3.Exceptions;
-using Engine3.Graphics;
+using System.Diagnostics;
 using Engine3.Graphics.Vulkan;
-using Engine3.Test.Graphics;
+using Engine3.Test.Graphics.Vulkan;
 using Engine3.Utils.Versions;
 using NLog;
+using OpenTK.Mathematics;
 using OpenTK.Platform;
 
 namespace Engine3.Test {
@@ -24,28 +24,30 @@ namespace Engine3.Test {
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public Window? MainWindow { get; set; }
-		public Window? Window2 { get; set; }
+		public VkWindow? MainWindow { get; set; }
+		public VkWindow? Window2 { get; set; }
 
 		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0), new VulkanGraphicsApiHints()) => OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
+			if (VkInstance is not { } vkInstance) { throw new UnreachableException(); }
+
+			Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
+
 			Logger.Debug("Making Main Window...");
-			MainWindow = Window.MakeWindow(this, Name, 854, 480);
-			if (MainWindow is not VkWindow mainWindow) { throw new Engine3Exception("Failed to create window"); }
+			MainWindow = new(this, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
 			MainWindow.OnCloseWindowEvent += Shutdown;
 
 			Logger.Debug("Making Window 2...");
-			Window2 = Window.MakeWindow(this, "Window 2", 500, 500);
-			if (Window2 is not VkWindow window2) { throw new Engine3Exception("Failed to create window"); }
+			Window2 = new(this, vkInstance, "Window 2", 500, 500) { ClearColor = clearColor, };
 
-			VkRenderer1 renderer1 = new(mainWindow, MaxFramesInFlight, Assembly);
-			VkRenderer2 renderer2 = new(window2, MaxFramesInFlight, Assembly);
+			VkRenderer1 renderer1 = new(MainWindow, MaxFramesInFlight, Assembly);
+			VkRenderer2 renderer2 = new(Window2, MaxFramesInFlight, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
 
-			mainWindow.Renderer = renderer1;
-			window2.Renderer = renderer2;
+			MainWindow.Renderer = renderer1;
+			Window2.Renderer = renderer2;
 
 			Logger.Debug("Setup done. Showing windows");
 

@@ -19,7 +19,4 @@
 
 		<EmbeddedResource Include="Assets\**"/>
 	</ItemGroup>
-	<ItemGroup>
-		<Folder Include="Assets\Shaders\SPIR-V\"/>
-	</ItemGroup>
 </Project>

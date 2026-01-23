@@ -1,11 +1,14 @@
 using System.Reflection;
 using Engine3.Graphics;
 using Engine3.Graphics.Vulkan;
+using Engine3.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Graphics {
+namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VkRenderer2 : VkRenderer {
+		private const string TestShaderName = "Test";
+
 		private GraphicsPipeline? graphicsPipeline;
 
 		private VkBufferObject? vertexBuffer;
@@ -16,20 +19,17 @@ namespace Engine3.Test.Graphics {
 		public VkRenderer2(VkWindow window, byte maxFramesInFlight, Assembly shaderAssembly) : base(window, maxFramesInFlight) => this.shaderAssembly = shaderAssembly;
 
 		public override void Setup() {
-			ShaderModule vertexShaderModule = new(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
-			ShaderModule fragmentShaderModule = new(LogicalDevice, "HLSL.Test", ShaderLanguage.Hlsl, ShaderType.Fragment, shaderAssembly);
-			ShaderStageInfo[] shaderCreateInfos = [
-					new(LogicalDevice, vertexShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageVertexBit), new(LogicalDevice, fragmentShaderModule.VkShaderModule, VkShaderStageFlagBits.ShaderStageFragmentBit),
-			];
+			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
+			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, shaderAssembly);
 
-			GraphicsPipeline.Builder builder = new(LogicalDevice, SwapChain, shaderCreateInfos, TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions());
+			GraphicsPipeline.Builder builder = new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions());
 			graphicsPipeline = builder.MakePipeline();
 
-			vertexShaderModule.Destroy();
-			fragmentShaderModule.Destroy();
+			vertexShader.Destroy();
+			fragmentShader.Destroy();
 
-			vertexBuffer = new(PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
-				(ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = new("Test Vertex Buffer", PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 
 			vertexBuffer.Copy(vertices);
 		}

@@ -24,7 +24,7 @@ namespace Engine3.Test {
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public VkWindow? MainWindow { get; set; }
+		public VkWindow? Window1 { get; set; }
 		public VkWindow? Window2 { get; set; }
 
 		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0), new VulkanGraphicsApiHints()) => OnSetupFinishedEvent += OnSetupFinished;
@@ -34,28 +34,31 @@ namespace Engine3.Test {
 
 			Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
 
-			Logger.Debug("Making Main Window...");
-			MainWindow = new(this, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
-			MainWindow.OnCloseWindowEvent += Shutdown;
+			Logger.Debug("Making Window 1...");
+			Window1 = new(this, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
+			Window1.OnCloseWindowEvent += Shutdown;
 
 			Logger.Debug("Making Window 2...");
 			Window2 = new(this, vkInstance, "Window 2", 500, 500) { ClearColor = clearColor, };
 
-			VkRenderer1 renderer1 = new(MainWindow, MaxFramesInFlight, Assembly);
-			VkRenderer2 renderer2 = new(Window2, MaxFramesInFlight, Assembly);
+			Windows.Add(Window1);
+			Windows.Add(Window2);
+
+			VkRenderer renderer1 = new VkRenderer1(this, Window1, Assembly);
+			VkRenderer renderer2 = new VkRenderer2(this, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
-
-			MainWindow.Renderer = renderer1;
-			Window2.Renderer = renderer2;
+			RenderingPipelines.Add(renderer1);
+			RenderingPipelines.Add(renderer2);
 
 			Logger.Debug("Setup done. Showing windows");
 
-			MainWindow.Show();
+			Window1.Show();
 			Window2.Show();
 		}
 
 		protected override void Update() { }
+
 		protected override void Cleanup() { }
 	}
 }

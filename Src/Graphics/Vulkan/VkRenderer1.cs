@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Reflection;
+using Engine3.Exceptions;
 using Engine3.Graphics;
 using Engine3.Graphics.Vulkan;
 using Engine3.Graphics.Vulkan.Objects;
@@ -26,9 +27,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private readonly TestUniformBufferObject testUniformBufferObject = new();
 		private readonly Assembly shaderAssembly;
 
-		private VkDescriptorSet CurrentDescriptorSet => graphicsPipeline?.DescriptorSets?[CurrentFrame] ?? throw new NullReferenceException("No graphics pipeline");
-
-		public VkRenderer1(VkWindow window, byte maxFramesInFlight, Assembly shaderAssembly) : base(window, maxFramesInFlight) {
+		public VkRenderer1(GameClient gameClient, VkWindow window, Assembly shaderAssembly) : base(gameClient, window) {
 			this.shaderAssembly = shaderAssembly;
 
 			uniformBuffers = new VkBufferObject[MaxFramesInFlight];
@@ -104,21 +103,18 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer.Buffer, 0);
 			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer.Buffer, indexBuffer.BufferSize);
 
-			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, CurrentDescriptorSet, VkShaderStageFlagBits.ShaderStageVertexBit);
+			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.DescriptorSets?[CurrentFrame] ?? throw new VulkanException("Uniform Buffer needed fpr this"),
+				VkShaderStageFlagBits.ShaderStageVertexBit);
 
 			graphicsCommandBuffer.CmdDrawIndexed((uint)indices.Length);
 		}
 
-		protected override void Destroy() {
-			Vk.DeviceWaitIdle(LogicalDevice);
-
+		protected override void Cleanup() {
 			vertexBuffer?.Destroy();
 			indexBuffer?.Destroy();
 			foreach (VkBufferObject uniformBuffer in uniformBuffers) { uniformBuffer.Destroy(); }
 
 			graphicsPipeline?.Destroy();
-
-			base.Destroy();
 		}
 	}
 }

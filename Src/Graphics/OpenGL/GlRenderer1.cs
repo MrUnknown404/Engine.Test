@@ -14,8 +14,6 @@ namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer1 : GlRenderer {
 		private const string TestShaderName = "Test";
 
-		public override bool IsWindowValid => !Window.WasDestroyed;
-
 		private GlBufferObject? vertexBuffer;
 		private GlBufferObject? indexBuffer;
 
@@ -51,7 +49,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 			GL.Disable(EnableCap.CullFace);
 		}
 
-		protected override void Draw(float delta) {
+		protected override void DrawFrame(float delta) {
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 			if (this.indexBuffer is not { } indexBuffer) { return; }
 			if (this.programPipeline is not { } programPipeline) { return; }
@@ -73,7 +71,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
 		}
 
-		protected override void Destroy() {
+		protected override void Cleanup() {
 			programPipeline?.Destroy();
 			vertexShader?.Destroy();
 			fragmentShader?.Destroy();

@@ -16,7 +16,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly shaderAssembly;
 
-		public VkRenderer2(VkWindow window, byte maxFramesInFlight, Assembly shaderAssembly) : base(window, maxFramesInFlight) => this.shaderAssembly = shaderAssembly;
+		public VkRenderer2(GameClient gameClient, VkWindow window, Assembly shaderAssembly) : base(gameClient, window) => this.shaderAssembly = shaderAssembly;
 
 		public override void Setup() {
 			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
@@ -48,14 +48,10 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}
 
-		protected override void Destroy() {
-			Vk.DeviceWaitIdle(LogicalDevice);
-
+		protected override void Cleanup() {
 			vertexBuffer?.Destroy();
 
 			graphicsPipeline?.Destroy();
-
-			base.Destroy();
 		}
 	}
 }

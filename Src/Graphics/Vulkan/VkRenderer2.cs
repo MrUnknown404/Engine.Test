@@ -1,5 +1,6 @@
 using System.Reflection;
 using Engine3.Graphics;
+using Engine3.Graphics.Objects;
 using Engine3.Graphics.Vulkan;
 using Engine3.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
@@ -11,7 +12,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBufferObject? vertexBuffer;
+		// private VkBufferObject? vertexBuffer;
+		private BufferObject? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly shaderAssembly;
@@ -28,8 +30,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit);
 
 			vertexBuffer.Copy(vertices);
 		}

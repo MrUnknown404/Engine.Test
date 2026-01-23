@@ -55,11 +55,11 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
-			indexBuffer = new("Test Index Buffer", PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
 			vertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, vertices);
 			indexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, indices);
@@ -69,8 +69,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			void CreateUniformBuffers() {
 				fixed (void** uniformBufferMapped = uniformBuffersMapped) {
 					for (int i = 0; i < MaxFramesInFlight; i++) {
-						VkBufferObject uniformBuffer = new($"Test Uniform Buffer[{i}]", PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
-							VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, uniformBufferSize);
+						VkBufferObject uniformBuffer = new($"Test Uniform Buffer[{i}]", uniformBufferSize, PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
+							VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit);
 
 						uniformBuffers[i] = uniformBuffer;
 						uniformBufferMapped[i] = uniformBuffer.MapMemory(uniformBufferSize);

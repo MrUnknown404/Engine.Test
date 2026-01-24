@@ -103,7 +103,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer.Buffer, 0);
 			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer.Buffer, indexBuffer.BufferSize);
 
-			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.DescriptorSets?[CurrentFrame] ?? throw new VulkanException("Uniform Buffer needed fpr this"),
+			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.DescriptorSets?[CurrentFrame] ?? throw new Engine3VulkanException("Uniform Buffer needed fpr this"),
 				VkShaderStageFlagBits.ShaderStageVertexBit);
 
 			graphicsCommandBuffer.CmdDrawIndexed((uint)indices.Length);

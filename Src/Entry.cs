@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Engine3.Api.Graphics;
+using Engine3.Graphics;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 

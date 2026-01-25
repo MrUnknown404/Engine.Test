@@ -5,11 +5,14 @@ using Engine3.Graphics;
 using Engine3.Graphics.Vulkan;
 using Engine3.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
+using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
 
 namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VkRenderer1 : VkRenderer {
+		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
 		private const string TestShaderName = "Test";
 
 		private GraphicsPipeline? graphicsPipeline;
@@ -17,18 +20,20 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private VkBufferObject? vertexBuffer;
 		private VkBufferObject? indexBuffer;
 
-		private readonly VkBufferObject[] uniformBuffers;
+		private readonly VkBufferObject[] uniformBuffers; // TODO uniform buffer class
 		private readonly void*[] uniformBuffersMapped;
+
+		private VkImageObject? image;
 
 		private readonly Camera camera;
 
 		private readonly TestVertex[] vertices = [ new(-0.5f, -0.5f, 0, 1, 0, 0), new(0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, 0.5f, 0, 0, 0, 1), new(-0.5f, 0.5f, 0, 1, 1, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly TestUniformBufferObject testUniformBufferObject = new();
-		private readonly Assembly shaderAssembly;
+		private readonly Assembly gameAssembly;
 
-		public VkRenderer1(GameClient gameClient, VkWindow window, Assembly shaderAssembly) : base(gameClient, window) {
-			this.shaderAssembly = shaderAssembly;
+		public VkRenderer1(GameClient gameClient, VkWindow window, Assembly gameAssembly) : base(gameClient, window) {
+			this.gameAssembly = gameAssembly;
 
 			uniformBuffers = new VkBufferObject[MaxFramesInFlight];
 			uniformBuffersMapped = new void*[MaxFramesInFlight];
@@ -38,11 +43,12 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		public override void Setup() {
-			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, shaderAssembly);
-			VkShaderObject fragmentShader = new("", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, shaderAssembly);
+			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VkShaderObject fragmentShader = new("", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
 			uint uniformBufferSize = TestUniformBufferObject.Size;
 			CreateUniformBuffers();
+			Logger.Debug("Made uniform buffers");
 
 			GraphicsPipeline.Builder builder =
 					new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
@@ -51,6 +57,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers.Select(static buffer => buffer.Buffer).ToArray(), uniformBufferSize);
 			graphicsPipeline = builder.MakePipeline();
+			Logger.Debug("Made pipeline");
 
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
@@ -63,6 +70,11 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			vertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, vertices);
 			indexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, indices);
+
+			Logger.Debug("Made vertex/index buffers");
+
+			image = VkImageObject.CreateFrom4ChannelPng("Test Image", PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
+			Logger.Debug("Made image");
 
 			return;
 
@@ -90,7 +102,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			fixed (void* dataPtr = data) { Buffer.MemoryCopy(dataPtr, uniformBuffersMapped[CurrentFrame], (ulong)data.Length, (ulong)data.Length); }
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBufferObject graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 			if (this.indexBuffer is not { } indexBuffer) { return; }
@@ -100,8 +112,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
 			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));
 
-			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer.Buffer, 0);
-			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer.Buffer, indexBuffer.BufferSize);
+			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
+			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer, indexBuffer.BufferSize);
 
 			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.DescriptorSets?[CurrentFrame] ?? throw new Engine3VulkanException("Uniform Buffer needed fpr this"),
 				VkShaderStageFlagBits.ShaderStageVertexBit);
@@ -113,6 +125,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexBuffer?.Destroy();
 			indexBuffer?.Destroy();
 			foreach (VkBufferObject uniformBuffer in uniformBuffers) { uniformBuffer.Destroy(); }
+
+			image?.Destroy();
 
 			graphicsPipeline?.Destroy();
 		}

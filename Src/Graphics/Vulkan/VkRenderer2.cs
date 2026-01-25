@@ -16,13 +16,13 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private BufferObject? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
-		private readonly Assembly shaderAssembly;
+		private readonly Assembly gameAssembly;
 
-		public VkRenderer2(GameClient gameClient, VkWindow window, Assembly shaderAssembly) : base(gameClient, window) => this.shaderAssembly = shaderAssembly;
+		public VkRenderer2(GameClient gameClient, VkWindow window, Assembly gameAssembly) : base(gameClient, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
-			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, shaderAssembly);
-			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, shaderAssembly);
+			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
 			GraphicsPipeline.Builder builder = new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions());
 			graphicsPipeline = builder.MakePipeline();
@@ -36,7 +36,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexBuffer.Copy(vertices);
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBufferObject graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 
@@ -45,7 +45,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
 			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));
 
-			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer.Buffer, 0);
+			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}

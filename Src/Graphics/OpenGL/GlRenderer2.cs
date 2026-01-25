@@ -20,15 +20,15 @@ namespace Engine3.Test.Graphics.OpenGL {
 
 		private readonly TestVertex[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
-		private readonly Assembly shaderAssembly;
+		private readonly Assembly gameAssembly;
 
-		public GlRenderer2(GlWindow window, Assembly shaderAssembly) : base(window) => this.shaderAssembly = shaderAssembly;
+		public GlRenderer2(GlWindow window, Assembly gameAssembly) : base(window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			base.Setup();
 
-			vertexShader = new("Test Vertex Shader", TestShaderName, ShaderType.Vertex, shaderAssembly);
-			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, shaderAssembly);
+			vertexShader = new("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
 			programPipeline = new("Test Program Pipeline", vertexShader, fragmentShader);
 
 			vertexBuffer = new("Test Vertex Buffer", sizeof(TestVertex) * vertices.Length, BufferStorageMask.DynamicStorageBit);

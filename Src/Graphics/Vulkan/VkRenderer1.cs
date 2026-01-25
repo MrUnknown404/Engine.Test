@@ -25,9 +25,11 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private VkImageObject? image;
 
+		private VkTextureSamplerObject? textureSampler;
+
 		private readonly Camera camera;
 
-		private readonly TestVertex[] vertices = [ new(-0.5f, -0.5f, 0, 1, 0, 0), new(0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, 0.5f, 0, 0, 0, 1), new(-0.5f, 0.5f, 0, 1, 1, 1), ];
+		private readonly TestVertex2[] vertices = [ new(-0.5f, -0.5f, 0, 1, 0, 1, 0, 0), new(0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, 0.5f, 0, 0, 1, 0, 0, 1), new(-0.5f, 0.5f, 0, 1, 1, 1, 1, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly TestUniformBufferObject testUniformBufferObject = new();
 		private readonly Assembly gameAssembly;
@@ -50,19 +52,29 @@ namespace Engine3.Test.Graphics.Vulkan {
 			CreateUniformBuffers();
 			Logger.Debug("Made uniform buffers");
 
-			GraphicsPipeline.Builder builder =
-					new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
+			image = VkImageObject.CreateFromRgbaPng("Test Image", PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
+			Logger.Debug("Made image");
+
+			VkTextureSamplerObject.Builder textureSamplerBuilder = new("Test Texture Sampler", LogicalDevice, VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits);
+			textureSampler = textureSamplerBuilder.MakeTextureSampler();
+			Logger.Debug("Made texture sampler");
+
+			GraphicsPipeline.Builder graphicsPipelineBuilder =
+					new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
 							CullMode = VkCullModeFlagBits.CullModeNone,
 					};
 
-			builder.AddDescriptorSets(VkShaderStageFlagBits.ShaderStageVertexBit, 0, MaxFramesInFlight, uniformBuffers.Select(static buffer => buffer.Buffer).ToArray(), uniformBufferSize);
-			graphicsPipeline = builder.MakePipeline();
+			graphicsPipelineBuilder.AddDescriptorSets(
+				[ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1), ],
+				MaxFramesInFlight, uniformBuffers, uniformBufferSize, image.ImageView, textureSampler.TextureSampler);
+
+			graphicsPipeline = graphicsPipelineBuilder.MakePipeline();
 			Logger.Debug("Made pipeline");
 
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex2) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
 			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
@@ -72,9 +84,6 @@ namespace Engine3.Test.Graphics.Vulkan {
 			indexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, indices);
 
 			Logger.Debug("Made vertex/index buffers");
-
-			image = VkImageObject.CreateFrom4ChannelPng("Test Image", PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
-			Logger.Debug("Made image");
 
 			return;
 
@@ -126,6 +135,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			indexBuffer?.Destroy();
 			foreach (VkBufferObject uniformBuffer in uniformBuffers) { uniformBuffer.Destroy(); }
 
+			textureSampler?.Destroy();
 			image?.Destroy();
 
 			graphicsPipeline?.Destroy();

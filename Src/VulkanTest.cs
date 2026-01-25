@@ -14,6 +14,7 @@ namespace Engine3.Test {
 	// TODO read https://medium.com/@heypete/hello-triangle-meet-swift-and-wide-color-6f9e246616d9
 	// https://developer.nvidia.com/vulkan-memory-management
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
+	// https://vulkan.lunarg.com/doc/view/1.4.304.0/linux/best_practices.html
 
 	// # where i'm at
 	// https://vulkan-tutorial.com/Texture_mapping/Images
@@ -51,7 +52,7 @@ namespace Engine3.Test {
 			RenderingPipelines.Add(renderer1);
 			RenderingPipelines.Add(renderer2);
 
-			Logger.Debug("Setup done. Showing windows");
+			Logger.Info("Setup done. Showing windows");
 
 			Window1.Show();
 			Window2.Show();

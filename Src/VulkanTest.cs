@@ -15,6 +15,7 @@ namespace Engine3.Test {
 	// https://developer.nvidia.com/vulkan-memory-management
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
 	// https://vulkan.lunarg.com/doc/view/1.4.304.0/linux/best_practices.html
+	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
 
 	// # where i'm at
 	// https://vulkan-tutorial.com/Texture_mapping/Images

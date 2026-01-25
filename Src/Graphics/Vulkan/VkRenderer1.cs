@@ -1,6 +1,5 @@
 using System.Numerics;
 using System.Reflection;
-using Engine3.Exceptions;
 using Engine3.Graphics;
 using Engine3.Graphics.Vulkan;
 using Engine3.Graphics.Vulkan.Objects;
@@ -61,12 +60,11 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			GraphicsPipeline.Builder graphicsPipelineBuilder =
 					new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
-							CullMode = VkCullModeFlagBits.CullModeNone,
+							CullMode = VkCullModeFlagBits.CullModeNone, MaxFramesInFlight = MaxFramesInFlight,
 					};
 
-			graphicsPipelineBuilder.AddDescriptorSets(
-				[ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1), ],
-				MaxFramesInFlight, uniformBuffers, uniformBufferSize, image.ImageView, textureSampler.TextureSampler);
+			graphicsPipelineBuilder.AddDescriptorSet(VkShaderStageFlagBits.ShaderStageVertexBit, 0, uniformBuffers, uniformBufferSize);
+			graphicsPipelineBuilder.AddDescriptorSet(VkShaderStageFlagBits.ShaderStageFragmentBit, 1, image.ImageView, textureSampler.TextureSampler);
 
 			graphicsPipeline = graphicsPipelineBuilder.MakePipeline();
 			Logger.Debug("Made pipeline");
@@ -74,15 +72,17 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex2) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
+			graphicsPipeline.UpdateDescriptorSets();
+			Logger.Debug("Updated descriptor sets");
+
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex2) * vertices.Length), PhysicalDevice, LogicalDevice,
+				VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
 			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
 			vertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, vertices);
 			indexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, indices);
-
 			Logger.Debug("Made vertex/index buffers");
 
 			return;
@@ -124,8 +124,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer, indexBuffer.BufferSize);
 
-			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.DescriptorSets?[CurrentFrame] ?? throw new Engine3VulkanException("Uniform Buffer needed fpr this"),
-				VkShaderStageFlagBits.ShaderStageVertexBit);
+			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.GetCurrentDescriptorSet(CurrentFrame), VkShaderStageFlagBits.ShaderStageVertexBit);
 
 			graphicsCommandBuffer.CmdDrawIndexed((uint)indices.Length);
 		}

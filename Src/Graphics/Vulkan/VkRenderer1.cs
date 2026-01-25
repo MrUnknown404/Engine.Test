@@ -45,17 +45,17 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		public override void Setup() {
 			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VkShaderObject fragmentShader = new("", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			GraphicsPipeline.Builder graphicsPipelineBuilder =
-					new("Test Graphics Pipeline", LogicalDevice, SwapChain, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
-							CullMode = VkCullModeFlagBits.CullModeNone, MaxFramesInFlight = MaxFramesInFlight,
-					};
+			GraphicsPipeline.DescriptorSet[] descriptorSets = [
+					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1),
+			];
 
-			graphicsPipelineBuilder.AddDescriptorSet(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0);
-			graphicsPipelineBuilder.AddDescriptorSet(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1);
+			graphicsPipeline = new(LogicalDevice,
+				new GraphicsPipeline.Settings("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
+						CullMode = VkCullModeFlagBits.CullModeNone,
+				}.SetDescriptorSets(descriptorSets, MaxFramesInFlight));
 
-			graphicsPipeline = graphicsPipelineBuilder.MakePipeline();
 			Logger.Debug("Made pipeline");
 
 			vertexShader.Destroy();
@@ -80,8 +80,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			image = VkImageObject.CreateFromRgbaPng("Test Image", PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
 			Logger.Debug("Made image");
 
-			VkTextureSamplerObject.Builder textureSamplerBuilder = new("Test Texture Sampler", LogicalDevice, VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits);
-			textureSampler = textureSamplerBuilder.MakeTextureSampler();
+			textureSampler = new(LogicalDevice, new("Test Texture Sampler", VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+
 			Logger.Debug("Made texture sampler");
 
 			graphicsPipeline.UpdateDescriptorSet(0, uniformBuffers, uniformBufferSize);
@@ -126,7 +126,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 			graphicsCommandBuffer.CmdBindIndexBuffer(indexBuffer, indexBuffer.BufferSize);
 
-			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.GetCurrentDescriptorSet(CurrentFrame), VkShaderStageFlagBits.ShaderStageVertexBit);
+			graphicsCommandBuffer.CmdBindDescriptorSets(graphicsPipeline.Layout, graphicsPipeline.GetDescriptorSet(CurrentFrame), VkShaderStageFlagBits.ShaderStageVertexBit);
 
 			graphicsCommandBuffer.CmdDrawIndexed((uint)indices.Length);
 		}

@@ -12,11 +12,11 @@ struct VertexData {
 	float color[3];
 };
 
-layout (binding = 0, std430) readonly buffer ssbo0 {
+layout (binding = 0, std430) readonly buffer VertexBuffer {
 	VertexData vertices[];
 };
 
-layout (binding = 1, std430) readonly buffer ssbo1 {
+layout (binding = 1, std430) readonly buffer IndexBuffer {
 	uint indices[];
 };
 

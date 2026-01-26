@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using Engine3.Graphics;
@@ -18,13 +19,10 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private VkBufferObject? vertexBuffer;
 		private VkBufferObject? indexBuffer;
-
-		private readonly VkBufferObject[] uniformBuffers; // TODO uniform buffer class
-		private readonly void*[] uniformBuffersMapped;
+		private UniformBuffers? uniformBuffers;
 
 		private VkImageObject? image;
-
-		private VkTextureSamplerObject? textureSampler;
+		private TextureSampler? textureSampler;
 
 		private readonly Camera camera;
 
@@ -36,87 +34,70 @@ namespace Engine3.Test.Graphics.Vulkan {
 		public VkRenderer1(GameClient gameClient, VkWindow window, Assembly gameAssembly) : base(gameClient, window) {
 			this.gameAssembly = gameAssembly;
 
-			uniformBuffers = new VkBufferObject[MaxFramesInFlight];
-			uniformBuffersMapped = new void*[MaxFramesInFlight];
-
 			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
-			camera = new PerspectiveCamera((float)SwapChain.Extent.width / SwapChain.Extent.height, 0.5f, 10f) { Position = new(0, 0, 3), YawDegrees = 270, };
+			camera = new PerspectiveCamera((float)SwapChain.Extent.width / SwapChain.Extent.height, 0.01f, 10f) { Position = new(0, 0, 2.5f), YawDegrees = 270, };
 		}
 
 		public override void Setup() {
+			CreateGraphicsPipeline();
+
+			uint uniformBufferSize = TestUniformBufferObject.Size;
+			CreateBuffers(uniformBufferSize);
+
+			CreateSamplerAndTextures();
+
+			UpdateDescriptorSets(uniformBufferSize);
+		}
+
+		private void CreateGraphicsPipeline() {
 			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
 			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			GraphicsPipeline.DescriptorSet[] descriptorSets = [
-					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1),
-			];
-
+			// ew
 			graphicsPipeline = new(LogicalDevice,
-				new GraphicsPipeline.Settings("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
-						CullMode = VkCullModeFlagBits.CullModeNone,
-				}.SetDescriptorSets(descriptorSets, MaxFramesInFlight));
+				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions(),
+					[ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1), ],
+					MaxFramesInFlight) { CullMode = VkCullModeFlagBits.CullModeNone, });
 
-			Logger.Debug("Made pipeline");
+			Logger.Debug("Created graphics pipeline");
 
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
+		}
 
-			Logger.Debug("Updated descriptor sets");
-
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex2) * vertices.Length), PhysicalDevice, LogicalDevice,
+		private void CreateBuffers(ulong uniformBufferSize) {
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex2) * vertices.Length), PhysicalDeviceMemoryProperties, LogicalDevice,
 				VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
-			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
+			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), PhysicalDeviceMemoryProperties, LogicalDevice,
+				VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit);
 
 			vertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, vertices);
 			indexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, indices);
-			Logger.Debug("Made vertex/index buffers");
+			Logger.Debug("Created vertex/index buffers");
 
-			uint uniformBufferSize = TestUniformBufferObject.Size;
-			CreateUniformBuffers();
-			Logger.Debug("Made uniform buffers");
-
-			image = VkImageObject.CreateFromRgbaPng("Test Image", PhysicalDevice, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
-			Logger.Debug("Made image");
-
-			textureSampler = new(LogicalDevice, new("Test Texture Sampler", VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
-
-			Logger.Debug("Made texture sampler");
-
-			graphicsPipeline.UpdateDescriptorSet(0, uniformBuffers, uniformBufferSize);
-			graphicsPipeline.UpdateDescriptorSet(1, image.ImageView, textureSampler.TextureSampler);
-
-			return;
-
-			void CreateUniformBuffers() {
-				fixed (void** uniformBufferMapped = uniformBuffersMapped) {
-					for (int i = 0; i < MaxFramesInFlight; i++) {
-						VkBufferObject uniformBuffer = new($"Test Uniform Buffer[{i}]", uniformBufferSize, PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageUniformBufferBit,
-							VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit);
-
-						uniformBuffers[i] = uniformBuffer;
-						uniformBufferMapped[i] = uniformBuffer.MapMemory(uniformBufferSize);
-					}
-				}
-			}
+			uniformBuffers = new("Test Uniform Buffers", this, PhysicalDeviceMemoryProperties, LogicalDevice, uniformBufferSize);
+			Logger.Debug("Created uniform buffers");
 		}
 
-		protected override void UpdateUniformBuffer(float delta) {
-			// camera.YawDegrees += 0.05f;
+		private void CreateSamplerAndTextures() {
+			textureSampler = new(LogicalDevice, new("Test Texture Sampler", VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			Logger.Debug("Created texture sampler");
 
-			testUniformBufferObject.Projection = camera.CreateProjectionMatrix();
-			testUniformBufferObject.View = camera.CreateViewMatrix();
-			testUniformBufferObject.Model = Matrix4x4.CreateRotationY(FrameCount / 1000f * MathH.ToRadians(90f)); // TODO currently affected by frame rate
+			image = VkImageObject.CreateFromRgbaPng("Test Image", PhysicalDeviceMemoryProperties, LogicalDevice, TransferCommandPool, LogicalGpu.TransferQueue, PhysicalGpu.QueueFamilyIndices, "Test.64x64", gameAssembly);
+			Logger.Debug("Created image");
+		}
 
-			byte[] data = testUniformBufferObject.CollectBytes();
-			fixed (void* dataPtr = data) { Buffer.MemoryCopy(dataPtr, uniformBuffersMapped[CurrentFrame], (ulong)data.Length, (ulong)data.Length); }
+		private void UpdateDescriptorSets(ulong bufferSize) {
+			if (graphicsPipeline == null || uniformBuffers == null || image == null || textureSampler == null) { throw new UnreachableException(); }
+
+			graphicsPipeline.UpdateDescriptorSet(0, uniformBuffers, bufferSize);
+			graphicsPipeline.UpdateDescriptorSet(1, image.ImageView, textureSampler.Sampler);
+			Logger.Debug("Updated descriptor sets");
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBufferObject graphicsCommandBuffer, float delta) {
-			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
-			if (this.vertexBuffer is not { } vertexBuffer) { return; }
-			if (this.indexBuffer is not { } indexBuffer) { return; }
+			if (graphicsPipeline == null || vertexBuffer == null || indexBuffer == null) { throw new NullReferenceException(); }
 
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
@@ -131,10 +112,22 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDrawIndexed((uint)indices.Length);
 		}
 
+		protected override void CopyUniformBuffer(float delta) {
+			if (uniformBuffers == null) { throw new UnreachableException(); }
+
+			// camera.YawDegrees += 0.05f;
+
+			testUniformBufferObject.Projection = camera.CreateProjectionMatrix();
+			testUniformBufferObject.View = camera.CreateViewMatrix();
+			testUniformBufferObject.Model = Matrix4x4.CreateRotationY(FrameCount / 1000f * MathH.ToRadians(90f)) * Matrix4x4.CreateTranslation(0, 0, MathF.Sin(FrameCount / 1000f) * 2); // TODO currently affected by frame rate
+
+			uniformBuffers.Copy(testUniformBufferObject.CollectBytes());
+		}
+
 		protected override void Cleanup() {
 			vertexBuffer?.Destroy();
 			indexBuffer?.Destroy();
-			foreach (VkBufferObject uniformBuffer in uniformBuffers) { uniformBuffer.Destroy(); }
+			uniformBuffers?.Destroy();
 
 			textureSampler?.Destroy();
 			image?.Destroy();

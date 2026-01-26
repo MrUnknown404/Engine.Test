@@ -18,10 +18,11 @@ namespace Engine3.Test {
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
 
 	// # where i'm at
-	// https://vulkan-tutorial.com/Texture_mapping/Images
+	// https://vulkan-tutorial.com/Depth_buffering
 
 	// TODO fix white screen while resizing
 	// TODO look into using IDisposable more?
+	// TODO figure out how to dynamically change images. do i set descriptors each time?
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

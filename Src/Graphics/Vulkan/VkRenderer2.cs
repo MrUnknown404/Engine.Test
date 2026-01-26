@@ -29,7 +29,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalDevice, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalGpu.PhysicalDeviceMemoryProperties2, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit);
 
 			vertexBuffer.Copy(vertices);

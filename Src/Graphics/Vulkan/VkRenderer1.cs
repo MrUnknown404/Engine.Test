@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
-using Engine3.Graphics;
-using Engine3.Graphics.Vulkan;
-using Engine3.Graphics.Vulkan.Objects;
+using Engine3.Client;
+using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Vulkan;
+using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using NLog;
 using OpenTK.Graphics.Vulkan;
@@ -31,7 +32,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private readonly TestUniformBufferObject testUniformBufferObject = new();
 		private readonly Assembly gameAssembly;
 
-		public VkRenderer1(GameClient gameClient, VkWindow window, Assembly gameAssembly) : base(gameClient, window) {
+		public VkRenderer1(VulkanGraphicsBackend graphicsBackend, VkWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
 			this.gameAssembly = gameAssembly;
 
 			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };

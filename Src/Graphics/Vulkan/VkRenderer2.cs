@@ -1,8 +1,9 @@
 using System.Reflection;
-using Engine3.Graphics;
-using Engine3.Graphics.Objects;
-using Engine3.Graphics.Vulkan;
-using Engine3.Graphics.Vulkan.Objects;
+using Engine3.Client;
+using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Objects;
+using Engine3.Client.Graphics.Vulkan;
+using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.Vulkan;
 
@@ -12,13 +13,12 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		// private VkBufferObject? vertexBuffer;
 		private BufferObject? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
 
-		public VkRenderer2(GameClient gameClient, VkWindow window, Assembly gameAssembly) : base(gameClient, window) => this.gameAssembly = gameAssembly;
+		public VkRenderer2(VulkanGraphicsBackend graphicsBackend, VkWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);

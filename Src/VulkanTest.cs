@@ -1,10 +1,12 @@
 using System.Diagnostics;
-using Engine3.Graphics.Vulkan;
+using Engine3.Client;
+using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Vulkan;
 using Engine3.Test.Graphics.Vulkan;
 using Engine3.Utility.Versions;
 using NLog;
+using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
-using OpenTK.Platform;
 
 namespace Engine3.Test {
 	// # resources
@@ -30,25 +32,29 @@ namespace Engine3.Test {
 		public VkWindow? Window1 { get; set; }
 		public VkWindow? Window2 { get; set; }
 
-		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0), new VulkanGraphicsApiHints()) => OnSetupFinishedEvent += OnSetupFinished;
+		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
+			new VulkanGraphicsBackend(new()) {
+					EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+			}) =>
+				OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
-			if (VkInstance is not { } vkInstance) { throw new UnreachableException(); }
+			if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: { } vkInstance, } graphicsBackend) { throw new UnreachableException(); }
 
 			Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
 
 			Logger.Debug("Making Window 1...");
-			Window1 = new(this, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
+			Window1 = new(graphicsBackend, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
 			Window1.OnCloseWindowEvent += Shutdown;
 
 			Logger.Debug("Making Window 2...");
-			Window2 = new(this, vkInstance, "Window 2", 500, 500) { ClearColor = clearColor, };
+			Window2 = new(graphicsBackend, vkInstance, "Window 2", 500, 500) { ClearColor = clearColor, };
 
 			Windows.Add(Window1);
 			Windows.Add(Window2);
 
-			VkRenderer renderer1 = new VkRenderer1(this, Window1, Assembly);
-			VkRenderer renderer2 = new VkRenderer2(this, Window2, Assembly);
+			VkRenderer renderer1 = new VkRenderer1(graphicsBackend, Window1, Assembly);
+			VkRenderer renderer2 = new VkRenderer2(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
 			RenderingPipelines.Add(renderer1);

@@ -1,14 +1,15 @@
 using System.Numerics;
 using System.Reflection;
-using Engine3.Graphics;
-using Engine3.Graphics.OpenGL;
-using Engine3.Graphics.OpenGL.Objects;
+using Engine3.Client;
+using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.OpenGL;
+using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Platform;
 using USharpLibs.Common.Math;
-using ShaderType = Engine3.Graphics.ShaderType;
+using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer1 : GlRenderer {
@@ -27,7 +28,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly Assembly gameAssembly;
 
-		public GlRenderer1(GlWindow window, Assembly gameAssembly) : base(window) => this.gameAssembly = gameAssembly;
+		public GlRenderer1(OpenGLGraphicsBackend graphicsBackend, GlWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			base.Setup();

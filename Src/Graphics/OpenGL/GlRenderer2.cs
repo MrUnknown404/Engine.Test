@@ -1,18 +1,19 @@
 using System.Reflection;
-using Engine3.Graphics.Objects;
-using Engine3.Graphics.OpenGL;
-using Engine3.Graphics.OpenGL.Objects;
+using Engine3.Client;
+using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Objects;
+using Engine3.Client.Graphics.OpenGL;
+using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.OpenGL;
-using ShaderType = Engine3.Graphics.ShaderType;
+using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer2 : GlRenderer {
 		private const string TestShaderName = "Test";
 
-		// private GlBufferObject? vertexBuffer;
 		private BufferObject? vertexBuffer;
-		private GlBufferObject? indexBuffer;
+		private BufferObject? indexBuffer;
 
 		private GlShaderObject? vertexShader;
 		private GlShaderObject? fragmentShader;
@@ -22,7 +23,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly Assembly gameAssembly;
 
-		public GlRenderer2(GlWindow window, Assembly gameAssembly) : base(window) => this.gameAssembly = gameAssembly;
+		public GlRenderer2(OpenGLGraphicsBackend graphicsBackend, GlWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			base.Setup();

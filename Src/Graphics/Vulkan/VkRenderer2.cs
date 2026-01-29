@@ -1,7 +1,6 @@
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Objects;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
@@ -13,7 +12,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private BufferObject? vertexBuffer;
+		private VkBufferObject? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
@@ -24,12 +23,13 @@ namespace Engine3.Test.Graphics.Vulkan {
 			VkShaderObject vertexShader = new("Test Vertex Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
 			VkShaderObject fragmentShader = new("Test Fragment Shader", LogicalDevice, TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			graphicsPipeline = new(LogicalDevice, new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
+			graphicsPipeline = new(PhysicalDevice, LogicalDevice,
+				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalGpu.PhysicalDeviceMemoryProperties2, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), PhysicalDeviceMemoryProperties, LogicalDevice, VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit);
 
 			vertexBuffer.Copy(vertices);

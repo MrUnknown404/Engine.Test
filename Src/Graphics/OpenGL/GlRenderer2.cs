@@ -1,7 +1,6 @@
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Objects;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Graphics.Test;
@@ -12,8 +11,8 @@ namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer2 : GlRenderer {
 		private const string TestShaderName = "Test";
 
-		private BufferObject? vertexBuffer;
-		private BufferObject? indexBuffer;
+		private GlBufferObject? vertexBuffer;
+		private GlBufferObject? indexBuffer;
 
 		private GlShaderObject? vertexShader;
 		private GlShaderObject? fragmentShader;
@@ -32,10 +31,10 @@ namespace Engine3.Test.Graphics.OpenGL {
 			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
 			programPipeline = new("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexBuffer = new("Test Vertex Buffer", sizeof(TestVertex) * vertices.Length, BufferStorageMask.DynamicStorageBit);
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), BufferStorageMask.DynamicStorageBit);
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = new("Test Index Buffer", sizeof(uint) * indices.Length, BufferStorageMask.DynamicStorageBit);
+			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), BufferStorageMask.DynamicStorageBit);
 			indexBuffer.Copy(indices);
 		}
 

@@ -16,6 +16,8 @@ namespace Engine3.Test.Graphics.Test {
 		public required float G { get; init; }
 		public required float B { get; init; }
 
+		public TestVertex2() { }
+
 		[SetsRequiredMembers]
 		public TestVertex2(float x, float y, float z, float u, float v, float r, float g, float b) {
 			X = x;
@@ -28,12 +30,12 @@ namespace Engine3.Test.Graphics.Test {
 			B = b;
 		}
 
-		public static unsafe VkVertexInputBindingDescription[] GetBindingDescriptions() => [ new() { binding = 0, stride = (uint)sizeof(TestVertex2), inputRate = VkVertexInputRate.VertexInputRateVertex, }, ];
+		public static unsafe VkVertexInputBindingDescription[] GetBindingDescriptions(uint binding = 0) => [ new() { binding = binding, stride = (uint)sizeof(TestVertex2), inputRate = VkVertexInputRate.VertexInputRateVertex, }, ];
 
-		public static VkVertexInputAttributeDescription[] GetAttributeDescriptions() => [
-				new() { binding = 0, location = 0, format = VkFormat.FormatR32g32b32Sfloat, offset = 0, }, //
-				new() { binding = 0, location = 1, format = VkFormat.FormatR32g32Sfloat, offset = sizeof(float) * 3, }, //
-				new() { binding = 0, location = 2, format = VkFormat.FormatR32g32b32Sfloat, offset = sizeof(float) * 5, },
+		public static VkVertexInputAttributeDescription[] GetAttributeDescriptions(uint binding = 0) => [
+				new() { binding = binding, location = 0, format = VkFormat.FormatR32g32b32Sfloat, offset = 0, }, //
+				new() { binding = binding, location = 1, format = VkFormat.FormatR32g32Sfloat, offset = sizeof(float) * 3, }, //
+				new() { binding = binding, location = 2, format = VkFormat.FormatR32g32b32Sfloat, offset = sizeof(float) * 5, },
 		];
 	}
 }

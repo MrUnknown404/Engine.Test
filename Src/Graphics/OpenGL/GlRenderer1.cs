@@ -37,10 +37,10 @@ namespace Engine3.Test.Graphics.OpenGL {
 			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
 			programPipeline = new("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexBuffer = new("Test Vertex Buffer", sizeof(TestVertex) * vertices.Length, BufferStorageMask.DynamicStorageBit);
+			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), BufferStorageMask.DynamicStorageBit);
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = new("Test Index Buffer", sizeof(uint) * indices.Length, BufferStorageMask.DynamicStorageBit);
+			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), BufferStorageMask.DynamicStorageBit);
 			indexBuffer.Copy(indices);
 
 			// camera = new OrthographicCamera(10, 10, 0.1f, 10)

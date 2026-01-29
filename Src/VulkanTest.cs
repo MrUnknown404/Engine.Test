@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Engine3.Client;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Vulkan;
 using Engine3.Test.Graphics.Vulkan;
 using Engine3.Utility.Versions;
 using NLog;
@@ -20,7 +19,7 @@ namespace Engine3.Test {
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
 
 	// # where i'm at
-	// https://vulkan-tutorial.com/Depth_buffering
+	// https://vulkan-tutorial.com/Depth_buffering#page_Explicitly-transitioning-the-depth-image
 
 	// TODO fix white screen while resizing
 	// TODO look into using IDisposable more?
@@ -53,12 +52,12 @@ namespace Engine3.Test {
 			Windows.Add(Window1);
 			Windows.Add(Window2);
 
-			VkRenderer renderer1 = new VkRenderer1(graphicsBackend, Window1, Assembly);
-			VkRenderer renderer2 = new VkRenderer2(graphicsBackend, Window2, Assembly);
+			VkRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
+			VkRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
-			RenderingPipelines.Add(renderer1);
-			RenderingPipelines.Add(renderer2);
+			Renderers.Add(renderer1);
+			Renderers.Add(renderer2);
 
 			Logger.Info("Setup done. Showing windows");
 

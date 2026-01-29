@@ -36,8 +36,8 @@ namespace Engine3.Test {
 			GlRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
-			RenderingPipelines.Add(renderer1);
-			RenderingPipelines.Add(renderer2);
+			Renderers.Add(renderer1);
+			Renderers.Add(renderer2);
 
 			Logger.Debug("Setup done. Showing windows");
 

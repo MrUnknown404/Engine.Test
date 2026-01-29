@@ -19,7 +19,7 @@ namespace Engine3.Test {
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
 
 	// # where i'm at
-	// https://vulkan-tutorial.com/Depth_buffering#page_Explicitly-transitioning-the-depth-image
+	// https://vulkan-tutorial.com/Loading_models
 
 	// TODO fix white screen while resizing
 	// TODO look into using IDisposable more?

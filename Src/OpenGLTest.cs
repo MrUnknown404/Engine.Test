@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Engine3.Client;
-using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.OpenGL;
 using Engine3.Test.Graphics.OpenGL;
 using Engine3.Utility.Versions;
 using NLog;

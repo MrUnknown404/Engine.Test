@@ -4,11 +4,12 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
-using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
+using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
+using VkImage = Engine3.Client.Graphics.Vulkan.VkImage;
 
 namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VkRenderer1 : VkRenderer {
@@ -20,17 +21,17 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBufferObject? cubeVertexBuffer;
-		private VkBufferObject? cubeIndexBuffer;
+		private VkBuffer? cubeVertexBuffer;
+		private VkBuffer? cubeIndexBuffer;
 		private UniformBuffers? cubeUniformBuffers;
 		private DescriptorSets? cubeDescriptorSet;
 
-		private VkBufferObject? quadVertexBuffer;
-		private VkBufferObject? quadIndexBuffer;
+		private VkBuffer? quadVertexBuffer;
+		private VkBuffer? quadIndexBuffer;
 		private UniformBuffers? quadUniformBuffers;
 		private DescriptorSets? quadDescriptorSet;
 
-		private VkImageObject? image;
+		private VkImage? image;
 		private TextureSampler? textureSampler;
 
 		private readonly Camera camera;
@@ -98,8 +99,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		private void CreateGraphicsPipeline() {
-			VkShaderObject vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VkShaderObject fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VkShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VkShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1),
@@ -172,7 +173,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBufferObject graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
 			if (graphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || quadVertexBuffer == null || quadIndexBuffer == null || cubeDescriptorSet == null || quadDescriptorSet == null) {
 				throw new NullReferenceException();
 			}

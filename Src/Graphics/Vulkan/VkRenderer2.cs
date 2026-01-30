@@ -2,9 +2,9 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
-using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.Vulkan;
+using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
 
 namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VkRenderer2 : VkRenderer {
@@ -12,7 +12,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBufferObject? vertexBuffer;
+		private VkBuffer? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
@@ -20,8 +20,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 		public VkRenderer2(VulkanGraphicsBackend graphicsBackend, VkWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
-			VkShaderObject vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VkShaderObject fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+			VkShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VkShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
 			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
@@ -34,7 +34,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexBuffer.Copy(vertices);
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBufferObject graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
 			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
 			if (this.vertexBuffer is not { } vertexBuffer) { return; }
 

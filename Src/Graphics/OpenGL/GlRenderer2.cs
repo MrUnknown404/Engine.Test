@@ -1,8 +1,6 @@
 using System.Reflection;
 using Engine3.Client;
-using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.OpenGL;
-using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
@@ -11,11 +9,11 @@ namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer2 : GlRenderer {
 		private const string TestShaderName = "Test";
 
-		private GlBufferObject? vertexBuffer;
-		private GlBufferObject? indexBuffer;
+		private GlBuffer? vertexBuffer;
+		private GlBuffer? indexBuffer;
 
-		private GlShaderObject? vertexShader;
-		private GlShaderObject? fragmentShader;
+		private GlShader? vertexShader;
+		private GlShader? fragmentShader;
 		private ProgramPipeline? programPipeline;
 
 		private readonly TestVertex[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];

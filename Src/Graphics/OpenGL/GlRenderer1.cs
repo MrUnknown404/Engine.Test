@@ -1,9 +1,7 @@
 using System.Numerics;
 using System.Reflection;
 using Engine3.Client;
-using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.OpenGL;
-using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -15,11 +13,11 @@ namespace Engine3.Test.Graphics.OpenGL {
 	public unsafe class GlRenderer1 : GlRenderer {
 		private const string TestShaderName = "Test";
 
-		private GlBufferObject? vertexBuffer;
-		private GlBufferObject? indexBuffer;
+		private GlBuffer? vertexBuffer;
+		private GlBuffer? indexBuffer;
 
-		private GlShaderObject? vertexShader;
-		private GlShaderObject? fragmentShader;
+		private GlShader? vertexShader;
+		private GlShader? fragmentShader;
 		private ProgramPipeline? programPipeline;
 
 		private Camera? camera;

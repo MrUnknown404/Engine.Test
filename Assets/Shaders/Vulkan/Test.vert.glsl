@@ -7,7 +7,7 @@ layout (location = 2) in vec3 inColor;
 layout (location = 0) out vec2 fragUVs;
 layout (location = 1) out vec3 fragColor;
 
-layout (set = 0, binding = 0) uniform UniformBufferObject {
+layout (binding = 0) uniform UniformBufferObject {
 	mat4 projection;
 	mat4 view;
 	mat4 model;

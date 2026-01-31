@@ -28,8 +28,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
 
-			vertexBuffer = LogicalGpu.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
+				(ulong)(sizeof(TestVertex) * vertices.Length));
 
 			vertexBuffer.Copy(vertices);
 		}
@@ -45,12 +45,6 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
-		}
-
-		protected override void Cleanup() {
-			vertexBuffer?.Destroy();
-
-			base.Cleanup();
 		}
 	}
 }

@@ -15,7 +15,7 @@ namespace Engine3.Test {
 		public OpenGLWindow? Window1 { get; set; }
 		public OpenGLWindow? Window2 { get; set; }
 
-		public OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) => OnSetupFinishedEvent += OnSetupFinished;
+		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) => OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
 			if (GraphicsBackend is not OpenGLGraphicsBackend graphicsBackend) { throw new UnreachableException(); }

@@ -24,6 +24,7 @@ namespace Engine3.Test {
 	// TODO fix white screen while resizing
 	// TODO look into using IDisposable more?
 	// TODO figure out how to dynamically change images. do i update descriptors each time?
+	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -31,7 +32,7 @@ namespace Engine3.Test {
 		public VulkanWindow? Window1 { get; set; }
 		public VulkanWindow? Window2 { get; set; }
 
-		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
+		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
 					EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 			}) =>

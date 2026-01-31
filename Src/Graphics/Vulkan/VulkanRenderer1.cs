@@ -117,16 +117,16 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		private void CreateBuffers() {
-			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex2) * cubeVertices.Length));
+			cubeVertexBuffer = CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
+				(ulong)(sizeof(TestVertex2) * cubeVertices.Length));
 
-			quadVertexBuffer = LogicalGpu.CreateBuffer("Quad Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex2) * quadVertices.Length));
+			quadVertexBuffer = CreateBuffer("Quad Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
+				(ulong)(sizeof(TestVertex2) * quadVertices.Length));
 
-			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
+			cubeIndexBuffer = CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
 
-			quadIndexBuffer = LogicalGpu.CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
+			quadIndexBuffer = CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * quadIndices.Length));
 
 			// TODO can i use a single staging buffer for all of these?
@@ -137,16 +137,16 @@ namespace Engine3.Test.Graphics.Vulkan {
 			Logger.Debug("Created vertex/index buffers");
 
 			ulong bufferSize = TestUniformBufferObject.Size;
-			cubeUniformBuffers = LogicalGpu.CreateUniformBuffers("Cube Uniform Buffers", this, bufferSize);
-			quadUniformBuffers = LogicalGpu.CreateUniformBuffers("Quad Uniform Buffers", this, bufferSize);
+			cubeUniformBuffers = CreateUniformBuffers("Cube Uniform Buffers", bufferSize);
+			quadUniformBuffers = CreateUniformBuffers("Quad Uniform Buffers", bufferSize);
 			Logger.Debug("Created uniform buffers");
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
-			image = LogicalGpu.CreateImageAndCopyUsingStaging("Test 64x64 Image", "Test.64x64", "png", 64, 64, 4, VkFormat.FormatR8g8b8a8Srgb, TransferCommandPool, gameAssembly);
+			image = CreateImageAndCopyUsingStaging("Test 64x64 Image", "Test.64x64", "png", 64, 64, 4, VkFormat.FormatR8g8b8a8Srgb, gameAssembly);
 			Logger.Debug("Created image");
 		}
 
@@ -211,16 +211,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		protected override void Cleanup() {
-			cubeVertexBuffer?.Destroy();
-			cubeIndexBuffer?.Destroy();
-			cubeUniformBuffers?.Destroy();
-
-			quadVertexBuffer?.Destroy();
-			quadIndexBuffer?.Destroy();
-			quadUniformBuffers?.Destroy();
-
-			textureSampler?.Destroy();
-			image?.Destroy();
+			//
 
 			base.Cleanup();
 		}

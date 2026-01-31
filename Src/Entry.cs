@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
+using Engine3.Utility;
 using NLog;
 
 namespace Engine3.Test {
@@ -10,6 +11,8 @@ namespace Engine3.Test {
 
 		[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 		private static void Main() { // TODO args to change api
+			LoggerH.ConsoleLogLevel = LogLevel.Trace;
+
 #pragma warning disable CS0162 // Unreachable code detected
 			GameClient gameClient = TestGraphicsBackend switch {
 					GraphicsBackend.Console => new ConsoleTest(),

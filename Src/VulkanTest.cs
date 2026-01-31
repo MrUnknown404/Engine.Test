@@ -9,8 +9,8 @@ using OpenTK.Mathematics;
 
 namespace Engine3.Test {
 	// # resources
-	// https://vkguide.dev/
 	// https://vulkan-tutorial.com/
+	// https://vkguide.dev/
 	// https://lesleylai.info/en/vk-khr-dynamic-rendering/
 	// TODO read https://medium.com/@heypete/hello-triangle-meet-swift-and-wide-color-6f9e246616d9
 	// https://developer.nvidia.com/vulkan-memory-management
@@ -23,7 +23,7 @@ namespace Engine3.Test {
 
 	// TODO fix white screen while resizing
 	// TODO look into using IDisposable more?
-	// TODO figure out how to dynamically change images. do i set descriptors each time?
+	// TODO figure out how to dynamically change images. do i update descriptors each time?
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

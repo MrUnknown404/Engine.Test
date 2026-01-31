@@ -1,4 +1,4 @@
-using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Console;
 using Engine3.Utility.Versions;
 
 namespace Engine3.Test {

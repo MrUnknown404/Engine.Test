@@ -173,7 +173,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 				throw new NullReferenceException();
 			}
 
-			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO automate graphics pipeline binding
+			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
 			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));

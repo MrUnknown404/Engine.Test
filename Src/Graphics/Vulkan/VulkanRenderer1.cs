@@ -12,12 +12,10 @@ using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
 using VkImage = Engine3.Client.Graphics.Vulkan.VkImage;
 
 namespace Engine3.Test.Graphics.Vulkan {
-	public unsafe class VkRenderer1 : VkRenderer {
+	public unsafe class VulkanRenderer1 : VulkanRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private const string TestShaderName = "Test";
-
-		private VkDescriptorSetLayout? descriptorSetLayout;
 
 		private GraphicsPipeline? graphicsPipeline;
 
@@ -57,7 +55,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private readonly Assembly gameAssembly;
 
-		public VkRenderer1(VulkanGraphicsBackend graphicsBackend, VkWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
+		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
 			this.gameAssembly = gameAssembly;
 
 			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
@@ -88,17 +86,17 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		public override void Setup() {
-			CreateGraphicsPipeline();
+			CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout);
 
 			CreateBuffers();
 
 			CreateSamplerAndTextures();
 
-			CreateDescriptorSets();
+			CreateDescriptorSets(descriptorSetLayout);
 			UpdateDescriptorSets();
 		}
 
-		private void CreateGraphicsPipeline() {
+		private void CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout) {
 			VkShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
 			VkShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
@@ -107,12 +105,11 @@ namespace Engine3.Test.Graphics.Vulkan {
 			]);
 
 			// ew
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
-				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
-						DescriptorSetLayouts = [ descriptorSetLayout.Value, ],
-						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
-						CullMode = VkCullModeFlagBits.CullModeNone,
-				});
+			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
+					DescriptorSetLayouts = [ descriptorSetLayout, ],
+					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
+					CullMode = VkCullModeFlagBits.CullModeNone,
+			});
 
 			Logger.Debug("Created graphics pipeline");
 
@@ -153,12 +150,10 @@ namespace Engine3.Test.Graphics.Vulkan {
 			Logger.Debug("Created image");
 		}
 
-		private void CreateDescriptorSets() {
-			if (descriptorSetLayout == null) { throw new UnreachableException(); }
-
+		private void CreateDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
 			DescriptorPool descriptorPool = CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 2u * MaxFramesInFlight);
-			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout.Value);
-			quadDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout.Value);
+			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
+			quadDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
 			Logger.Debug("Created descriptor sets");
 		}
 
@@ -196,7 +191,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDrawIndexed((uint)quadIndices.Length);
 		}
 
-		protected override void CopyUniformBuffer(float delta) {
+		protected override void CopyUniformBuffers(float delta) {
 			if (cubeUniformBuffers == null || quadUniformBuffers == null) { throw new UnreachableException(); }
 
 			// camera.YawDegrees += 0.05f;
@@ -226,8 +221,6 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			textureSampler?.Destroy();
 			image?.Destroy();
-
-			graphicsPipeline?.Destroy();
 		}
 	}
 }

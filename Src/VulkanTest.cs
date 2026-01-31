@@ -28,8 +28,8 @@ namespace Engine3.Test {
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public VkWindow? Window1 { get; set; }
-		public VkWindow? Window2 { get; set; }
+		public VulkanWindow? Window1 { get; set; }
+		public VulkanWindow? Window2 { get; set; }
 
 		public VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
@@ -52,8 +52,8 @@ namespace Engine3.Test {
 			Windows.Add(Window1);
 			Windows.Add(Window2);
 
-			VkRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
-			VkRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
+			VulkanRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
+			VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
 			Renderers.Add(renderer1);

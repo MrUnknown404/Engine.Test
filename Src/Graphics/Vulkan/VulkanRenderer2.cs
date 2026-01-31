@@ -7,7 +7,7 @@ using OpenTK.Graphics.Vulkan;
 using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
 
 namespace Engine3.Test.Graphics.Vulkan {
-	public unsafe class VkRenderer2 : VkRenderer {
+	public unsafe class VulkanRenderer2 : VulkanRenderer {
 		private const string TestShaderName = "Test";
 
 		private GraphicsPipeline? graphicsPipeline;
@@ -17,13 +17,13 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
 
-		public VkRenderer2(VulkanGraphicsBackend graphicsBackend, VkWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
+		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			VkShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
 			VkShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
+			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
 			vertexShader.Destroy();
 			fragmentShader.Destroy();
@@ -35,8 +35,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
-			if (this.graphicsPipeline is not { } graphicsPipeline) { return; }
-			if (this.vertexBuffer is not { } vertexBuffer) { return; }
+			if (vertexBuffer == null || graphicsPipeline == null) { return; }
 
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
@@ -48,10 +47,6 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}
 
-		protected override void Cleanup() {
-			vertexBuffer?.Destroy();
-
-			graphicsPipeline?.Destroy();
-		}
+		protected override void Cleanup() { vertexBuffer?.Destroy(); }
 	}
 }

@@ -6,7 +6,7 @@ using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Graphics.OpenGL {
-	public unsafe class GlRenderer2 : GlRenderer {
+	public unsafe class OpenGLRenderer2 : OpenGLRenderer {
 		private const string TestShaderName = "Test";
 
 		private GlBuffer? vertexBuffer;
@@ -20,7 +20,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly Assembly gameAssembly;
 
-		public GlRenderer2(OpenGLGraphicsBackend graphicsBackend, GlWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
+		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			base.Setup();

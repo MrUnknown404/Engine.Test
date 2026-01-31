@@ -12,8 +12,8 @@ namespace Engine3.Test {
 
 		public const string Title = "OpenGL Test";
 
-		public GlWindow? Window1 { get; set; }
-		public GlWindow? Window2 { get; set; }
+		public OpenGLWindow? Window1 { get; set; }
+		public OpenGLWindow? Window2 { get; set; }
 
 		public OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) => OnSetupFinishedEvent += OnSetupFinished;
 
@@ -32,8 +32,8 @@ namespace Engine3.Test {
 			Windows.Add(Window1);
 			Windows.Add(Window2);
 
-			GlRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
-			GlRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
+			OpenGLRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
+			OpenGLRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
 			Renderers.Add(renderer1);

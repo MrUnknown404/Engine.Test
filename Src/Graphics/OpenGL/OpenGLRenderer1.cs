@@ -10,7 +10,7 @@ using USharpLibs.Common.Math;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Graphics.OpenGL {
-	public unsafe class GlRenderer1 : GlRenderer {
+	public unsafe class OpenGLRenderer1 : OpenGLRenderer {
 		private const string TestShaderName = "Test";
 
 		private GlBuffer? vertexBuffer;
@@ -26,7 +26,7 @@ namespace Engine3.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
 		private readonly Assembly gameAssembly;
 
-		public GlRenderer1(OpenGLGraphicsBackend graphicsBackend, GlWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
+		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
 			base.Setup();

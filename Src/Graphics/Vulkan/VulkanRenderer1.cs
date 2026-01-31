@@ -4,12 +4,11 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
+using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
-using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
-using VkImage = Engine3.Client.Graphics.Vulkan.VkImage;
 
 namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer1 : VulkanRenderer {
@@ -19,17 +18,17 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBuffer? cubeVertexBuffer;
-		private VkBuffer? cubeIndexBuffer;
+		private VulkanBuffer? cubeVertexBuffer;
+		private VulkanBuffer? cubeIndexBuffer;
 		private UniformBuffers? cubeUniformBuffers;
 		private DescriptorSets? cubeDescriptorSet;
 
-		private VkBuffer? quadVertexBuffer;
-		private VkBuffer? quadIndexBuffer;
+		private VulkanBuffer? quadVertexBuffer;
+		private VulkanBuffer? quadIndexBuffer;
 		private UniformBuffers? quadUniformBuffers;
 		private DescriptorSets? quadDescriptorSet;
 
-		private VkImage? image;
+		private VulkanImage? image;
 		private TextureSampler? textureSampler;
 
 		private readonly Camera camera;
@@ -97,8 +96,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 		}
 
 		private void CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout) {
-			VkShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VkShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1),
@@ -130,6 +129,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 			quadIndexBuffer = LogicalGpu.CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * quadIndices.Length));
 
+			// TODO can i use a single staging buffer for all of these?
 			cubeVertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeVertices);
 			quadVertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, quadVertices);
 			cubeIndexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeIndices);
@@ -221,6 +221,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			textureSampler?.Destroy();
 			image?.Destroy();
+
+			base.Cleanup();
 		}
 	}
 }

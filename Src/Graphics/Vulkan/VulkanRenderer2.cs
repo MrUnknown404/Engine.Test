@@ -2,9 +2,9 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
+using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Graphics.Test;
 using OpenTK.Graphics.Vulkan;
-using VkBuffer = Engine3.Client.Graphics.Vulkan.VkBuffer;
 
 namespace Engine3.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer2 : VulkanRenderer {
@@ -12,7 +12,7 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private VkBuffer? vertexBuffer;
+		private VulkanBuffer? vertexBuffer;
 
 		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
@@ -20,8 +20,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
-			VkShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VkShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
 			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
@@ -47,6 +47,10 @@ namespace Engine3.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}
 
-		protected override void Cleanup() { vertexBuffer?.Destroy(); }
+		protected override void Cleanup() {
+			vertexBuffer?.Destroy();
+
+			base.Cleanup();
+		}
 	}
 }

@@ -22,9 +22,9 @@ namespace Engine3.Test {
 	// https://vulkan-tutorial.com/Loading_models
 
 	// TODO fix white screen while resizing
-	// TODO look into using IDisposable more?
 	// TODO figure out how to dynamically change images. do i update descriptors each time?
 	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general
+	// TODO i'd like the engine to use instancing when rendering but how should that work?
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -39,16 +39,16 @@ namespace Engine3.Test {
 				OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
-			if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: { } vkInstance, } graphicsBackend) { throw new UnreachableException(); }
+			if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
 
 			Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
 
 			Logger.Debug("Making Window 1...");
-			Window1 = new(graphicsBackend, vkInstance, Name, 854, 480) { ClearColor = clearColor, };
+			Window1 = new(graphicsBackend, Name, 854, 480) { ClearColor = clearColor, };
 			Window1.OnCloseWindowEvent += Shutdown;
 
 			Logger.Debug("Making Window 2...");
-			Window2 = new(graphicsBackend, vkInstance, "Window 2", 500, 500) { ClearColor = clearColor, };
+			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };
 
 			Windows.Add(Window1);
 			Windows.Add(Window2);

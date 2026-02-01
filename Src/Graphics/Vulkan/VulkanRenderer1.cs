@@ -160,8 +160,8 @@ namespace Engine3.Test.Graphics.Vulkan {
 		private void UpdateDescriptorSets() {
 			if (cubeUniformBuffers == null || quadUniformBuffers == null || image == null || textureSampler == null || cubeDescriptorSet == null || quadDescriptorSet == null) { throw new UnreachableException(); }
 
-			cubeDescriptorSet.UpdateDescriptorSet(0, cubeUniformBuffers, cubeUniformBuffers.BufferSize);
-			quadDescriptorSet.UpdateDescriptorSet(0, quadUniformBuffers, quadUniformBuffers.BufferSize);
+			cubeDescriptorSet.UpdateDescriptorSet(0, cubeUniformBuffers);
+			quadDescriptorSet.UpdateDescriptorSet(0, quadUniformBuffers);
 			cubeDescriptorSet.UpdateDescriptorSet(1, image.ImageView, textureSampler.Sampler);
 			quadDescriptorSet.UpdateDescriptorSet(1, image.ImageView, textureSampler.Sampler);
 

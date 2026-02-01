@@ -21,6 +21,10 @@ namespace Engine3.Test {
 			};
 #endif
 
+// #pragma warning disable CS0162 // Unreachable code detected
+// 			GameClient gameClient = new LightCycleTest(TestGraphicsBackend == GraphicsBackend.Vulkan || (TestGraphicsBackend == GraphicsBackend.OpenGL ? false : throw new ArgumentException()));
+// #pragma warning restore CS0162 // Unreachable code detected
+
 #pragma warning disable CS0162 // Unreachable code detected
 			GameClient gameClient = TestGraphicsBackend switch {
 					GraphicsBackend.Console => new ConsoleTest(),

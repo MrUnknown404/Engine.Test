@@ -28,12 +28,15 @@ namespace Engine3.Test.Graphics.OpenGL {
 
 			vertexShader = new("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
 			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
-			programPipeline = new("Test Program Pipeline", vertexShader, fragmentShader);
+			programPipeline = CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexBuffer = new("Test Vertex Buffer", (ulong)(sizeof(TestVertex) * vertices.Length), BufferStorageMask.DynamicStorageBit);
+			vertexShader.Destroy();
+			fragmentShader.Destroy();
+
+			vertexBuffer = CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = new("Test Index Buffer", (ulong)(sizeof(uint) * indices.Length), BufferStorageMask.DynamicStorageBit);
+			indexBuffer = CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
 			indexBuffer.Copy(indices);
 		}
 
@@ -51,12 +54,9 @@ namespace Engine3.Test.Graphics.OpenGL {
 		}
 
 		protected override void Cleanup() {
-			programPipeline?.Destroy();
-			vertexShader?.Destroy();
-			fragmentShader?.Destroy();
+			//
 
-			vertexBuffer?.Destroy();
-			indexBuffer?.Destroy();
+			base.Cleanup();
 		}
 	}
 }

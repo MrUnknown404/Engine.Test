@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Engine3.Test.Graphics.Test {
+namespace Engine3.Test.Test.Graphics.Test {
 	public class TestUniformBufferObject {
 		private static unsafe uint MatrixSize { get; } = (uint)sizeof(Matrix4x4);
 		public static uint Size { get; } = MatrixSize * 3;

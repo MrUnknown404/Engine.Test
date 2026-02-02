@@ -5,7 +5,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Graphics.Test;
+using Engine3.Test.Test.Graphics.Test;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
@@ -149,21 +149,13 @@ namespace Engine3.Test.LightCycle.Graphics {
 		protected override void CopyUniformBuffers(float delta) {
 			if (cubeUniformBuffers == null) { throw new UnreachableException(); }
 
-			if (gameManager.Map is not { } map) {
-				Logger.Warn("No map found. Nothing to render. Do something about that"); // TODO impl rendering when we have no map
-				return;
-			}
-
-			// camera.PitchDegrees += 0.005f;
-
-			// TODO i think because the projection & view matrix are the same they should have their own shared uniform buffer (push constants?). then a second uniform buffer for model transformations
-
-			float f = FrameCount / 5000f; // TODO currently affected by frame rate
+			if (gameManager.Map is not { } map) { return; }
 
 			Cycle.Cycle cycle = map.Cycles.First();
 
 			cubeUniformBufferObject.View = camera.CreateViewMatrix();
-			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(f * MathH.ToRadians(90f)) * cycle.Transform.CreateMatrix();
+			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(float.Lerp(LightCycleTest.PrevCubeRotation, LightCycleTest.CubeRotation, delta) * MathH.ToRadians(90f)) *
+											cycle.Transform.CreateMatrix(delta, cycle.PreviousTransform);
 
 			cubeUniformBuffers.Copy(cubeUniformBufferObject.CollectBytes());
 		}

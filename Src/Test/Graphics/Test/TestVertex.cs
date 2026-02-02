@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Graphics.Test {
+namespace Engine3.Test.Test.Graphics.Test {
 	public readonly unsafe record struct TestVertex {
 		public required float X { get; init; }
 		public required float Y { get; init; }

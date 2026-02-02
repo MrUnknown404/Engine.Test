@@ -4,20 +4,26 @@ using JetBrains.Annotations;
 
 namespace Engine3.Test.LightCycle.Cycle {
 	[PublicAPI]
-	public class CycleTransform : ITransform<CycleTransform, Vector2, uint> {
+	public class CycleTransform : ITransform<CycleTransform>, ITransformPosition<Vector2>, ITransformRotation<uint> {
 		public static CycleTransform Zero => new();
 
 		public Vector2 Position { get; set; }
-		[Obsolete($"Use {nameof(Rotation)}")] public uint Scale { get; set; }
-
-#pragma warning disable CS0618 // Type or member is obsolete
-		public uint Rotation { get => Scale; set => Scale = value; }
-#pragma warning restore CS0618 // Type or member is obsolete
+		public uint Rotation { get; set; }
 
 		public Matrix4x4 CreateMatrix() {
 			Matrix4x4 matrix = Matrix4x4.Identity;
 			matrix *= Matrix4x4.CreateTranslation(Position.X, 0, Position.Y);
 			matrix *= Matrix4x4.CreateRotationX(Rotation);
+			return matrix;
+		}
+
+		public Matrix4x4 CreateMatrix(float delta, CycleTransform prev) {
+			Vector2 pos = Vector2.Lerp(prev.Position, Position, delta);
+			float rot = float.Lerp(prev.Rotation, Rotation, delta);
+
+			Matrix4x4 matrix = Matrix4x4.Identity;
+			matrix *= Matrix4x4.CreateTranslation(pos.X, 0, pos.Y);
+			matrix *= Matrix4x4.CreateRotationX(rot);
 			return matrix;
 		}
 

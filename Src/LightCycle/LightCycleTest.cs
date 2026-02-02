@@ -19,6 +19,9 @@ namespace Engine3.Test.LightCycle {
 
 		private readonly bool useVulkan;
 
+		public static float PrevCubeRotation { get; private set; }
+		public static float CubeRotation { get; private set; }
+
 		public LightCycleTest(bool useVulkan) : base("Light Cycle Test", new BuildVersion(0),
 			useVulkan ?
 					new VulkanGraphicsBackend(new()) {
@@ -61,7 +64,13 @@ namespace Engine3.Test.LightCycle {
 			window.Show();
 		}
 
-		protected override void Update() => gameManager.Update();
+		protected override void Update() {
+			PrevCubeRotation = CubeRotation;
+			CubeRotation += 0.01f;
+			CubeRotation %= 360;
+
+			gameManager.Update();
+		}
 
 		protected override void Cleanup() { }
 	}

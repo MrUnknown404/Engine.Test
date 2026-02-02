@@ -1,13 +1,14 @@
 using System.Diagnostics;
 using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
-using Engine3.Test.Graphics.Vulkan;
+using Engine3.Test.Test.Graphics.Vulkan;
 using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
+using OpenTK.Platform;
 
-namespace Engine3.Test {
+namespace Engine3.Test.Test {
 	// # resources
 	// https://vulkan-tutorial.com/
 	// https://vkguide.dev/
@@ -25,12 +26,18 @@ namespace Engine3.Test {
 	// TODO figure out how to dynamically change images. do i update descriptors each time?
 	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general
 	// TODO i'd like the engine to use instancing when rendering but how should that work?
+	// TODO read https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html
+	// TODO read https://docs.vulkan.org/guide/latest/buffer_device_address.html
+	// TOOD setup ImGui & ImPlot and render debug info. fps/frame graph
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public VulkanWindow? Window1 { get; set; }
 		public VulkanWindow? Window2 { get; set; }
+
+		public static float PrevCubeRotation { get; private set; }
+		public static float CubeRotation { get; private set; }
 
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
@@ -66,7 +73,13 @@ namespace Engine3.Test {
 			Window2.Show();
 		}
 
-		protected override void Update() { }
+		protected override void Update() {
+			PrevCubeRotation = CubeRotation;
+			CubeRotation += 0.01f;
+			CubeRotation %= 360;
+
+			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(), $"{Name} - Update: {UpdateIndex}, {Ups}, {UpdateTime:F}ms - Frame: {FrameIndex}, {Fps}, {FrameTime:F}ms");
+		}
 
 		protected override void Cleanup() { }
 	}

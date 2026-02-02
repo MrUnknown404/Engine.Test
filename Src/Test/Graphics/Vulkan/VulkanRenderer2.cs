@@ -3,10 +3,10 @@ using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Graphics.Test;
+using Engine3.Test.Test.Graphics.Test;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Graphics.Vulkan {
+namespace Engine3.Test.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer2 : VulkanRenderer {
 		private const string TestShaderName = "Test";
 

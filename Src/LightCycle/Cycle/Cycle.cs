@@ -3,11 +3,10 @@ using Engine3.Test.LightCycle.Cycle.Controller;
 
 namespace Engine3.Test.LightCycle.Cycle {
 	public class Cycle {
-		private const byte SlowdownModifier = 100;
-
-		private static readonly uint TargetUpdateCount = Engine3.GameInstance.TargetUpdateCount;
+		private static readonly uint TargetUpdateCount = Engine3.GameInstance.UpsTarget;
 
 		public Guid Uuid { get; }
+		public CycleTransform PreviousTransform { get; } = CycleTransform.Zero; // TODO how do i want to handle previous transforms? i'd like it to be automatic? should i store a previous transform or previous values in transform
 		public CycleTransform Transform { get; } = CycleTransform.Zero;
 		public Direction Direction { get; private set; }
 
@@ -30,6 +29,8 @@ namespace Engine3.Test.LightCycle.Cycle {
 			IsDead = isDead;
 			if (IsDead) { return; }
 
+			PreviousTransform.Position = Transform.Position;
+
 			Direction = controller.CheckForDirectionChange(Direction);
 			UpdateValues();
 
@@ -46,7 +47,7 @@ namespace Engine3.Test.LightCycle.Cycle {
 						_ => throw new ArgumentOutOfRangeException(),
 				};
 
-				Transform.Position += moveVector * properties.Speed / TargetUpdateCount / SlowdownModifier; // TODO impl acceleration
+				Transform.Position += moveVector * properties.Speed / TargetUpdateCount; // TODO impl acceleration
 			}
 		}
 	}

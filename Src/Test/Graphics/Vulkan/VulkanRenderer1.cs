@@ -5,12 +5,12 @@ using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Graphics.Test;
+using Engine3.Test.Test.Graphics.Test;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
 
-namespace Engine3.Test.Graphics.Vulkan {
+namespace Engine3.Test.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer1 : VulkanRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -196,15 +196,15 @@ namespace Engine3.Test.Graphics.Vulkan {
 
 			// camera.YawDegrees += 0.05f;
 
-			// TODO i think because the projection & view matrix are the same they should have their own shared uniform buffer (push constants?). then a second uniform buffer for model transformations
+			// TODO i think because the projection & view matrix are the same they should have their own shared uniform buffer (push constants? edit: probably still use a uniform buffer). then a second uniform buffer for model transformations
 
-			float f = FrameCount / 5000f;
+			float cubeRotation = float.Lerp(VulkanTest.PrevCubeRotation, VulkanTest.CubeRotation, delta);
 
 			cubeUniformBufferObject.View = camera.CreateViewMatrix();
-			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(f * MathH.ToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition); // TODO currently affected by frame rate
+			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(cubeRotation * MathH.ToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition);
 
 			quadUniformBufferObject.View = camera.CreateViewMatrix();
-			quadUniformBufferObject.Model = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(f), quadPosition.Z);
+			quadUniformBufferObject.Model = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(cubeRotation), quadPosition.Z);
 
 			cubeUniformBuffers.Copy(cubeUniformBufferObject.CollectBytes());
 			quadUniformBuffers.Copy(quadUniformBufferObject.CollectBytes());

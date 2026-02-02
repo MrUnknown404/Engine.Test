@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
-using Engine3.Test.Graphics.OpenGL;
+using Engine3.Test.Test.Graphics.OpenGL;
 using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Mathematics;
+using OpenTK.Platform;
 
-namespace Engine3.Test {
+namespace Engine3.Test.Test {
 	public class OpenGLTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -14,6 +15,9 @@ namespace Engine3.Test {
 
 		public OpenGLWindow? Window1 { get; set; }
 		public OpenGLWindow? Window2 { get; set; }
+
+		public static float PrevCubeRotation { get; private set; }
+		public static float CubeRotation { get; private set; }
 
 		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) => OnSetupFinishedEvent += OnSetupFinished;
 
@@ -45,7 +49,14 @@ namespace Engine3.Test {
 			Window2.Show();
 		}
 
-		protected override void Update() { }
+		protected override void Update() {
+			PrevCubeRotation = CubeRotation;
+			CubeRotation += 0.01f;
+			CubeRotation %= 360;
+
+			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(), $"{Name} - Update: {UpdateIndex}, {Ups}, {UpdateTime:F}ms - Frame: {FrameIndex}, {Fps}, {FrameTime:F}ms");
+		}
+
 		protected override void Cleanup() { }
 	}
 }

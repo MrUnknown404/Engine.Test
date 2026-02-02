@@ -1,7 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
 using Engine3.Debug;
-using Engine3.Test.Graphics.Test;
+using Engine3.Test.Test;
+using Engine3.Test.Test.Graphics.Test;
 using Engine3.Utility;
 using NLog;
 

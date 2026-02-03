@@ -78,7 +78,11 @@ namespace Engine3.Test.Test {
 			CubeRotation += 0.01f;
 			CubeRotation %= 360;
 
-			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(), $"{Name} - Update: {UpdateIndex}, {Ups}, {UpdateTime:F}ms - Frame: {FrameIndex}, {Fps}, {FrameTime:F}ms");
+			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(),
+				PerformanceMonitor.CalculateMinMaxAverage ?
+						$"{Name} - Idx/Per/Avg/Min/Max - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.AvgUpdateTime:F}ms, {PerformanceMonitor.MinUpdateTime:F}ms, {PerformanceMonitor.MaxUpdateTime
+							:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.AvgFrameTime:F}ms, {PerformanceMonitor.MinFrameTime:F}ms, {PerformanceMonitor.MaxFrameTime:F}ms" :
+						$"{Name} - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.UpdateTime:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.FrameTime:F}ms");
 		}
 
 		protected override void Cleanup() { }

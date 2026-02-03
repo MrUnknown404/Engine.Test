@@ -15,6 +15,7 @@ namespace Engine3.Test {
 		[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 		private static void Main() { // TODO args to change api
 			LoggerH.ConsoleLogLevel = LogLevel.Trace;
+
 #if DEBUG
 			StructLayoutDumper.AddStructs += static () => {
 				StructLayoutDumper.AddStruct<TestVertex>();

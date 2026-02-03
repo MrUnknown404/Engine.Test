@@ -20,13 +20,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
-			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
 			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
-			vertexShader.Destroy();
-			fragmentShader.Destroy();
+			DestroyResource(vertexShader);
+			DestroyResource(fragmentShader);
 
 			vertexBuffer = CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
 				(ulong)(sizeof(TestVertex) * vertices.Length));

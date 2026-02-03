@@ -68,23 +68,23 @@ namespace Engine3.Test.LightCycle.Graphics {
 		}
 
 		public override void Setup() {
-			CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout);
+			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
 
 			CreateBuffers();
 
-			CreateDescriptorSets(descriptorSetLayout);
+			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
 			UpdateDescriptorSets();
 		}
 
-		private void CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = LogicalGpu.CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
+			VulkanShader vertexShader = CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+			descriptorSetLayout = CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
 
 			// ew
 			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
-					DescriptorSetLayouts = [ descriptorSetLayout, ],
+					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
 					CullMode = VkCullModeFlagBits.CullModeNone,
 			});
@@ -102,10 +102,8 @@ namespace Engine3.Test.LightCycle.Graphics {
 			cubeIndexBuffer = CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
 
-			// TODO can i use a single staging buffer for all of these?
-			cubeVertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeVertices);
-			cubeIndexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeIndices);
-			Logger.Debug("Created vertex/index buffers");
+			CopyToBuffers([ CopyToInfo.Of(cubeVertices, cubeVertexBuffer), CopyToInfo.Of(cubeIndices, cubeIndexBuffer), ]);
+			Logger.Debug("Created & copied vertex/index buffers");
 
 			ulong bufferSize = TestUniformBufferObject.Size;
 			cubeUniformBuffers = CreateUniformBuffers("Cube Uniform Buffers", bufferSize);

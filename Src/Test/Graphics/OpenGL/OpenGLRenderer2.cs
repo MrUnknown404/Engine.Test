@@ -26,12 +26,12 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		public override void Setup() {
 			base.Setup();
 
-			vertexShader = new("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
+			vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+			fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
 			programPipeline = CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexShader.Destroy();
-			fragmentShader.Destroy();
+			DestroyResource(vertexShader);
+			DestroyResource(fragmentShader);
 
 			vertexBuffer = CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 			vertexBuffer.Copy(vertices);

@@ -48,7 +48,6 @@ namespace Engine3.Test.Test {
 			double difference = (endTime - startTime).TotalMilliseconds;
 
 			Logger.Debug($"Setting console buffer took {difference:F}ms");
-			Thread.Sleep(10); // TODO temp
 		}
 
 		private void UpdateBuffer() {

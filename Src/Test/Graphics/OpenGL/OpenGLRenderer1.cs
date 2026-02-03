@@ -32,12 +32,12 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		public override void Setup() {
 			base.Setup();
 
-			vertexShader = new("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = new("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
+			vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+			fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
 			programPipeline = CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexShader.Destroy();
-			fragmentShader.Destroy();
+			DestroyResource(vertexShader);
+			DestroyResource(fragmentShader);
 
 			vertexBuffer = CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 			vertexBuffer.Copy(vertices);
@@ -53,11 +53,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		}
 
 		protected override void DrawFrame(float delta) {
-			if (this.vertexBuffer is not { } vertexBuffer) { return; }
-			if (this.indexBuffer is not { } indexBuffer) { return; }
-			if (this.programPipeline is not { } programPipeline) { return; }
-			if (this.vertexShader is not { } vertexShader) { return; }
-			if (this.camera is not { } camera) { return; }
+			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || vertexShader == null || camera == null) { return; }
 
 			// TODO gl graphics pipeline class. bind program pipeline -> grants access to shaders -> bind buffers -> draw
 			GL.BindProgramPipeline(programPipeline.Handle.Handle);

@@ -85,35 +85,35 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		}
 
 		public override void Setup() {
-			CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout);
+			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
 
 			CreateBuffers();
 
 			CreateSamplerAndTextures();
 
-			CreateDescriptorSets(descriptorSetLayout);
+			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
 			UpdateDescriptorSets();
 		}
 
-		private void CreateGraphicsPipeline(out VkDescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
+			VulkanShader vertexShader = CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
+			descriptorSetLayout = CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1),
 			]);
 
 			// ew
 			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
-					DescriptorSetLayouts = [ descriptorSetLayout, ],
+					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
 					CullMode = VkCullModeFlagBits.CullModeNone,
 			});
 
 			Logger.Debug("Created graphics pipeline");
 
-			vertexShader.Destroy();
-			fragmentShader.Destroy();
+			DestroyResource(vertexShader);
+			DestroyResource(fragmentShader);
 		}
 
 		private void CreateBuffers() {
@@ -129,12 +129,8 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			quadIndexBuffer = CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * quadIndices.Length));
 
-			// TODO can i use a single staging buffer for all of these?
-			cubeVertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeVertices);
-			quadVertexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, quadVertices);
-			cubeIndexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, cubeIndices);
-			quadIndexBuffer.CopyUsingStaging(TransferCommandPool, LogicalGpu.TransferQueue, quadIndices);
-			Logger.Debug("Created vertex/index buffers");
+			CopyToBuffers([ CopyToInfo.Of(cubeVertices, cubeVertexBuffer), CopyToInfo.Of(quadVertices, quadVertexBuffer), CopyToInfo.Of(cubeIndices, cubeIndexBuffer), CopyToInfo.Of(quadIndices, quadIndexBuffer), ]);
+			Logger.Debug("Created & copied vertex/index buffers");
 
 			ulong bufferSize = TestUniformBufferObject.Size;
 			cubeUniformBuffers = CreateUniformBuffers("Cube Uniform Buffers", bufferSize);
@@ -146,7 +142,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			textureSampler = CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
-			image = CreateImageAndCopyUsingStaging("Test 64x64 Image", "Test.64x64", "png", 64, 64, 4, VkFormat.FormatR8g8b8a8Srgb, gameAssembly);
+			image = CreateImageAndCopyUsingStaging("Test 64x64 Image", "Test.64x64", "png", 4, VkFormat.FormatR8g8b8a8Srgb, gameAssembly);
 			Logger.Debug("Created image");
 		}
 

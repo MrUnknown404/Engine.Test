@@ -7,14 +7,17 @@ layout (location = 2) in vec3 inColor;
 layout (location = 0) out vec2 fragUVs;
 layout (location = 1) out vec3 fragColor;
 
-layout (binding = 0) uniform UniformBufferObject {
+layout (binding = 0) uniform CameraBuffer {
 	mat4 projection;
 	mat4 view;
-	mat4 model;
-} ubo;
+} cameraBuffer;
+
+layout (std140, binding = 1) readonly buffer InstanceBuffers {
+	mat4 models[];
+} instanceBuffers;
 
 void main() {
-	gl_Position = ubo.projection * ubo.view * ubo.model * vec4(inPosition, 1);
+	gl_Position = cameraBuffer.projection * cameraBuffer.view * instanceBuffers.models[gl_InstanceIndex] * vec4(inPosition, 1);
 	fragUVs = inUVs;
 	fragColor = inColor;
 }

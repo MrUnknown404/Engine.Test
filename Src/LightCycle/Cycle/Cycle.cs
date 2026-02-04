@@ -3,7 +3,7 @@ using Engine3.Test.LightCycle.Cycle.Controller;
 
 namespace Engine3.Test.LightCycle.Cycle {
 	public class Cycle {
-		private static readonly uint TargetUpdateCount = Engine3.GameInstance.UpsTarget;
+		private static readonly uint TargetUpdateCount = Engine3.GameInstance.TargetUps;
 
 		public Guid Uuid { get; }
 		public CycleTransform PreviousTransform { get; } = CycleTransform.Zero; // TODO how do i want to handle previous transforms? i'd like it to be automatic? should i store a previous transform or previous values in transform

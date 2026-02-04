@@ -25,7 +25,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		private VulkanBuffer? cubeVertexBuffer;
 		private VulkanBuffer? cubeIndexBuffer;
-		private UniformBuffers? cubeUniformBuffers;
+		private DescriptorBuffers? cubeUniformBuffers;
 		private DescriptorSets? cubeDescriptorSet;
 
 		private readonly TestVertex[] cubeVertices;
@@ -106,7 +106,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			Logger.Debug("Created & copied vertex/index buffers");
 
 			ulong bufferSize = TestUniformBufferObject.Size;
-			cubeUniformBuffers = CreateUniformBuffers("Cube Uniform Buffers", bufferSize);
+			cubeUniformBuffers = CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 			Logger.Debug("Created uniform buffers");
 		}
 

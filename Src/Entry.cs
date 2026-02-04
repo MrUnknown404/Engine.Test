@@ -20,6 +20,7 @@ namespace Engine3.Test {
 			StructLayoutDumper.AddStructs += static () => {
 				StructLayoutDumper.AddStruct<TestVertex>();
 				StructLayoutDumper.AddStruct<TestVertex2>();
+				StructLayoutDumper.AddStruct<CameraUniformBuffer>();
 			};
 #endif
 

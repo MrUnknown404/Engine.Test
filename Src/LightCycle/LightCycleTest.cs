@@ -51,10 +51,9 @@ namespace Engine3.Test.LightCycle {
 
 			window.OnCloseWindowEvent += Shutdown;
 
-			Windows.Add(window);
-
+			AddWindow(window);
 			renderer.Setup();
-			Renderers.Add(renderer);
+			AddRenderer(renderer);
 
 			Logger.Info($"Setting up {nameof(GameManager)}");
 			gameManager.Setup(window.InputManager);

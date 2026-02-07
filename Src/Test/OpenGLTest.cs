@@ -33,15 +33,15 @@ namespace Engine3.Test.Test {
 			Logger.Debug("Making Window 2...");
 			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };
 
-			Windows.Add(Window1);
-			Windows.Add(Window2);
+			AddWindow(Window1);
+			AddWindow(Window2);
 
 			OpenGLRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
 			OpenGLRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 			renderer1.Setup();
 			renderer2.Setup();
-			Renderers.Add(renderer1);
-			Renderers.Add(renderer2);
+			AddRenderer(renderer1);
+			AddRenderer(renderer2);
 
 			Logger.Debug("Setup done. Showing windows");
 

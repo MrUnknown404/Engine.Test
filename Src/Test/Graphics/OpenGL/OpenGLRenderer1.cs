@@ -56,7 +56,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || vertexShader == null || camera == null) { return; }
 
 			// TODO gl graphics pipeline class. bind program pipeline -> grants access to shaders -> bind buffers -> draw
-			GL.BindProgramPipeline(programPipeline.Handle.Handle);
+			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
 			// camera.YawDegrees += 0.5f;
 
@@ -64,8 +64,8 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			vertexShader.SetUniform("view", camera.CreateViewMatrix());
 			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * MathH.ToRadians(90f)));
 
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.Handle);
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.Handle);
+			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
+			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
 
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
 		}

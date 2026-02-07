@@ -20,16 +20,18 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
 		public override void Setup() {
-			VulkanShader vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+			base.Setup();
 
-			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
+			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			DestroyResource(vertexShader);
-			DestroyResource(fragmentShader);
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
 
-			vertexBuffer = CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
-				(ulong)(sizeof(TestVertex) * vertices.Length));
+			LogicalGpu.EnqueueDestroy(vertexShader);
+			LogicalGpu.EnqueueDestroy(fragmentShader);
+
+			vertexBuffer = LogicalGpu.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 
 			vertexBuffer.Copy(vertices);
 		}
@@ -40,7 +42,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));
+			graphicsCommandBuffer.CmdSetScissor(new(0, 0), SwapChain.Extent);
 
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 

@@ -23,6 +23,8 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		private GraphicsPipeline? graphicsPipeline;
 
+		private DepthImage? depthImage;
+
 		private VulkanBuffer? cubeVertexBuffer;
 		private VulkanBuffer? cubeIndexBuffer;
 		private DescriptorBuffers? cubeUniformBuffers;
@@ -39,6 +41,8 @@ namespace Engine3.Test.LightCycle.Graphics {
 		];
 
 		private readonly TestUniformBufferObject cubeUniformBufferObject = new();
+
+		protected override DepthImage? DepthImage => depthImage;
 
 		public VulkanLightCycleRenderer(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window) {
 			this.gameManager = gameManager;
@@ -68,22 +72,26 @@ namespace Engine3.Test.LightCycle.Graphics {
 		}
 
 		public override void Setup() {
+			base.Setup();
+
 			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
 
 			CreateBuffers();
 
 			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
 			UpdateDescriptorSets();
+
+			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool.VkCommandPool, SwapChain.Extent);
 		}
 
 		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+			VulkanShader vertexShader = LogicalGpu.CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			descriptorSetLayout = CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
 
 			// ew
-			graphicsPipeline = CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
 					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
 					CullMode = VkCullModeFlagBits.CullModeNone,
@@ -91,27 +99,27 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 			Logger.Debug("Created graphics pipeline");
 
-			vertexShader.Destroy();
-			fragmentShader.Destroy();
+			LogicalGpu.EnqueueDestroy(vertexShader);
+			LogicalGpu.EnqueueDestroy(fragmentShader);
 		}
 
 		private void CreateBuffers() {
-			cubeVertexBuffer = CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(TestVertex) * cubeVertices.Length));
+			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex) * cubeVertices.Length));
 
-			cubeIndexBuffer = CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
+			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
 
 			CopyToBuffers([ CopyToInfo.Of(cubeVertices, cubeVertexBuffer), CopyToInfo.Of(cubeIndices, cubeIndexBuffer), ]);
 			Logger.Debug("Created & copied vertex/index buffers");
 
 			ulong bufferSize = TestUniformBufferObject.Size;
-			cubeUniformBuffers = CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
+			cubeUniformBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 			Logger.Debug("Created uniform buffers");
 		}
 
 		private void CreateDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
-			DescriptorPool descriptorPool = CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1u * MaxFramesInFlight);
+			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
 			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
 			Logger.Debug("Created descriptor sets");
 		}
@@ -135,7 +143,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(SwapChain.Extent, new(0, 0));
+			graphicsCommandBuffer.CmdSetScissor(new(0, 0), SwapChain.Extent);
 
 			// Cube
 			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
@@ -155,7 +163,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(float.Lerp(LightCycleTest.PrevCubeRotation, LightCycleTest.CubeRotation, delta) * MathH.ToRadians(90f)) *
 											cycle.Transform.CreateMatrix(delta, cycle.PreviousTransform);
 
-			cubeUniformBuffers.Copy(cubeUniformBufferObject.CollectBytes());
+			cubeUniformBuffers.Copy(cubeUniformBufferObject.CollectBytes(), FrameIndex);
 		}
 	}
 }

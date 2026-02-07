@@ -45,10 +45,10 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			if (this.indexBuffer is not { } indexBuffer) { return; }
 			if (this.programPipeline is not { } programPipeline) { return; }
 
-			GL.BindProgramPipeline(programPipeline.Handle.Handle);
+			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.Handle);
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.Handle);
+			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
+			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
 
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
 		}

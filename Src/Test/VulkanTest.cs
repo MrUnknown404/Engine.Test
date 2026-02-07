@@ -34,7 +34,7 @@ namespace Engine3.Test.Test {
 	// TODO i'd like the engine to use instancing when rendering but how should that work?
 	// TODO read https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html
 	// TODO read https://docs.vulkan.org/guide/latest/buffer_device_address.html
-	// TOOD setup ImGui & ImPlot and render debug info. fps/frameTime graph
+	// TODO setup ImGui & ImPlot and render debug info. fps/frameTime graph
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

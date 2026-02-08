@@ -10,15 +10,15 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 	public unsafe class OpenGLRenderer2 : OpenGLRenderer {
 		private const string TestShaderName = "Test";
 
-		private OpenGLBuffer? vertexBuffer;
-		private OpenGLBuffer? indexBuffer;
-
 		private OpenGLShader? vertexShader;
 		private OpenGLShader? fragmentShader;
 		private ProgramPipeline? programPipeline;
 
+		private OpenGLBuffer? vertexBuffer;
+		private OpenGLBuffer? indexBuffer;
+
 		private readonly TestVertex[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
-		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
+		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
 		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
@@ -26,24 +26,22 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		public override void Setup() {
 			base.Setup();
 
-			vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
-			programPipeline = CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
+			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+			fragmentShader = ResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
+			programPipeline = ResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			DestroyResource(vertexShader);
-			DestroyResource(fragmentShader);
+			// ResourceProvider.EnqueueDestroy(vertexShader);
+			// ResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
 			indexBuffer.Copy(indices);
 		}
 
 		protected override void DrawFrame(float delta) {
-			if (this.vertexBuffer is not { } vertexBuffer) { return; }
-			if (this.indexBuffer is not { } indexBuffer) { return; }
-			if (this.programPipeline is not { } programPipeline) { return; }
+			if (vertexBuffer == null || indexBuffer == null || programPipeline == null) { throw new NullReferenceException(); }
 
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 

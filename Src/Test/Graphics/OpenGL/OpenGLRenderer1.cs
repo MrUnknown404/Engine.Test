@@ -4,9 +4,11 @@ using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Test.Graphics.Test;
+using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Platform;
+using StbiSharp;
 using USharpLibs.Common.Math;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
@@ -14,48 +16,59 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 	public unsafe class OpenGLRenderer1 : OpenGLRenderer {
 		private const string TestShaderName = "Test";
 
-		private OpenGLBuffer? vertexBuffer;
-		private OpenGLBuffer? indexBuffer;
-
 		private OpenGLShader? vertexShader;
 		private OpenGLShader? fragmentShader;
 		private ProgramPipeline? programPipeline;
 
-		private Camera? camera;
+		private OpenGLBuffer? vertexBuffer;
+		private OpenGLBuffer? indexBuffer;
 
-		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
-		private readonly uint[] indices = [ 0, 1, 2, 2, 3, 0, ];
+		private OpenGLImage? image;
+
+		private readonly Camera camera;
+
+		private readonly TestVertex2[] vertices = [ new(0, 0.5f, 0, 0.5f, 1, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 1, 0, 0, 0, 1), ];
+		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
-		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
+		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window)) {
+			this.gameAssembly = gameAssembly;
+
+			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
+
+			// camera = new OrthographicCamera(10, 10, 0.1f, 10)
+			camera = new PerspectiveCamera((float)framebufferSize.X / framebufferSize.Y, 0.1f, 10) { Position = new(0, 0, 5), YawDegrees = 270, };
+		}
 
 		public override void Setup() {
 			base.Setup();
 
-			vertexShader = CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
-			programPipeline = CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
+			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", $"{TestShaderName}UVs", ShaderType.Vertex, gameAssembly);
+			fragmentShader = ResourceProvider.CreateShader("Test Fragment Shader", $"{TestShaderName}UVs", ShaderType.Fragment, gameAssembly);
+			programPipeline = ResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			DestroyResource(vertexShader);
-			DestroyResource(fragmentShader);
+			// ResourceProvider.EnqueueDestroy(vertexShader); // TODO RenderDoc gives an error when i destroy these but it renders fine. i think i'm doing something wrong?
+			// ResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex2) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
 			indexBuffer.Copy(indices);
 
-			// camera = new OrthographicCamera(10, 10, 0.1f, 10)
-			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
-			camera = new PerspectiveCamera((float)framebufferSize.X / framebufferSize.Y, 0.1f, 10) { Position = new(0, 0, 5), YawDegrees = 270, };
+			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
+				image = ResourceProvider.CreateImage("Test Image");
+				image.Copy(stbiImage);
+			}
 
+			GL.Enable(EnableCap.DepthTest);
 			GL.Disable(EnableCap.CullFace);
 		}
 
 		protected override void DrawFrame(float delta) {
-			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || vertexShader == null || camera == null) { return; }
+			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || vertexShader == null || image == null) { throw new NullReferenceException(); }
 
-			// TODO gl graphics pipeline class. bind program pipeline -> grants access to shaders -> bind buffers -> draw
+			// TODO gl graphics pipeline class? bind program pipeline -> grants access to shaders -> bind buffers -> draw ?
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
 			// camera.YawDegrees += 0.5f;
@@ -66,6 +79,8 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
+
+			GL.BindTexture(TextureTarget.Texture2d, (int)image.TextureHandle);
 
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
 		}

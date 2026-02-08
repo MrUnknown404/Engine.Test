@@ -3,7 +3,6 @@ using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Test.Test.Graphics.Vulkan;
 using Engine3.Utility.Versions;
-using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
@@ -31,7 +30,6 @@ namespace Engine3.Test.Test {
 	// TODO fix white screen while resizing. is it possible to show the last swap frame and scale then present?
 	// TODO figure out how to dynamically change images. do i update descriptors each time?
 	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general
-	// TODO i'd like the engine to use instancing when rendering but how should that work?
 	// TODO read https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html
 	// TODO read https://docs.vulkan.org/guide/latest/buffer_device_address.html
 	// TODO setup ImGui & ImPlot and render debug info. fps/frameTime graph
@@ -40,7 +38,7 @@ namespace Engine3.Test.Test {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public VulkanWindow? Window1 { get; set; }
-		// public VulkanWindow? Window2 { get; set; }
+		public VulkanWindow? Window2 { get; set; }
 
 		public static float PrevCubeRotation { get; private set; }
 		public static float CubeRotation { get; private set; }
@@ -48,10 +46,8 @@ namespace Engine3.Test.Test {
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
 					EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
-			}) {
-			OnSetupFinishedEvent += OnSetupFinished;
-			UseImGui = true;
-		}
+			}) =>
+				OnSetupFinishedEvent += OnSetupFinished;
 
 		private void OnSetupFinished() {
 			if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
@@ -63,25 +59,24 @@ namespace Engine3.Test.Test {
 			Window1.OnCloseWindowEvent += Shutdown;
 
 			Logger.Debug("Making Window 2...");
-			// Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };
+			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };
 
 			AddWindow(Window1);
-			// Windows.Add(Window2);
+			AddWindow(Window2);
 
 			VulkanRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
-			// VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
+			VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
+
 			renderer1.Setup();
-			// renderer2.Setup();
+			renderer2.Setup();
+
 			AddRenderer(renderer1);
-			// Renderers.Add(renderer2);
+			AddRenderer(renderer2);
 
 			Logger.Info("Setup done. Showing windows");
 
-			ImGuiViewportPtr mainViewport = ImGui.GetMainViewport();
-			mainViewport.PlatformHandle = ImGuiH.GetWindowId(Window1.WindowHandle);
-
 			Window1.Show();
-			// Window2.Show();
+			Window2.Show();
 		}
 
 		protected override void Update() {

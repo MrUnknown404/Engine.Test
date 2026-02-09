@@ -18,11 +18,6 @@ namespace Engine3.Test.Test {
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
 	// https://vulkan.lunarg.com/doc/view/1.4.304.0/linux/best_practices.html
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
-	// https://github.com/ocornut/imgui/wiki/Getting-Started
-	// https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md#rendering-adding-support-for-imguibackendflags_rendererhastextures-192
-	// https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-create-my-own-backend
-	// https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_vulkan.cpp
-	// https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/GUI/02_imgui_setup.html
 
 	// # where i'm at
 	// https://vulkan-tutorial.com/Loading_models
@@ -33,6 +28,7 @@ namespace Engine3.Test.Test {
 	// TODO read https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html
 	// TODO read https://docs.vulkan.org/guide/latest/buffer_device_address.html
 	// TODO setup ImGui & ImPlot and render debug info. fps/frameTime graph
+	// TODO use more stackallocs with vulkan
 
 	public class VulkanTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

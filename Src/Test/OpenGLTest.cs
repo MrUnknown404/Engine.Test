@@ -5,7 +5,6 @@ using Engine3.Test.Test.Graphics.OpenGL;
 using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Mathematics;
-using OpenTK.Platform;
 
 namespace Engine3.Test.Test {
 	public class OpenGLTest : GameClient {
@@ -19,7 +18,10 @@ namespace Engine3.Test.Test {
 		public static float PrevCubeRotation { get; private set; }
 		public static float CubeRotation { get; private set; }
 
-		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) => OnSetupFinishedEvent += OnSetupFinished;
+		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) {
+			OnSetupFinishedEvent += OnSetupFinished;
+			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreLastTimeValues = true, AmountOfFrameTimeToStore = 1000, };
+		}
 
 		private void OnSetupFinished() {
 			if (GraphicsBackend is not OpenGLGraphicsBackend graphicsBackend) { throw new UnreachableException(); }
@@ -55,12 +57,6 @@ namespace Engine3.Test.Test {
 			PrevCubeRotation = CubeRotation;
 			CubeRotation += 0.01f;
 			CubeRotation %= 360;
-
-			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(),
-				PerformanceMonitor.CalculateMinMaxAverage ?
-						$"{Name} - Idx/Per/Avg/Min/Max - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.AvgUpdateTime:F}ms, {PerformanceMonitor.MinUpdateTime:F}ms, {PerformanceMonitor.MaxUpdateTime
-							:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.AvgFrameTime:F}ms, {PerformanceMonitor.MinFrameTime:F}ms, {PerformanceMonitor.MaxFrameTime:F}ms" :
-						$"{Name} - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.UpdateTime:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.FrameTime:F}ms");
 		}
 
 		protected override void Cleanup() { }

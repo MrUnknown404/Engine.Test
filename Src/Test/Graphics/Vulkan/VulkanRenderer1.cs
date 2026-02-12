@@ -7,6 +7,7 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Test.Graphics.Test;
+using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using USharpLibs.Common.Math;
@@ -62,8 +63,11 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		protected override DepthImage? DepthImage => depthImage;
 
-		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window, graphicsBackend.MaxFramesInFlight)) {
+		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window, graphicsBackend.MaxFramesInFlight) { ShowDebugUI = true, }) {
 			this.gameAssembly = gameAssembly;
+
+			ImGuiBackend?.AddImGui += AddImGui;
+			ImGuiBackend?.AddExtraDebugUI += AddExtraDebugUI;
 
 			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
 			float aspectRatio = (float)SwapChain.Extent.width / SwapChain.Extent.height;
@@ -91,6 +95,33 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			Random random = new();
 			for (int i = 0; i < CubeCount; i++) { cubePositions[i] = new((random.NextSingle() * 10 - 5) * aspectRatio, random.NextSingle() * 10 - 5, -10.5f + random.NextSingle()); }
+		}
+
+		private void AddImGui() => ImGui.ShowDemoWindow();
+
+		private void AddExtraDebugUI() {
+			float indentAmount = ImGuiBackend?.IndentAmount ?? throw new NullReferenceException();
+
+			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
+
+			ImGui.Text("test");
+
+			return;
+
+			void DrawCamera() {
+				Vector3 camPos = camera.Position;
+				if (ImGui.DragFloat3("Position", ref camPos, 0.1f / 2f)) { camera.Position = camPos; } // TODO why x2?
+				ImGuiH.HelpMarker("X/Y/Z");
+
+				Vector3 camRot = new(camera.PitchDegrees, camera.YawDegrees, 0); // TODO roll
+				if (ImGui.DragFloat3("Rotation", ref camRot, 0.1f / 2f)) {
+					camera.PitchDegrees = camRot.X;
+					camera.YawDegrees = camRot.Y;
+					// camera.RollDegrees = camPos.Z;
+				}
+
+				ImGuiH.HelpMarker("Pitch/Yaw/Roll (roll not implemented)");
+			}
 		}
 
 		public override void Setup() {

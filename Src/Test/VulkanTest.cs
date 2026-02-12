@@ -6,7 +6,6 @@ using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
-using OpenTK.Platform;
 
 namespace Engine3.Test.Test {
 	// # resources
@@ -18,6 +17,7 @@ namespace Engine3.Test.Test {
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
 	// https://vulkan.lunarg.com/doc/view/1.4.304.0/linux/best_practices.html
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
+	// TODO make resources.md & re-add imgui
 
 	// # where i'm at
 	// https://vulkan-tutorial.com/Loading_models
@@ -42,8 +42,10 @@ namespace Engine3.Test.Test {
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
 					EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
-			}) =>
-				OnSetupFinishedEvent += OnSetupFinished;
+			}) {
+			OnSetupFinishedEvent += OnSetupFinished;
+			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreLastTimeValues = true, AmountOfFrameTimeToStore = 1000, };
+		}
 
 		private void OnSetupFinished() {
 			if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
@@ -79,12 +81,6 @@ namespace Engine3.Test.Test {
 			PrevCubeRotation = CubeRotation;
 			CubeRotation += 0.01f;
 			CubeRotation %= 360;
-
-			Toolkit.Window.SetTitle(Window1?.WindowHandle ?? throw new NullReferenceException(),
-				PerformanceMonitor.CalculateMinMaxAverage ?
-						$"{Name} - Idx/Per/Avg/Min/Max - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.AvgUpdateTime:F}ms, {PerformanceMonitor.MinUpdateTime:F}ms, {PerformanceMonitor.MaxUpdateTime
-							:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.AvgFrameTime:F}ms, {PerformanceMonitor.MinFrameTime:F}ms, {PerformanceMonitor.MaxFrameTime:F}ms" :
-						$"{Name} - Update: {UpdateIndex}, {PerformanceMonitor.Ups}, {PerformanceMonitor.UpdateTime:F}ms - Frame: {FrameIndex}, {PerformanceMonitor.Fps}, {PerformanceMonitor.FrameTime:F}ms");
 		}
 
 		protected override void Cleanup() { }

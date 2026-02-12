@@ -31,7 +31,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
-		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window)) {
+		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window) { ShowDebugUI = true, }) {
 			this.gameAssembly = gameAssembly;
 
 			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);

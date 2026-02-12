@@ -20,7 +20,7 @@ namespace Engine3.Test.Test {
 
 		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) {
 			OnSetupFinishedEvent += OnSetupFinished;
-			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreLastTimeValues = true, AmountOfFrameTimeToStore = 1000, };
+			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, FrameTimeGraphSize = 1000, };
 		}
 
 		private void OnSetupFinished() {

@@ -63,15 +63,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		protected override DepthImage? DepthImage => depthImage;
 
-		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window, graphicsBackend.MaxFramesInFlight) { ShowDebugUI = true, }) {
+		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window,
+			new(window, graphicsBackend.MaxFramesInFlight) { ShowDebugUI = true, }) {
+			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
 			ImGuiBackend?.AddImGui += AddImGui;
 			ImGuiBackend?.AddExtraDebugUI += AddExtraDebugUI;
-
-			// camera = new OrthographicCamera(10, 10, 0.5f, 10f) { Position = new(0, 1, 3), YawDegrees = 270, };
-			float aspectRatio = (float)SwapChain.Extent.width / SwapChain.Extent.height;
-			camera = new PerspectiveCamera(aspectRatio, 0.01f, 100f) { Position = new(0, 0, 2.5f), YawDegrees = 270, };
 
 			const float Size = 1;
 			const float H = Size / 2;
@@ -93,7 +91,9 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 					new(X0, Y1, Z0, U, V, R, G, B), // 7
 			];
 
+			float aspectRatio = (float)SwapChain.Extent.width / SwapChain.Extent.height;
 			Random random = new();
+
 			for (int i = 0; i < CubeCount; i++) { cubePositions[i] = new((random.NextSingle() * 10 - 5) * aspectRatio, random.NextSingle() * 10 - 5, -10.5f + random.NextSingle()); }
 		}
 
@@ -109,18 +109,22 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			return;
 
 			void DrawCamera() {
-				Vector3 camPos = camera.Position;
-				if (ImGui.DragFloat3("Position", ref camPos, 0.1f / 2f)) { camera.Position = camPos; } // TODO why x2?
+				Vector3 position = camera.Position;
+				if (ImGui.DragFloat3("Position", ref position, 0.1f / 2f)) { camera.Position = position; } // why x2?
 				ImGuiH.HelpMarker("X/Y/Z");
 
-				Vector3 camRot = new(camera.PitchDegrees, camera.YawDegrees, 0); // TODO roll
-				if (ImGui.DragFloat3("Rotation", ref camRot, 0.1f / 2f)) {
-					camera.PitchDegrees = camRot.X;
-					camera.YawDegrees = camRot.Y;
+				Vector3 rotation = new(camera.PitchDegrees, camera.YawDegrees, 0); // TODO roll
+				if (ImGui.DragFloat3("Rotation", ref rotation, 0.1f / 2f)) {
+					camera.PitchDegrees = rotation.X;
+					camera.YawDegrees = rotation.Y;
 					// camera.RollDegrees = camPos.Z;
 				}
 
 				ImGuiH.HelpMarker("Pitch/Yaw/Roll (roll not implemented)");
+
+				Vector3 forward = camera.Forward;
+				ImGui.DragFloat3("Forward Vector", ref forward);
+				ImGuiH.HelpMarker("X/Y/Z");
 			}
 		}
 

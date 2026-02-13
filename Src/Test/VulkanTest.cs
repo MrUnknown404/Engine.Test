@@ -12,22 +12,27 @@ namespace Engine3.Test.Test {
 	// https://vulkan-tutorial.com/
 	// https://vkguide.dev/
 	// https://lesleylai.info/en/vk-khr-dynamic-rendering/
-	// TODO read https://medium.com/@heypete/hello-triangle-meet-swift-and-wide-color-6f9e246616d9
 	// https://developer.nvidia.com/vulkan-memory-management
 	// https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-view-matrix
 	// https://vulkan.lunarg.com/doc/view/1.4.304.0/linux/best_practices.html
 	// https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/debug_printf.md
-	// TODO make resources.md & re-add imgui
+	// https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md
+	// https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md#rendering-adding-support-for-imguibackendflags_rendererhastextures-192 add if i update ImGui
+	// https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-create-my-own-backend
+	// https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/GUI/02_imgui_setup.html
+	// https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_vulkan.cpp
+	// https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.cpp
+	// TODO make resources.md
 
 	// # where i'm at
 	// https://vulkan-tutorial.com/Loading_models
 
 	// TODO fix white screen while resizing. is it possible to show the last swap frame and scale then present?
 	// TODO figure out how to dynamically change images. do i update descriptors each time?
-	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general
+	// TODO add way more debug logging. i kinda want more levels though. look into that. maybe redo logging in general. multiple files or single file?
 	// TODO read https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html
 	// TODO read https://docs.vulkan.org/guide/latest/buffer_device_address.html
-	// TODO setup ImGui & ImPlot and render debug info. fps/frameTime graph
+	// TODO setup ImPlot
 	// TODO use more stackallocs with vulkan
 
 	public class VulkanTest : GameClient {
@@ -39,7 +44,7 @@ namespace Engine3.Test.Test {
 		public VulkanWindow? Window1 { get; set; }
 		public VulkanWindow? Window2 { get; set; }
 
-		public Camera? Camera { get; set; }
+		public Camera? Camera { get; set; } // TODO set camera aspect ratio when window size changes
 
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
@@ -64,7 +69,9 @@ namespace Engine3.Test.Test {
 			AddWindow(Window1);
 			AddWindow(Window2);
 
-			Camera = new PerspectiveCamera(854f / 480f, 0.01f, 100f) { Position = new(0, 0, 2.5f), YawDegrees = 270, };
+			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
+			Camera.Position = new(0, 0, 2.5f);
+			Camera.YawDegrees = 270;
 
 			VulkanRenderer1 renderer1 = new(graphicsBackend, Window1, Camera, Assembly);
 			VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);

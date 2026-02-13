@@ -47,7 +47,10 @@ namespace Engine3.Test.LightCycle.Graphics {
 		public VulkanLightCycleRenderer(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window) {
 			this.gameManager = gameManager;
 
-			camera = new PerspectiveCamera((float)SwapChain.Extent.width / SwapChain.Extent.height, 0.01f, 10f) { Position = new(0, 5, 0), YawDegrees = 0, PitchDegrees = -90, };
+			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
+			camera.Position = new(0, 5, 0);
+			camera.YawDegrees = 0;
+			camera.PitchDegrees = -90;
 
 			cubeUniformBufferObject.Projection = camera.CreateProjectionMatrix();
 

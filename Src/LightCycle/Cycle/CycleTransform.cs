@@ -1,10 +1,9 @@
 using System.Numerics;
-using Engine3.GameObject;
 using JetBrains.Annotations;
 
 namespace Engine3.Test.LightCycle.Cycle {
 	[PublicAPI]
-	public class CycleTransform : ITransform<CycleTransform>, ITransformPosition<Vector2>, ITransformRotation<uint> {
+	public class CycleTransform {
 		public static CycleTransform Zero => new();
 
 		public Vector2 Position { get; set; }

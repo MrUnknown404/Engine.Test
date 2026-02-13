@@ -36,8 +36,9 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
 
-			// camera = new OrthographicCamera(10, 10, 0.1f, 10)
-			camera = new PerspectiveCamera((float)framebufferSize.X / framebufferSize.Y, 0.1f, 10) { Position = new(0, 0, 5), YawDegrees = 270, };
+			camera = Camera.CreatePerspective((float)framebufferSize.X / framebufferSize.Y, 90, 0.1f, 10);
+			camera.Position = new(0, 0, 5f);
+			camera.YawDegrees = 270;
 		}
 
 		public override void Setup() {

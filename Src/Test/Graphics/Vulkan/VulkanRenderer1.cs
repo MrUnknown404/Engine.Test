@@ -109,6 +109,9 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			return;
 
 			void DrawCamera() {
+				// transform
+				ImGui.SeparatorText("Transform");
+
 				Vector3 position = camera.Position;
 				if (ImGui.DragFloat3("Position", ref position, 0.1f / 2f)) { camera.Position = position; } // why x2?
 				ImGuiH.HelpMarker("X/Y/Z");
@@ -123,8 +126,51 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 				ImGuiH.HelpMarker("Pitch/Yaw/Roll (roll not implemented)");
 
 				Vector3 forward = camera.Forward;
-				ImGui.DragFloat3("Forward Vector", ref forward);
+				ImGui.DragFloat3("Forward Vector", ref forward, 0, 0, 0, null, ImGuiSliderFlags.NoInput);
 				ImGuiH.HelpMarker("X/Y/Z");
+
+				// look at
+				ImGui.Separator();
+
+				bool useLookAtPosition = camera.UseLookAtPosition;
+				if (ImGui.Checkbox("UseLookAtPosition", ref useLookAtPosition)) { camera.UseLookAtPosition = useLookAtPosition; }
+
+				Vector3 lookAtPosition = camera.LookAtPosition;
+				if (ImGui.DragFloat3("LookAtPosition", ref lookAtPosition, 0.1f / 2f)) { camera.LookAtPosition = lookAtPosition; }
+				ImGuiH.HelpMarker("X/Y/Z");
+
+				// type & type specific values
+				ImGui.Separator();
+
+				ImGui.Text($"Camera Type: {camera.CameraType}");
+				switch (camera.CameraType) {
+					case Camera.CameraTypes.Orthographic:
+						float width = camera.OrthographicWidth;
+						if (ImGui.DragFloat("Width", ref width, 0.1f / 2f, 0.001f, ushort.MaxValue)) { camera.OrthographicWidth = width; }
+
+						float height = camera.OrthographicHeight;
+						if (ImGui.DragFloat("Height", ref height, 0.1f / 2f, 0.001f, ushort.MaxValue)) { camera.OrthographicHeight = height; }
+						break;
+					case Camera.CameraTypes.Perspective:
+						float aspectRatio = camera.PerspectiveAspectRatio;
+						if (ImGui.DragFloat("Aspect Ratio", ref aspectRatio, 0.05f, 0.001f, 100, null, ImGuiSliderFlags.Logarithmic)) { camera.PerspectiveAspectRatio = aspectRatio; } // TODO i don't know what realistic values are
+
+						float fov = camera.PerspectiveFovDegrees;
+						if (ImGui.DragFloat("Field Of View", ref fov, 0.05f, 1, 179, "%.3f\u00B0", ImGuiSliderFlags.Logarithmic)) { camera.PerspectiveFovDegrees = fov; }
+						break;
+					default: throw new ArgumentOutOfRangeException();
+				}
+
+				// near/far plane
+				const float NearFarPadding = 0.01f;
+
+				float nearPlane = camera.NearPlane;
+				if (ImGui.DragFloat("Near Plane", ref nearPlane, 10f, 0.0001f, ushort.MaxValue - NearFarPadding, "%.4f", ImGuiSliderFlags.Logarithmic)) { camera.NearPlane = nearPlane; }
+
+				float farPlane = camera.FarPlane;
+				if (ImGui.DragFloat("Far Plane", ref farPlane, 10f, nearPlane + NearFarPadding, ushort.MaxValue, null, ImGuiSliderFlags.Logarithmic)) { camera.FarPlane = farPlane; }
+
+				if (nearPlane + NearFarPadding > camera.FarPlane) { camera.FarPlane = nearPlane + NearFarPadding; }
 			}
 		}
 

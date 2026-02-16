@@ -43,7 +43,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		private readonly VertexXyzUvRgb[] quadVertices = [ new(-0.5f, -0.5f, 0, 0, 1, 1, 0, 0), new(0.5f, -0.5f, 0, 1, 1, 0, 1, 0), new(0.5f, 0.5f, 0, 1, 0, 0, 0, 1), new(-0.5f, 0.5f, 0, 0, 0, 1, 1, 1), ];
 		private readonly uint[] quadIndices = [ 0, 1, 2, 2, 3, 0, ];
 
-		private readonly VertexXyzUvRgb[] cubeVertices;
+		private readonly VertexXyzUvRgb[] cubeVertices; // TODO fix these
 		private readonly uint[] cubeIndices = [
 				6, 2, 3, 3, 7, 6, // X-
 				4, 0, 1, 1, 5, 4, // X+

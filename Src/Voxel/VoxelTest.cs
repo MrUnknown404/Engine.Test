@@ -15,7 +15,6 @@ namespace Engine3.Test.Voxel {
 
 		public VulkanWindow? Window { get; set; }
 
-		// TODO set camera aspect ratio when window size changes
 		public Camera? Camera { get; set; }
 		public FloatingCameraController? CameraController { get; set; }
 
@@ -37,6 +36,7 @@ namespace Engine3.Test.Voxel {
 			Logger.Debug("Making Window...");
 			Window = new(graphicsBackend, Name, 854, 480) { ClearColor = new(0.01f, 0.01f, 0.01f, 1), };
 			Window.OnCloseWindowEvent += Shutdown;
+			Window.OnResize += (w, h) => Camera?.PerspectiveAspectRatio = (float)w / h;
 
 			AddWindow(Window);
 

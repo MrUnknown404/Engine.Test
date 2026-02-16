@@ -44,7 +44,7 @@ namespace Engine3.Test.Test {
 		public VulkanWindow? Window1 { get; set; }
 		public VulkanWindow? Window2 { get; set; }
 
-		public Camera? Camera { get; set; } // TODO set camera aspect ratio when window size changes
+		public Camera? Camera { get; set; }
 
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
@@ -62,6 +62,7 @@ namespace Engine3.Test.Test {
 			Logger.Debug("Making Window 1...");
 			Window1 = new(graphicsBackend, Name, 854, 480) { ClearColor = clearColor, };
 			Window1.OnCloseWindowEvent += Shutdown;
+			Window1.OnResize += (w, h) => Camera?.PerspectiveAspectRatio = (float)w / h;
 
 			Logger.Debug("Making Window 2...");
 			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };

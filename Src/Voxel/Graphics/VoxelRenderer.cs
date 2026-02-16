@@ -26,7 +26,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private DescriptorBuffers? cameraUniformBuffer;
 
-		private VulkanBuffer? cubeVertexBuffer;
+		private VulkanBuffer? cubeVertexBuffer; // TODO remove
 		private VulkanBuffer? cubeIndexBuffer;
 		private DescriptorBuffers? cubeInstanceBuffers;
 		private DescriptorSets? cubeDescriptorSet;
@@ -52,7 +52,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private readonly Vector3 cubePosition = new(0, 0, -5);
 		private readonly ObjectUniformBuffer cubeUniformBufferValue = new(1);
-		private readonly ObjectUniformBuffer chunkUniformBufferValue = new(1); // TODO offset chunk by this
+		private readonly ChunkUniformBuffer chunkUniformBufferValue = new(1); // TODO offset chunk by this
 
 		private readonly Assembly gameAssembly;
 

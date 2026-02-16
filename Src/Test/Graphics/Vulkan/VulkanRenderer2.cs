@@ -3,7 +3,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Core.Graphics;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
@@ -14,7 +14,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		private VulkanBuffer? vertexBuffer;
 
-		private readonly TestVertex[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
+		private readonly VertexXyzRgb[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
 
 		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
@@ -25,13 +25,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
 			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()));
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()));
 
 			LogicalGpu.EnqueueDestroy(vertexShader);
 			LogicalGpu.EnqueueDestroy(fragmentShader);
 
 			vertexBuffer = LogicalGpu.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
 
 			vertexBuffer.Copy(vertices);
 		}

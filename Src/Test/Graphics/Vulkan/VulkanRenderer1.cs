@@ -4,13 +4,13 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Core.Graphics;
 using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
-using USharpLibs.Common.Math;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer1 : VulkanRenderer {
@@ -40,10 +40,10 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		private readonly Camera camera;
 
-		private readonly TestVertex2[] quadVertices = [ new(-0.5f, -0.5f, 0, 0, 1, 1, 0, 0), new(0.5f, -0.5f, 0, 1, 1, 0, 1, 0), new(0.5f, 0.5f, 0, 1, 0, 0, 0, 1), new(-0.5f, 0.5f, 0, 0, 0, 1, 1, 1), ];
+		private readonly VertexXyzUvRgb[] quadVertices = [ new(-0.5f, -0.5f, 0, 0, 1, 1, 0, 0), new(0.5f, -0.5f, 0, 1, 1, 0, 1, 0), new(0.5f, 0.5f, 0, 1, 0, 0, 0, 1), new(-0.5f, 0.5f, 0, 0, 0, 1, 1, 1), ];
 		private readonly uint[] quadIndices = [ 0, 1, 2, 2, 3, 0, ];
 
-		private readonly TestVertex2[] cubeVertices;
+		private readonly VertexXyzUvRgb[] cubeVertices;
 		private readonly uint[] cubeIndices = [
 				6, 2, 3, 3, 7, 6, // X-
 				4, 0, 1, 1, 5, 4, // X+
@@ -68,7 +68,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
-			ImGuiBackend?.AddImGui += AddImGui;
+			ImGuiBackend?.AddImGui += ImGui.ShowDemoWindow;
 			ImGuiBackend?.AddExtraDebugUI += AddExtraDebugUI;
 
 			const float Size = 1;
@@ -97,81 +97,16 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			for (int i = 0; i < CubeCount; i++) { cubePositions[i] = new((random.NextSingle() * 10 - 5) * aspectRatio, random.NextSingle() * 10 - 5, -10.5f + random.NextSingle()); }
 		}
 
-		private void AddImGui() => ImGui.ShowDemoWindow();
-
 		private void AddExtraDebugUI() {
 			float indentAmount = ImGuiBackend?.IndentAmount ?? throw new NullReferenceException();
 
-			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
+			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawFunc);
 
 			ImGui.Text("test");
 
 			return;
 
-			void DrawCamera() {
-				// transform
-				ImGui.SeparatorText("Transform");
-
-				Vector3 position = camera.Position;
-				if (ImGui.DragFloat3("Position", ref position, 0.1f / 2f)) { camera.Position = position; } // why x2?
-				ImGuiH.HelpMarker("X/Y/Z");
-
-				Vector3 rotation = new(camera.PitchDegrees, camera.YawDegrees, 0); // TODO roll
-				if (ImGui.DragFloat3("Rotation", ref rotation, 0.1f / 2f)) {
-					camera.PitchDegrees = rotation.X;
-					camera.YawDegrees = rotation.Y;
-					// camera.RollDegrees = camPos.Z;
-				}
-
-				ImGuiH.HelpMarker("Pitch/Yaw/Roll (roll not implemented)");
-
-				Vector3 forward = camera.Forward;
-				ImGui.DragFloat3("Forward Vector", ref forward, 0, 0, 0, null, ImGuiSliderFlags.NoInput);
-				ImGuiH.HelpMarker("X/Y/Z");
-
-				// look at
-				ImGui.Separator();
-
-				bool useLookAtPosition = camera.UseLookAtPosition;
-				if (ImGui.Checkbox("UseLookAtPosition", ref useLookAtPosition)) { camera.UseLookAtPosition = useLookAtPosition; }
-
-				Vector3 lookAtPosition = camera.LookAtPosition;
-				if (ImGui.DragFloat3("LookAtPosition", ref lookAtPosition, 0.1f / 2f)) { camera.LookAtPosition = lookAtPosition; }
-				ImGuiH.HelpMarker("X/Y/Z");
-
-				// type & type specific values
-				ImGui.Separator();
-
-				ImGui.Text($"Camera Type: {camera.CameraType}");
-				switch (camera.CameraType) {
-					case Camera.CameraTypes.Orthographic:
-						float width = camera.OrthographicWidth;
-						if (ImGui.DragFloat("Width", ref width, 0.1f / 2f, 0.001f, ushort.MaxValue)) { camera.OrthographicWidth = width; }
-
-						float height = camera.OrthographicHeight;
-						if (ImGui.DragFloat("Height", ref height, 0.1f / 2f, 0.001f, ushort.MaxValue)) { camera.OrthographicHeight = height; }
-						break;
-					case Camera.CameraTypes.Perspective:
-						float aspectRatio = camera.PerspectiveAspectRatio;
-						if (ImGui.DragFloat("Aspect Ratio", ref aspectRatio, 0.05f, 0.001f, 100, null, ImGuiSliderFlags.Logarithmic)) { camera.PerspectiveAspectRatio = aspectRatio; } // TODO i don't know what realistic values are
-
-						float fov = camera.PerspectiveFovDegrees;
-						if (ImGui.DragFloat("Field Of View", ref fov, 0.05f, 1, 179, "%.3f\u00B0", ImGuiSliderFlags.Logarithmic)) { camera.PerspectiveFovDegrees = fov; }
-						break;
-					default: throw new ArgumentOutOfRangeException();
-				}
-
-				// near/far plane
-				const float NearFarPadding = 0.01f;
-
-				float nearPlane = camera.NearPlane;
-				if (ImGui.DragFloat("Near Plane", ref nearPlane, 10f, 0.0001f, ushort.MaxValue - NearFarPadding, "%.4f", ImGuiSliderFlags.Logarithmic)) { camera.NearPlane = nearPlane; }
-
-				float farPlane = camera.FarPlane;
-				if (ImGui.DragFloat("Far Plane", ref farPlane, 10f, nearPlane + NearFarPadding, ushort.MaxValue, null, ImGuiSliderFlags.Logarithmic)) { camera.FarPlane = farPlane; }
-
-				if (nearPlane + NearFarPadding > camera.FarPlane) { camera.FarPlane = nearPlane + NearFarPadding; }
-			}
+			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
 		}
 
 		public override void Setup() {
@@ -196,12 +131,12 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 					new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 1), //
-					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), // do i need to increase i?
+					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), //
 			]);
 
 			// ew
 			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
-				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex2.GetAttributeDescriptions(), TestVertex2.GetBindingDescriptions()) {
+				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
 						CullMode = VkCullModeFlagBits.CullModeNone,
@@ -215,10 +150,10 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		private void CreateBuffers() {
 			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex2) * cubeVertices.Length));
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzUvRgb) * cubeVertices.Length));
 
 			quadVertexBuffer = LogicalGpu.CreateBuffer("Quad Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex2) * quadVertices.Length));
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzUvRgb) * quadVertices.Length));
 
 			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
@@ -226,7 +161,10 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			quadIndexBuffer = LogicalGpu.CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * quadIndices.Length));
 
-			CopyToBuffers([ CopyToInfo.Of(cubeVertices, cubeVertexBuffer), CopyToInfo.Of(quadVertices, quadVertexBuffer), CopyToInfo.Of(cubeIndices, cubeIndexBuffer), CopyToInfo.Of(quadIndices, quadIndexBuffer), ]);
+			CopyToBuffers([
+					CopyToBufferInfo.Of(cubeVertices, cubeVertexBuffer), CopyToBufferInfo.Of(quadVertices, quadVertexBuffer), CopyToBufferInfo.Of(cubeIndices, cubeIndexBuffer), CopyToBufferInfo.Of(quadIndices, quadIndexBuffer),
+			]);
+
 			Logger.Debug("Created & copied vertex/index buffers");
 
 			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(CameraUniformBuffer), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
@@ -300,12 +238,8 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		protected override void CopyUniformBuffers(float delta) {
 			if (cubeInstanceBuffers == null || quadInstanceBuffers == null || cameraUniformBuffer == null) { throw new NullReferenceException(); }
 
-			// camera.YawDegrees += 0.05f;
-
-			// TODO i think because the projection & view matrix are the same they should have their own shared uniform buffer (push constants? edit: probably still use a uniform buffer). then a second uniform buffer for model transformations
-
 			float cubeRotation = float.Lerp(VulkanTest.PrevCubeRotation, VulkanTest.CubeRotation, delta);
-			Matrix4x4 rotationMatrix = Matrix4x4.CreateRotationY(cubeRotation * MathH.ToRadians(90f));
+			Matrix4x4 rotationMatrix = Matrix4x4.CreateRotationY(cubeRotation * float.DegreesToRadians(90f));
 
 			for (int i = 0; i < CubeCount; i++) { cubeUniformBufferValue.Models[i] = rotationMatrix * Matrix4x4.CreateTranslation(cubePositions[i]); }
 

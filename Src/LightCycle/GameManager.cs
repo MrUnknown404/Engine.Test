@@ -4,9 +4,9 @@ namespace Engine3.Test.LightCycle {
 	public class GameManager {
 		public Map? Map { get; private set; }
 
-		public void Setup(InputManager inputManager) {
+		public void Setup(KeyManager keyManager) {
 			Map = new("Test Map", 10, new(1));
-			Map.AddCycles(inputManager);
+			Map.AddCycles(keyManager);
 		}
 
 		public void Update() {

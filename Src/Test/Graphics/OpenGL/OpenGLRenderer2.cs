@@ -2,7 +2,7 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Core.Graphics;
 using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
@@ -17,7 +17,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		private OpenGLBuffer? vertexBuffer;
 		private OpenGLBuffer? indexBuffer;
 
-		private readonly TestVertex[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
+		private readonly VertexXyzRgb[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
@@ -33,7 +33,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			// ResourceProvider.EnqueueDestroy(vertexShader);
 			// ResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex) * vertices.Length));
+			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
 			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));

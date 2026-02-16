@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Engine3.Test.Test.Graphics.Test {
+namespace Engine3.Test.Core.Graphics {
 	public readonly record struct CameraUniformBuffer {
 		public Matrix4x4 Projection { get; init; } = Matrix4x4.Identity;
 		public Matrix4x4 View { get; init; } = Matrix4x4.Identity;

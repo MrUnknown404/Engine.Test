@@ -1,8 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
 using Engine3.Debug;
+using Engine3.Test.Core.Graphics;
+using Engine3.Test.Core.Test;
+using Engine3.Test.LightCycle;
 using Engine3.Test.Test;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Voxel;
 using Engine3.Utility;
 using NLog;
 
@@ -11,6 +14,7 @@ namespace Engine3.Test {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private const GraphicsBackend TestGraphicsBackend = GraphicsBackend.Vulkan;
+		private const TestType TestType = global::Engine3.Test.Core.Test.TestType.Voxel;
 
 		[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 		private static void Main() { // TODO args to change api
@@ -18,24 +22,23 @@ namespace Engine3.Test {
 
 #if DEBUG
 			StructLayoutDumper.AddStructs += static () => {
-				StructLayoutDumper.AddStruct<TestVertex>();
-				StructLayoutDumper.AddStruct<TestVertex2>();
+				StructLayoutDumper.AddStruct<VertexXyzRgb>();
+				StructLayoutDumper.AddStruct<VertexXyzUvRgb>();
 				StructLayoutDumper.AddStruct<CameraUniformBuffer>();
 			};
 #endif
 
-// #pragma warning disable CS0162 // Unreachable code detected
-// 			GameClient gameClient = new LightCycleTest(TestGraphicsBackend == GraphicsBackend.Vulkan || (TestGraphicsBackend == GraphicsBackend.OpenGL ? false : throw new ArgumentException()));
-// #pragma warning restore CS0162 // Unreachable code detected
-
-#pragma warning disable CS0162 // Unreachable code detected
-			GameClient gameClient = TestGraphicsBackend switch {
-					GraphicsBackend.Console => new ConsoleTest(),
-					GraphicsBackend.OpenGL => new OpenGLTest(),
-					GraphicsBackend.Vulkan => new VulkanTest(),
+			GameClient gameClient = TestType switch {
+					TestType.GraphicsTest => TestGraphicsBackend switch {
+							GraphicsBackend.Console => new ConsoleTest(),
+							GraphicsBackend.OpenGL => new OpenGLTest(),
+							GraphicsBackend.Vulkan => new VulkanTest(),
+							_ => throw new ArgumentOutOfRangeException(),
+					},
+					TestType.LightCycle => new LightCycleTest(TestGraphicsBackend == GraphicsBackend.Vulkan),
+					TestType.Voxel => new VoxelTest(TestGraphicsBackend == GraphicsBackend.Vulkan),
 					_ => throw new ArgumentOutOfRangeException(),
 			};
-#pragma warning restore CS0162 // Unreachable code detected
 
 			gameClient.Start(gameClient, new());
 			Logger.Info("Entry Exit");

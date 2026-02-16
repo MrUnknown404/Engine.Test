@@ -3,13 +3,12 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Core.Graphics;
 using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Platform;
 using StbiSharp;
-using USharpLibs.Common.Math;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Test.Graphics.OpenGL {
@@ -27,7 +26,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 		private readonly Camera camera;
 
-		private readonly TestVertex2[] vertices = [ new(0, 0.5f, 0, 0.5f, 1, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 1, 0, 0, 0, 1), ];
+		private readonly VertexXyzUvRgb[] vertices = [ new(0, 0.5f, 0, 0.5f, 1, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 1, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
@@ -37,7 +36,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
 
 			camera = Camera.CreatePerspective((float)framebufferSize.X / framebufferSize.Y, 90, 0.1f, 10);
-			camera.Position = new(0, 0, 5f);
+			camera.Transform.Position = new(0, 0, 5f);
 			camera.YawDegrees = 270;
 		}
 
@@ -51,7 +50,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			// ResourceProvider.EnqueueDestroy(vertexShader); // TODO RenderDoc gives an error when i destroy these but it renders fine. i think i'm doing something wrong?
 			// ResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(TestVertex2) * vertices.Length));
+			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzUvRgb) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
 			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
@@ -76,7 +75,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			vertexShader.SetUniform("projection", camera.CreateProjectionMatrix());
 			vertexShader.SetUniform("view", camera.CreateViewMatrix());
-			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * MathH.ToRadians(90f)));
+			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * float.DegreesToRadians(90f)));
 
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);

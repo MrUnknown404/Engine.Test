@@ -5,10 +5,9 @@ using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Test.Graphics.Test;
+using Engine3.Test.Core.Graphics;
 using NLog;
 using OpenTK.Graphics.Vulkan;
-using USharpLibs.Common.Math;
 
 namespace Engine3.Test.LightCycle.Graphics {
 	public unsafe class VulkanLightCycleRenderer : VulkanRenderer {
@@ -30,7 +29,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 		private DescriptorBuffers? cubeUniformBuffers;
 		private DescriptorSets? cubeDescriptorSet;
 
-		private readonly TestVertex[] cubeVertices;
+		private readonly VertexXyzRgb[] cubeVertices;
 		private readonly uint[] cubeIndices = [
 				6, 2, 3, 3, 7, 6, // X-
 				4, 0, 1, 1, 5, 4, // X+
@@ -48,7 +47,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			this.gameManager = gameManager;
 
 			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
-			camera.Position = new(0, 5, 0);
+			camera.Transform.Position = new(0, 5, 0);
 			camera.YawDegrees = 0;
 			camera.PitchDegrees = -90;
 
@@ -94,7 +93,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
 
 			// ew
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], TestVertex.GetAttributeDescriptions(), TestVertex.GetBindingDescriptions()) {
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()) {
 					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
 					CullMode = VkCullModeFlagBits.CullModeNone,
@@ -108,13 +107,12 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		private void CreateBuffers() {
 			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(TestVertex) * cubeVertices.Length));
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzRgb) * cubeVertices.Length));
 
 			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
 
-			CopyToBuffers([ CopyToInfo.Of(cubeVertices, cubeVertexBuffer), CopyToInfo.Of(cubeIndices, cubeIndexBuffer), ]);
-			Logger.Debug("Created & copied vertex/index buffers");
+			CopyToBuffers([ CopyToBufferInfo.Of(cubeVertices, cubeVertexBuffer), CopyToBufferInfo.Of(cubeIndices, cubeIndexBuffer), ]);
 
 			ulong bufferSize = TestUniformBufferObject.Size;
 			cubeUniformBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
@@ -163,7 +161,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			Cycle.Cycle cycle = map.Cycles.First();
 
 			cubeUniformBufferObject.View = camera.CreateViewMatrix();
-			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(float.Lerp(LightCycleTest.PrevCubeRotation, LightCycleTest.CubeRotation, delta) * MathH.ToRadians(90f)) *
+			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(float.Lerp(LightCycleTest.PrevCubeRotation, LightCycleTest.CubeRotation, delta) * float.DegreesToRadians(90f)) *
 											cycle.Transform.CreateMatrix(delta, cycle.PreviousTransform);
 
 			cubeUniformBuffers.Copy(cubeUniformBufferObject.CollectBytes(), FrameIndex);

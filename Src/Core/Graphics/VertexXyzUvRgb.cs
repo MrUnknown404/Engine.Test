@@ -2,9 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Test.Graphics.Test {
+namespace Engine3.Test.Core.Graphics {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public readonly record struct TestVertex2 {
+	public readonly record struct VertexXyzUvRgb {
 		public required float X { get; init; }
 		public required float Y { get; init; }
 		public required float Z { get; init; }
@@ -16,10 +16,10 @@ namespace Engine3.Test.Test.Graphics.Test {
 		public required float G { get; init; }
 		public required float B { get; init; }
 
-		public TestVertex2() { }
+		public VertexXyzUvRgb() { }
 
 		[SetsRequiredMembers]
-		public TestVertex2(float x, float y, float z, float u, float v, float r, float g, float b) {
+		public VertexXyzUvRgb(float x, float y, float z, float u, float v, float r, float g, float b) {
 			X = x;
 			Y = y;
 			Z = z;
@@ -30,7 +30,9 @@ namespace Engine3.Test.Test.Graphics.Test {
 			B = b;
 		}
 
-		public static unsafe VkVertexInputBindingDescription[] GetBindingDescriptions(uint binding = 0) => [ new() { binding = binding, stride = (uint)sizeof(TestVertex2), inputRate = VkVertexInputRate.VertexInputRateVertex, }, ];
+		public static unsafe VkVertexInputBindingDescription[] GetBindingDescriptions(uint binding = 0) => [
+				new() { binding = binding, stride = (uint)sizeof(VertexXyzUvRgb), inputRate = VkVertexInputRate.VertexInputRateVertex, },
+		];
 
 		public static VkVertexInputAttributeDescription[] GetAttributeDescriptions(uint binding = 0) => [
 				new() { binding = binding, location = 0, format = VkFormat.FormatR32g32b32Sfloat, offset = 0, }, //

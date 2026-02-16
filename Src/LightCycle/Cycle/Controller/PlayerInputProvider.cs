@@ -3,11 +3,11 @@ using OpenTK.Platform;
 
 namespace Engine3.Test.LightCycle.Cycle.Controller {
 	public class PlayerInputProvider : IPlayerInputProvider {
-		private readonly InputManager inputManager;
+		private readonly KeyManager keyManager;
 
-		public PlayerInputProvider(InputManager inputManager) => this.inputManager = inputManager;
+		public PlayerInputProvider(KeyManager keyManager) => this.keyManager = keyManager;
 
-		public bool TurnLeft => inputManager.GetKey(Key.A) || inputManager.GetKey(Key.LeftArrow);
-		public bool TurnRight => inputManager.GetKey(Key.D) || inputManager.GetKey(Key.RightArrow);
+		public bool TurnLeft => keyManager.IsKey(Key.A) || keyManager.IsKey(Key.LeftArrow);
+		public bool TurnRight => keyManager.IsKey(Key.D) || keyManager.IsKey(Key.RightArrow);
 	}
 }

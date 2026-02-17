@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.ImGui.Makers;
+using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Core.Graphics;
@@ -63,13 +64,11 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		protected override DepthImage? DepthImage => depthImage;
 
-		public VulkanRenderer1(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window,
-			new(window, graphicsBackend.MaxFramesInFlight) { ShowDebugUI = true, }) {
+		public VulkanRenderer1(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window) {
 			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
-			ImGuiBackend?.AddImGui += ImGui.ShowDemoWindow;
-			ImGuiBackend?.AddExtraDebugUI += AddExtraDebugUI;
+			ImGuiBackend = new(window, graphicsBackend.MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
 
 			const float Size = 1;
 			const float H = Size / 2;
@@ -97,9 +96,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			for (int i = 0; i < CubeCount; i++) { cubePositions[i] = new((random.NextSingle() * 10 - 5) * aspectRatio, random.NextSingle() * 10 - 5, -10.5f + random.NextSingle()); }
 		}
 
-		private void AddExtraDebugUI() {
-			float indentAmount = ImGuiBackend?.IndentAmount ?? throw new NullReferenceException();
-
+		private void AddExtraDebugUI(float indentAmount) {
 			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawFunc);
 
 			ImGui.Text("test");

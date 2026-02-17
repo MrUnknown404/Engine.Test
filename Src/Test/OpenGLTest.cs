@@ -38,7 +38,7 @@ namespace Engine3.Test.Test {
 			AddWindow(Window1);
 			AddWindow(Window2);
 
-			OpenGLRenderer1 renderer1 = new(graphicsBackend, Window1, Assembly);
+			OpenGLRenderer1 renderer1 = new(this, graphicsBackend, Window1, Assembly);
 			OpenGLRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 
 			renderer1.Setup();

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Reflection;
 using Engine3.Client;
+using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Test.Core.Graphics;
@@ -30,8 +31,10 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
-		public OpenGLRenderer1(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window, new(window) { ShowDebugUI = true, }) {
+		public OpenGLRenderer1(GameClient game, OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
 			this.gameAssembly = gameAssembly;
+
+			ImGuiBackend = new(window, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window), };
 
 			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
 

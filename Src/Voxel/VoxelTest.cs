@@ -46,7 +46,7 @@ namespace Engine3.Test.Voxel {
 
 			CameraController = new(Window, Camera);
 
-			VoxelRenderer renderer = new(graphicsBackend, Window, Camera, Assembly);
+			VoxelRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
 
 			renderer.Setup();
 

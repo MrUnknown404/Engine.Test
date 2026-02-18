@@ -8,6 +8,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		public OpenGLLightCycleRenderer(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window) : base(graphicsBackend, window) { }
 
-		protected override void DrawFrame(float delta) { }
+		protected override void DrawFrame() { }
+		protected override void CopyBuffers(float delta) { }
 	}
 }

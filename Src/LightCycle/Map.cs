@@ -6,7 +6,7 @@ namespace Engine3.Test.LightCycle {
 		public string Name { get; }
 		public uint Size { get; }
 
-		private readonly List<Cycle.Cycle> cycles = new();
+		private readonly List<Cycle.Cycle> cycles = new(); // TODO move to GameManager
 		private readonly CycleProperties cycleProperties;
 
 		public IEnumerable<Cycle.Cycle> Cycles => cycles;

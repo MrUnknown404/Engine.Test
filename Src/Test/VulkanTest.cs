@@ -44,7 +44,7 @@ namespace Engine3.Test.Test {
 			AddWindow(Window2);
 
 			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
-			Camera.Transform.Position = new(0, 0, 2.5f);
+			Camera.Position = new(0, 0, 2.5f);
 			Camera.YawDegrees = 270;
 
 			VulkanRenderer1 renderer1 = new(this, graphicsBackend, Window1, Camera, Assembly);

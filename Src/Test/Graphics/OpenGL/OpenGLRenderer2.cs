@@ -40,7 +40,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			indexBuffer.Copy(indices);
 		}
 
-		protected override void DrawFrame(float delta) {
+		protected override void DrawFrame() {
 			if (vertexBuffer == null || indexBuffer == null || programPipeline == null) { throw new NullReferenceException(); }
 
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
@@ -50,6 +50,8 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
 		}
+
+		protected override void CopyBuffers(float delta) { }
 
 		protected override void Cleanup() {
 			//

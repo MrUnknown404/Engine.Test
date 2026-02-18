@@ -39,7 +39,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
 
 			camera = Camera.CreatePerspective((float)framebufferSize.X / framebufferSize.Y, 90, 0.1f, 10);
-			camera.Transform.Position = new(0, 0, 5f);
+			camera.Position = new(0, 0, 5f);
 			camera.YawDegrees = 270;
 		}
 
@@ -68,17 +68,13 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			GL.Disable(EnableCap.CullFace);
 		}
 
-		protected override void DrawFrame(float delta) {
-			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || vertexShader == null || image == null) { throw new NullReferenceException(); }
+		protected override void DrawFrame() {
+			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || image == null) { throw new NullReferenceException(); }
 
 			// TODO gl graphics pipeline class? bind program pipeline -> grants access to shaders -> bind buffers -> draw ?
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
 			// camera.YawDegrees += 0.5f;
-
-			vertexShader.SetUniform("projection", camera.CreateProjectionMatrix());
-			vertexShader.SetUniform("view", camera.CreateViewMatrix());
-			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * float.DegreesToRadians(90f)));
 
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
@@ -86,6 +82,14 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 			GL.BindTexture(TextureTarget.Texture2d, (int)image.TextureHandle);
 
 			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
+		}
+
+		protected override void CopyBuffers(float delta) {
+			if (vertexShader == null) { throw new NullReferenceException(); }
+
+			vertexShader.SetUniform("projection", camera.Projection);
+			vertexShader.SetUniform("view", camera.View);
+			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * float.DegreesToRadians(90f)));
 		}
 
 		protected override void Cleanup() {

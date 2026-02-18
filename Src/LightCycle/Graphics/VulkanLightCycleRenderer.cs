@@ -47,11 +47,11 @@ namespace Engine3.Test.LightCycle.Graphics {
 			this.gameManager = gameManager;
 
 			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
-			camera.Transform.Position = new(0, 5, 0);
+			camera.Position = new(0, 5, 0);
 			camera.YawDegrees = 0;
 			camera.PitchDegrees = -90;
 
-			cubeUniformBufferObject.Projection = camera.CreateProjectionMatrix();
+			cubeUniformBufferObject.Projection = camera.Projection;
 
 			const float Size = 0.1f;
 			const float H = Size / 2;
@@ -83,7 +83,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
 			UpdateDescriptorSets();
 
-			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool.VkCommandPool, SwapChain.Extent);
+			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
 		}
 
 		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
@@ -93,11 +93,12 @@ namespace Engine3.Test.LightCycle.Graphics {
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
 
 			// ew
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()) {
-					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-					// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
-					CullMode = VkCullModeFlagBits.CullModeNone,
-			});
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
+				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()) {
+						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
+						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
+						CullMode = VkCullModeFlagBits.CullModeNone,
+				});
 
 			Logger.Debug("Created graphics pipeline");
 
@@ -112,7 +113,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * cubeIndices.Length));
 
-			CopyToBuffers([ CopyToBufferInfo.Of(cubeVertices, cubeVertexBuffer), CopyToBufferInfo.Of(cubeIndices, cubeIndexBuffer), ]);
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(cubeVertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(cubeIndexBuffer, cubeIndices), ]);
 
 			ulong bufferSize = TestUniformBufferObject.Size;
 			cubeUniformBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
@@ -133,7 +134,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
 			if (graphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || cubeDescriptorSet == null) { throw new NullReferenceException(); }
 
 			if (gameManager.Map is not { } map) {
@@ -144,7 +145,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(new(0, 0), SwapChain.Extent);
+			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			// Cube
 			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
@@ -153,14 +154,14 @@ namespace Engine3.Test.LightCycle.Graphics {
 			graphicsCommandBuffer.CmdDrawIndexed((uint)cubeIndices.Length);
 		}
 
-		protected override void CopyUniformBuffers(float delta) {
+		protected override void CopyBuffers(float delta) {
 			if (cubeUniformBuffers == null) { throw new UnreachableException(); }
 
 			if (gameManager.Map is not { } map) { return; }
 
 			Cycle.Cycle cycle = map.Cycles.First();
 
-			cubeUniformBufferObject.View = camera.CreateViewMatrix();
+			cubeUniformBufferObject.View = camera.View;
 			cubeUniformBufferObject.Model = Matrix4x4.CreateRotationY(float.Lerp(LightCycleTest.PrevCubeRotation, LightCycleTest.CubeRotation, delta) * float.DegreesToRadians(90f)) *
 											cycle.Transform.CreateMatrix(delta, cycle.PreviousTransform);
 

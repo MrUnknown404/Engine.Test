@@ -25,7 +25,8 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
 			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()));
+			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
+				VertexXyzRgb.GetBindingDescriptions()));
 
 			LogicalGpu.EnqueueDestroy(vertexShader);
 			LogicalGpu.EnqueueDestroy(fragmentShader);
@@ -36,13 +37,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			vertexBuffer.Copy(vertices);
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
 			if (vertexBuffer == null || graphicsPipeline == null) { return; }
 
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(new(0, 0), SwapChain.Extent);
+			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 

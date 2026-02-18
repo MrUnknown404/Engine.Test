@@ -9,9 +9,11 @@ using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Core.Graphics;
+using Engine3.Utility;
 using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
+using StbiSharp;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
 	public unsafe class VulkanRenderer1 : VulkanRenderer {
@@ -118,7 +120,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
 			UpdateDescriptorSets();
 
-			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool.VkCommandPool, SwapChain.Extent);
+			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
 		}
 
 		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
@@ -158,8 +160,9 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			quadIndexBuffer = LogicalGpu.CreateBuffer("Quad Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)(sizeof(uint) * quadIndices.Length));
 
-			CopyToBuffers([
-					CopyToBufferInfo.Of(cubeVertices, cubeVertexBuffer), CopyToBufferInfo.Of(quadVertices, quadVertexBuffer), CopyToBufferInfo.Of(cubeIndices, cubeIndexBuffer), CopyToBufferInfo.Of(quadIndices, quadIndexBuffer),
+			TransferCommandPool.CopyToBuffers([
+					TransferCommandPool.CopyDataToBufferInfo.Copy(cubeVertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(quadVertexBuffer, quadVertices),
+					TransferCommandPool.CopyDataToBufferInfo.Copy(cubeIndexBuffer, cubeIndices), TransferCommandPool.CopyDataToBufferInfo.Copy(quadIndexBuffer, quadIndices),
 			]);
 
 			Logger.Debug("Created & copied vertex/index buffers");
@@ -180,7 +183,11 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
-			image = CreateImageAndCopyUsingStaging("Test 64x64 Image", "Test.64x64", "png", 4, VkFormat.FormatR8g8b8a8Srgb, gameAssembly);
+			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
+				image = LogicalGpu.CreateImage("Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
+				TransferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
+			}
+
 			Logger.Debug("Created image");
 		}
 
@@ -209,7 +216,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer, float delta) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
 			if (graphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || quadVertexBuffer == null || quadIndexBuffer == null || cubeDescriptorSet == null || quadDescriptorSet == null) {
 				throw new NullReferenceException();
 			}
@@ -217,7 +224,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
 			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(new(0, 0), SwapChain.Extent);
+			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			// Cube
 			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
@@ -232,7 +239,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			graphicsCommandBuffer.CmdDrawIndexed((uint)quadIndices.Length);
 		}
 
-		protected override void CopyUniformBuffers(float delta) {
+		protected override void CopyBuffers(float delta) {
 			if (cubeInstanceBuffers == null || quadInstanceBuffers == null || cameraUniformBuffer == null) { throw new NullReferenceException(); }
 
 			float cubeRotation = float.Lerp(VulkanTest.PrevCubeRotation, VulkanTest.CubeRotation, delta);
@@ -242,7 +249,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			quadUniformBufferValue.Models[0] = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(cubeRotation), quadPosition.Z);
 
-			cameraUniformBuffer.Copy(new CameraUniformBuffer(camera.CreateProjectionMatrix(), camera.CreateViewMatrix()), FrameIndex);
+			cameraUniformBuffer.Copy(new CameraUniformBuffer(camera.Projection, camera.View), FrameIndex);
 			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
 			quadInstanceBuffers.Copy(MemoryMarshal.AsBytes(quadUniformBufferValue.Models), FrameIndex);
 		}

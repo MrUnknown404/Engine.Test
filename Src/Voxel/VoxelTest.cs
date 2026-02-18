@@ -41,7 +41,7 @@ namespace Engine3.Test.Voxel {
 			AddWindow(Window);
 
 			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
-			Camera.Transform.Position = new(0, 0, 2.5f);
+			Camera.Position = new(0, 0, 2.5f);
 			Camera.YawDegrees = 270;
 
 			CameraController = new(Window, Camera);

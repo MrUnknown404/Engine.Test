@@ -17,7 +17,7 @@ using Quaternion = System.Numerics.Quaternion;
 using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics {
-	public unsafe class XyzGizmoRenderingImpl {
+	public unsafe class XyzGizmoRenderingImpl { // TODO once this is done merge into engine
 		private static Matrix4x4 GizmoTransform { get; } = Matrix4x4.CreateScale(0.1f) * Matrix4x4.CreateTranslation(-Vector3.UnitZ); // TODO scale based on viewport size
 
 		private readonly GraphicsPipeline gizmoGraphicsPipeline;
@@ -47,11 +47,12 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			xyzGizmoModel.Collect(out byte[] vertices, out uint[] indices);
 
-			CreateBuffers(logicalGpu, transferCommandPool, maxFramesInFlight, vertices, indices, (byte)MaterialUniformData.Length, out xyzGizmoVertexBuffer, out xyzGizmoIndexBuffer, out sceneUniformBuffers,
-				out materialUniformBuffers);
+			CreateBuffers(logicalGpu, maxFramesInFlight, vertices, indices, (byte)MaterialUniformData.Length, out xyzGizmoVertexBuffer, out xyzGizmoIndexBuffer, out sceneUniformBuffers, out materialUniformBuffers);
 
 			CreateDescriptorSets(logicalGpu, sceneLayout, materialLayout, maxFramesInFlight, sceneUniformBuffers, materialUniformBuffers, out sceneDescriptorSets, out materialDescriptorSets);
 
+			// initial copy
+			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoVertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoIndexBuffer, indices), ]);
 			materialUniformBuffers.Copy(MaterialUniformData, 0);
 
 			return;
@@ -157,7 +158,8 @@ namespace Engine3.Test.Voxel.Graphics {
 				new($"{Name} Graphics Pipeline", swapChainImageFormat, [ vertexShader, fragmentShader, ], VertexXyz.GetAttributeDescriptions(), VertexXyz.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ sceneDescriptorSetLayout.VkDescriptorSetLayout, materialDescriptorSetLayout.VkDescriptorSetLayout, ],
 						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(MaterialPushConstants), }, ],
-						FrontFace = VkFrontFace.FrontFaceCounterClockwise,
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			logicalGpu.EnqueueDestroy(vertexShader);
@@ -166,8 +168,8 @@ namespace Engine3.Test.Voxel.Graphics {
 			return pipeline;
 		}
 
-		private static void CreateBuffers(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, byte maxFramesInFlight, byte[] vertices, uint[] indices, byte materialCount, out VulkanBuffer vertexBuffer,
-			out VulkanBuffer indexBuffer, out DescriptorBuffers sceneDescriptorBuffers, out DescriptorBuffers materialDescriptorBuffers) {
+		private static void CreateBuffers(LogicalGpu logicalGpu, byte maxFramesInFlight, byte[] vertices, uint[] indices, byte materialCount, out VulkanBuffer vertexBuffer, out VulkanBuffer indexBuffer,
+			out DescriptorBuffers sceneDescriptorBuffers, out DescriptorBuffers materialDescriptorBuffers) {
 			vertexBuffer = logicalGpu.CreateBuffer("Gizmo Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
 				(ulong)vertices.Length);
 
@@ -179,8 +181,6 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			materialDescriptorBuffers = logicalGpu.CreateDescriptorBuffers("Gizmo Material Storage Buffer", (ulong)(sizeof(Material) * materialCount), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
-
-			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(vertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(indexBuffer, indices), ]);
 		}
 
 		private static void CreateDescriptorSets(LogicalGpu logicalGpu, DescriptorSetLayout sceneDescriptorSetLayout, DescriptorSetLayout materialDescriptorSetLayout, byte maxFramesInFlight,

@@ -139,8 +139,10 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
 				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
+						FrontFace = VkFrontFace.FrontFaceClockwise, // TODO oops. indices are backwards
 						CullMode = VkCullModeFlagBits.CullModeNone,
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created graphics pipeline");
@@ -182,7 +184,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = LogicalGpu.CreateSampler(GraphicsBackend, new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {

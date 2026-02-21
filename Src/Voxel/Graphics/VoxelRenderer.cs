@@ -26,24 +26,24 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		public World.World? World { private get; set; }
 
-		private GraphicsPipeline? cubeGraphicsPipeline; // TODO remove nullability
-		private GraphicsPipeline? chunkGraphicsPipeline;
+		private GraphicsPipeline cubeGraphicsPipeline = null!;
+		private GraphicsPipeline chunkGraphicsPipeline = null!;
 
-		private DepthImage? depthImage;
+		private DepthImage depthImage = null!;
 
-		private DescriptorBuffers? cameraUniformBuffer;
+		private DescriptorBuffers cameraUniformBuffer = null!;
 
-		private VulkanBuffer? cubeVertexBuffer; // TODO for testing. remove
-		private VulkanBuffer? cubeIndexBuffer;
-		private DescriptorBuffers? cubeInstanceBuffers;
-		private DescriptorSets? cubeDescriptorSet;
+		private VulkanBuffer cubeVertexBuffer = null!; // TODO for testing. remove
+		private VulkanBuffer cubeIndexBuffer = null!;
+		private DescriptorBuffers cubeInstanceBuffers = null!;
+		private DescriptorSets cubeDescriptorSet = null!;
 
-		private VulkanBuffer? chunkVertexBuffer;
-		private VulkanBuffer? chunkIndexBuffer;
-		private DescriptorSets? chunkDescriptorSet;
+		private VulkanBuffer chunkVertexBuffer = null!;
+		private VulkanBuffer chunkIndexBuffer = null!;
+		private DescriptorSets chunkDescriptorSet = null!;
 
-		private VulkanImage? image;
-		private TextureSampler? textureSampler;
+		private VulkanImage image = null!;
+		private TextureSampler textureSampler = null!;
 
 		private readonly Camera camera;
 
@@ -56,7 +56,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private readonly Assembly gameAssembly;
 
-		protected override DepthImage? DepthImage => depthImage;
+		protected override DepthImage DepthImage => depthImage;
 
 		private bool shouldRegenerateChunk = true;
 
@@ -135,56 +135,6 @@ namespace Engine3.Test.Voxel.Graphics {
 					16 + 0, 16 + 1, 16 + 3, 16 + 3, 16 + 1, 16 + 2, // X-
 					20 + 0, 20 + 1, 20 + 3, 20 + 3, 20 + 1, 20 + 2, // X+
 			];
-
-			// [SuppressMessage("ReSharper", "InconsistentNaming")]
-			// static Mesh GltfMeshToMesh_VertexXyz(IMeshPrimitiveDecoder<GLTFMaterial> meshPrimitiveDecoder, ref uint offset) {
-			// 	List<VertexXyz> vertices = new();
-			// 	List<uint> indices = new();
-			//
-			// 	GLTFMaterial material = meshPrimitiveDecoder.Material; // TODO materials
-			//
-			// 	for (int i = 0; i < meshPrimitiveDecoder.VertexCount; i++) {
-			// 		Vector3 pos = meshPrimitiveDecoder.GetPosition(i);
-			// 		vertices.Add(new(pos));
-			// 	}
-			//
-			// 	foreach ((int indexA, int indexB, int indexC) in meshPrimitiveDecoder.TriangleIndices) {
-			// 		indices.Add((uint)indexA + offset);
-			// 		indices.Add((uint)indexB + offset);
-			// 		indices.Add((uint)indexC + offset);
-			// 	}
-			//
-			// 	offset += (uint)meshPrimitiveDecoder.VertexCount; // do i offset?
-			//
-			// 	return new(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(vertices)).ToArray(), indices.ToArray()) { Material = new(Color4<Rgba>.FromVector4(material.Channels.First().Color)), };
-			// }
-			//
-			// [SuppressMessage("ReSharper", "InconsistentNaming")]
-			// static Mesh GltfMeshesToMesh_VertexXyz(IReadOnlyList<GLTFMesh> inMeshes) {
-			// 	List<VertexXyz> vertices = new();
-			// 	List<uint> indices = new();
-			// 	uint offset = 0;
-			//
-			// 	IMeshDecoder<GLTFMaterial>[] meshDecoders = inMeshes.Decode(new RuntimeOptions());
-			// 	foreach (IMeshDecoder<GLTFMaterial> meshDecoder in meshDecoders) {
-			// 		foreach (IMeshPrimitiveDecoder<GLTFMaterial> meshPrimitiveDecoder in meshDecoder.Primitives) {
-			// 			for (int i = 0; i < meshPrimitiveDecoder.VertexCount; i++) {
-			// 				Vector3 pos = meshPrimitiveDecoder.GetPosition(i);
-			// 				vertices.Add(new(pos));
-			// 			}
-			//
-			// 			foreach ((int indexA, int indexB, int indexC) in meshPrimitiveDecoder.TriangleIndices) {
-			// 				indices.Add((uint)indexA + offset);
-			// 				indices.Add((uint)indexB + offset);
-			// 				indices.Add((uint)indexC + offset);
-			// 			}
-			//
-			// 			offset += (uint)meshPrimitiveDecoder.VertexCount;
-			// 		}
-			// 	}
-			//
-			// 	return new(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(vertices)).ToArray(), indices.ToArray());
-			// }
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {
@@ -232,6 +182,9 @@ namespace Engine3.Test.Voxel.Graphics {
 			cubeGraphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
+						FrontFace = VkFrontFace.FrontFaceClockwise, // TODO fix this
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created cube graphics pipeline");
@@ -253,6 +206,10 @@ namespace Engine3.Test.Voxel.Graphics {
 			chunkGraphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
+						FrontFace = VkFrontFace.FrontFaceClockwise, // TODO fix this
+
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created chunk graphics pipeline");
@@ -297,7 +254,7 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = LogicalGpu.CreateSampler(GraphicsBackend, new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {

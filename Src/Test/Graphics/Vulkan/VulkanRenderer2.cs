@@ -26,7 +26,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
 			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
-				VertexXyzRgb.GetBindingDescriptions()));
+				VertexXyzRgb.GetBindingDescriptions()) { FrontFace = VkFrontFace.FrontFaceClockwise, });
 
 			LogicalGpu.EnqueueDestroy(vertexShader);
 			LogicalGpu.EnqueueDestroy(fragmentShader);

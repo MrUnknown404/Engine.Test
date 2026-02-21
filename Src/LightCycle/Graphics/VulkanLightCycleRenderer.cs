@@ -48,7 +48,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
 			camera.Position = new(0, 5, 0);
-			Quaternion qx = Quaternion.CreateFromAxisAngle(Vector3.UnitX, float.DegreesToRadians(-90) );
+			Quaternion qx = Quaternion.CreateFromAxisAngle(Vector3.UnitX, float.DegreesToRadians(-90));
 			Quaternion qy = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0);
 			camera.Orientation = qx * qy;
 
@@ -97,8 +97,10 @@ namespace Engine3.Test.LightCycle.Graphics {
 			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
 				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. indices are backwards
+						FrontFace = VkFrontFace.FrontFaceClockwise, // TODO oops. indices are backwards
 						CullMode = VkCullModeFlagBits.CullModeNone,
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created graphics pipeline");

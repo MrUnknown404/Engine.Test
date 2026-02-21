@@ -4,7 +4,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
-using Engine3.Test.Core.Graphics;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -40,10 +40,9 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			camera = Camera.CreatePerspective((float)framebufferSize.X / framebufferSize.Y, 90, 0.1f, 10);
 			camera.Position = new(0, 0, 5f);
-			camera.YawDegrees = 270;
 		}
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
 
 			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", $"{TestShaderName}UVs", ShaderType.Vertex, gameAssembly);

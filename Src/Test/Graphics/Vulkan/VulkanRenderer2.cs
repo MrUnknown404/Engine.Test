@@ -1,9 +1,9 @@
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Core.Graphics;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
@@ -19,7 +19,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
 
 			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);

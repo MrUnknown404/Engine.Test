@@ -1,4 +1,5 @@
 using Engine3.Test.Voxel.Blocks;
+using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
 using JetBrains.Annotations;
 
@@ -15,27 +16,27 @@ namespace Engine3.Test.Voxel.Graphics {
 			for (ushort i = 0; i < Chunk.ArraySize; i++) {
 				Block b = chunk[i];
 
-				BlockFace blockFaceMask = b.Properties.SolidFaceMask;
-				if (blockFaceMask == BlockFace.None) { continue; }
+				BlockFaceMask blockFaceMask = b.Properties.SolidFaceMask;
+				if (blockFaceMask == BlockFaceMask.None) { continue; }
 
 				// TODO check if face is visible
 
-				if (blockFaceMask.HasFlagFast(BlockFace.North)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.North)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 
-				if (blockFaceMask.HasFlagFast(BlockFace.East)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.East)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 
-				if (blockFaceMask.HasFlagFast(BlockFace.South)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.South)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 
-				if (blockFaceMask.HasFlagFast(BlockFace.West)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.West)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 
-				if (blockFaceMask.HasFlagFast(BlockFace.Up)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.Up)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 
-				if (blockFaceMask.HasFlagFast(BlockFace.Down)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
+				if (blockFaceMask.HasFlagFast(BlockFaceMask.Down)) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
 			}
 

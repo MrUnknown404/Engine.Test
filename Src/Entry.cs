@@ -1,7 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.DataStructs;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Debug;
-using Engine3.Test.Core.Graphics;
 using Engine3.Test.Core.Test;
 using Engine3.Test.LightCycle;
 using Engine3.Test.Test;
@@ -24,7 +25,7 @@ namespace Engine3.Test {
 			StructLayoutDumper.AddStructs += static () => {
 				StructLayoutDumper.AddStruct<VertexXyzRgb>();
 				StructLayoutDumper.AddStruct<VertexXyzUvRgb>();
-				StructLayoutDumper.AddStruct<CameraUniformBuffer>();
+				StructLayoutDumper.AddStruct<ProjectionView>();
 			};
 #endif
 

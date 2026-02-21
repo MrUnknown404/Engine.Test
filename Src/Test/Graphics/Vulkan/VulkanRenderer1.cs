@@ -4,8 +4,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.DataStructs;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Core.Graphics;
@@ -108,7 +110,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
 		}
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
 
 			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
@@ -117,7 +119,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			CreateSamplerAndTextures();
 
-			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
+			CreateDescriptorSets(descriptorSetLayout);
 			UpdateDescriptorSets();
 
 			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
@@ -167,7 +169,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			Logger.Debug("Created & copied vertex/index buffers");
 
-			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(CameraUniformBuffer), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
 			cubeInstanceBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Instance Storage Buffers", cubeUniformBufferValue.Size, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
@@ -191,7 +193,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			Logger.Debug("Created image");
 		}
 
-		private void CreateDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
+		private void CreateDescriptorSets(DescriptorSetLayout descriptorSetLayout) {
 			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 3,
 				MaxFramesInFlight);
 
@@ -249,7 +251,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			quadUniformBufferValue.Models[0] = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(cubeRotation), quadPosition.Z);
 
-			cameraUniformBuffer.Copy(new CameraUniformBuffer(camera.Projection, camera.View), FrameIndex);
+			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex);
 			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
 			quadInstanceBuffers.Copy(MemoryMarshal.AsBytes(quadUniformBufferValue.Models), FrameIndex);
 		}

@@ -2,7 +2,7 @@ using Engine3.Test.Voxel.World;
 
 namespace Engine3.Test.Voxel.Blocks {
 	public class Block {
-		public static Block Air { get; } = new("air", new() { SolidFaceMask = BlockFace.None, }); // TODO registry?
+		public static Block Air { get; } = new("air", new() { SolidFaceMask = BlockFaceMask.None, }); // TODO registry?
 		public static Block Stone { get; } = new("stone");
 
 		public string Name { get; }
@@ -16,6 +16,6 @@ namespace Engine3.Test.Voxel.Blocks {
 	}
 
 	public class BlockProperties {
-		public BlockFace SolidFaceMask { get; init; } = BlockFace.All;
+		public BlockFaceMask SolidFaceMask { get; init; } = BlockFaceMask.All;
 	}
 }

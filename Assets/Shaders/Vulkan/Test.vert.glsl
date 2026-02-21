@@ -12,7 +12,7 @@ layout (binding = 0) uniform CameraBuffer {
 	mat4 view;
 } cameraBuffer;
 
-layout (std140, binding = 1) readonly buffer InstanceBuffers {
+layout (binding = 1, std140) readonly buffer InstanceBuffers {
 	mat4 models[];
 } instanceBuffers;
 

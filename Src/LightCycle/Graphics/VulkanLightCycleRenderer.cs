@@ -3,9 +3,9 @@ using System.Numerics;
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Test.Core.Graphics;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 
@@ -48,8 +48,9 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
 			camera.Position = new(0, 5, 0);
-			camera.YawDegrees = 0;
-			camera.PitchDegrees = -90;
+			Quaternion qx = Quaternion.CreateFromAxisAngle(Vector3.UnitX, float.DegreesToRadians(-90) );
+			Quaternion qy = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0);
+			camera.Orientation = qx * qy;
 
 			cubeUniformBufferObject.Projection = camera.Projection;
 
@@ -73,14 +74,14 @@ namespace Engine3.Test.LightCycle.Graphics {
 			];
 		}
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
 
 			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
 
 			CreateBuffers();
 
-			CreateDescriptorSets(descriptorSetLayout.VkDescriptorSetLayout);
+			CreateDescriptorSets(descriptorSetLayout);
 			UpdateDescriptorSets();
 
 			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
@@ -120,7 +121,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			Logger.Debug("Created uniform buffers");
 		}
 
-		private void CreateDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
+		private void CreateDescriptorSets(DescriptorSetLayout descriptorSetLayout) {
 			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
 			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
 			Logger.Debug("Created descriptor sets");

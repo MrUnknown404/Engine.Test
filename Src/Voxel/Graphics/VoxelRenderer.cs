@@ -3,22 +3,26 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
+using Engine3.Client.Graphics.DataStructs;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
+using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Test.Core.Graphics;
+using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Utility;
 using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using StbiSharp;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics {
 	public unsafe class VoxelRenderer : VulkanRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private const string TestShaderName = "Test";
+		private XyzGizmoRenderingImpl? xyzGizmoRenderingImpl;
 
 		public World.World? World { private get; set; }
 
@@ -29,7 +33,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private DescriptorBuffers? cameraUniformBuffer;
 
-		private VulkanBuffer? cubeVertexBuffer; // TODO remove
+		private VulkanBuffer? cubeVertexBuffer; // TODO for testing. remove
 		private VulkanBuffer? cubeIndexBuffer;
 		private DescriptorBuffers? cubeInstanceBuffers;
 		private DescriptorSets? cubeDescriptorSet;
@@ -44,14 +48,7 @@ namespace Engine3.Test.Voxel.Graphics {
 		private readonly Camera camera;
 
 		private readonly VertexXyzUvRgb[] cubeVertices;
-		private readonly uint[] cubeIndices = [
-				6, 2, 3, 3, 7, 6, // X-
-				4, 0, 1, 1, 5, 4, // X+
-				0, 1, 2, 2, 3, 0, // Y-
-				4, 5, 6, 6, 7, 4, // Y+
-				7, 3, 0, 0, 4, 7, // Z-
-				5, 1, 2, 2, 6, 5, // Z+ (textured atm)
-		];
+		private readonly uint[] cubeIndices;
 
 		private readonly Vector3 cubePosition = new(0, 0, -5);
 		private readonly ObjectUniformBuffer cubeUniformBufferValue = new(1);
@@ -71,25 +68,123 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			ImGuiBackend = new(window, graphicsBackend.MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
 
+			// cubeVertices = CubeBuilder.BuildCube(BlockFaceMask.Up, 1);
+			// // cubeIndices = [ 0, 3, 2, 2, 1, 0, ];
+			//
+			// const byte CubeFaceCount = 6;
+			// const byte IndicesPerFace = 6;
+			// const byte VertexPerFace = 4;
+			//
+			// uint[] arr = [ 0, 3, 2, 2, 1, 0, ];
+			// cubeIndices = new uint[IndicesPerFace * CubeFaceCount];
+			//
+			// uint faceCount = (uint)(cubeVertices.Length / VertexPerFace);
+			//
+			// for (int i = 0; i < faceCount; i++) {
+			// 	for (int j = 0; j < IndicesPerFace; j++) { cubeIndices[i * IndicesPerFace + j] = (uint)(i * VertexPerFace) + arr[j]; }
+			// }
+			//
+			// Logger.Warn(cubeVertices.GetSizeAndElementsAsString());
+			// Logger.Warn(cubeIndices.GetSizeAndElementsAsString());
+
 			const float Size = 1;
 			const float H = Size / 2;
 			const float R = 1, G = 1, B = 1;
-			const float U = 0, V = 0;
 
 			const float X0 = -H, X1 = +H;
 			const float Y0 = -H, Y1 = +H;
 			const float Z0 = -H, Z1 = +H;
 
 			cubeVertices = [
-					new(X1, Y0, Z0, U, V, R, G, B), // 0
+					new(X0, Y0, Z0, 0, 0, R, G, B), // 0 Y-
+					new(X0, Y0, Z1, 1, 0, R, G, B), // 1
+					new(X1, Y0, Z1, 1, 1, R, G, B), // 2
+					new(X1, Y0, Z0, 0, 1, R, G, B), // 3
+
+					new(X1, Y1, Z0, 0, 1, R, G, B), // 3 Y+
+					new(X1, Y1, Z1, 1, 1, R, G, B), // 2
+					new(X0, Y1, Z1, 1, 0, R, G, B), // 1
+					new(X0, Y1, Z0, 0, 0, R, G, B), // 0
+
+					new(X0, Y1, Z0, 1, 1, R, G, B), // 3 Z-
+					new(X0, Y0, Z0, 1, 0, R, G, B), // 2
+					new(X1, Y0, Z0, 0, 0, R, G, B), // 1
+					new(X1, Y1, Z0, 0, 1, R, G, B), // 0
+
+					new(X0, Y1, Z1, 0, 1, R, G, B), // 3 Z+
+					new(X1, Y1, Z1, 1, 1, R, G, B), // 0
 					new(X1, Y0, Z1, 1, 0, R, G, B), // 1
 					new(X0, Y0, Z1, 0, 0, R, G, B), // 2
-					new(X0, Y0, Z0, U, V, R, G, B), // 3
-					new(X1, Y1, Z0, U, V, R, G, B), // 4
-					new(X1, Y1, Z1, 1, 1, R, G, B), // 5
-					new(X0, Y1, Z1, 0, 1, R, G, B), // 6
-					new(X0, Y1, Z0, U, V, R, G, B), // 7
+
+					new(X0, Y0, Z0, 0, 0, R, G, B), // 2 X-
+					new(X0, Y1, Z0, 0, 1, R, G, B), // 3
+					new(X0, Y1, Z1, 1, 1, R, G, B), // 0
+					new(X0, Y0, Z1, 1, 0, R, G, B), // 1
+
+					new(X1, Y1, Z0, 1, 1, R, G, B), // 3 X+
+					new(X1, Y0, Z0, 1, 0, R, G, B), // 2
+					new(X1, Y0, Z1, 0, 0, R, G, B), // 1
+					new(X1, Y1, Z1, 0, 1, R, G, B), // 0
 			];
+
+			cubeIndices = [
+					0, 1, 3, 3, 1, 2, // Y-
+					4 + 0, 4 + 1, 4 + 3, 4 + 3, 4 + 1, 4 + 2, // Y+
+					8 + 0, 8 + 1, 8 + 3, 8 + 3, 8 + 1, 8 + 2, // Z-
+					12 + 0, 12 + 1, 12 + 3, 12 + 3, 12 + 1, 12 + 2, // Z+
+					16 + 0, 16 + 1, 16 + 3, 16 + 3, 16 + 1, 16 + 2, // X-
+					20 + 0, 20 + 1, 20 + 3, 20 + 3, 20 + 1, 20 + 2, // X+
+			];
+
+			// [SuppressMessage("ReSharper", "InconsistentNaming")]
+			// static Mesh GltfMeshToMesh_VertexXyz(IMeshPrimitiveDecoder<GLTFMaterial> meshPrimitiveDecoder, ref uint offset) {
+			// 	List<VertexXyz> vertices = new();
+			// 	List<uint> indices = new();
+			//
+			// 	GLTFMaterial material = meshPrimitiveDecoder.Material; // TODO materials
+			//
+			// 	for (int i = 0; i < meshPrimitiveDecoder.VertexCount; i++) {
+			// 		Vector3 pos = meshPrimitiveDecoder.GetPosition(i);
+			// 		vertices.Add(new(pos));
+			// 	}
+			//
+			// 	foreach ((int indexA, int indexB, int indexC) in meshPrimitiveDecoder.TriangleIndices) {
+			// 		indices.Add((uint)indexA + offset);
+			// 		indices.Add((uint)indexB + offset);
+			// 		indices.Add((uint)indexC + offset);
+			// 	}
+			//
+			// 	offset += (uint)meshPrimitiveDecoder.VertexCount; // do i offset?
+			//
+			// 	return new(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(vertices)).ToArray(), indices.ToArray()) { Material = new(Color4<Rgba>.FromVector4(material.Channels.First().Color)), };
+			// }
+			//
+			// [SuppressMessage("ReSharper", "InconsistentNaming")]
+			// static Mesh GltfMeshesToMesh_VertexXyz(IReadOnlyList<GLTFMesh> inMeshes) {
+			// 	List<VertexXyz> vertices = new();
+			// 	List<uint> indices = new();
+			// 	uint offset = 0;
+			//
+			// 	IMeshDecoder<GLTFMaterial>[] meshDecoders = inMeshes.Decode(new RuntimeOptions());
+			// 	foreach (IMeshDecoder<GLTFMaterial> meshDecoder in meshDecoders) {
+			// 		foreach (IMeshPrimitiveDecoder<GLTFMaterial> meshPrimitiveDecoder in meshDecoder.Primitives) {
+			// 			for (int i = 0; i < meshPrimitiveDecoder.VertexCount; i++) {
+			// 				Vector3 pos = meshPrimitiveDecoder.GetPosition(i);
+			// 				vertices.Add(new(pos));
+			// 			}
+			//
+			// 			foreach ((int indexA, int indexB, int indexC) in meshPrimitiveDecoder.TriangleIndices) {
+			// 				indices.Add((uint)indexA + offset);
+			// 				indices.Add((uint)indexB + offset);
+			// 				indices.Add((uint)indexC + offset);
+			// 			}
+			//
+			// 			offset += (uint)meshPrimitiveDecoder.VertexCount;
+			// 		}
+			// 	}
+			//
+			// 	return new(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(vertices)).ToArray(), indices.ToArray());
+			// }
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {
@@ -102,8 +197,10 @@ namespace Engine3.Test.Voxel.Graphics {
 			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
 		}
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
+
+			xyzGizmoRenderingImpl = new(LogicalGpu, TransferCommandPool, SwapChain.ImageFormat, gameAssembly, MaxFramesInFlight);
 
 			CreateCubeGraphicsPipeline(out DescriptorSetLayout cubeDescriptorSetLayout);
 			CreateChunkGraphicsPipeline(out DescriptorSetLayout chunkDescriptorSetLayout);
@@ -112,16 +209,18 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			CreateSamplerAndTextures();
 
-			CreateCubeDescriptorSets(cubeDescriptorSetLayout.VkDescriptorSetLayout);
-			CreateChunkDescriptorSets(chunkDescriptorSetLayout.VkDescriptorSetLayout);
+			CreateCubeDescriptorSets(cubeDescriptorSetLayout);
+			CreateChunkDescriptorSets(chunkDescriptorSetLayout);
 			UpdateDescriptorSets();
 
 			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
 		}
 
 		private void CreateCubeGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = LogicalGpu.CreateShader($"{TestShaderName} Vertex Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{TestShaderName} Fragment Shader", TestShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			const string Name = "Test";
+
+			VulkanShader vertexShader = LogicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
@@ -131,10 +230,8 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			// ew
 			cubeGraphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
-				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
+				new($"{Name} Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						// FrontFace = VkFrontFace.FrontFaceCounterClockwise, // TODO oops. most indices are backwards
-						CullMode = VkCullModeFlagBits.CullModeNone,
 				});
 
 			Logger.Debug("Created cube graphics pipeline");
@@ -144,17 +241,18 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void CreateChunkGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = LogicalGpu.CreateShader("Chunk Vertex Shader", "Chunk", ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader("Chunk Fragment Shader", "Chunk", ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			const string Name = "Chunk";
+
+			VulkanShader vertexShader = LogicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
 			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 			]);
 
 			chunkGraphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
-				new("Chunk Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
+				new($"{Name} Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						// CullMode = VkCullModeFlagBits.CullModeNone,
 				});
 
 			Logger.Debug("Created chunk graphics pipeline");
@@ -189,7 +287,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Created & copied vertex/index buffers");
 
 			// descriptor buffers
-			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(CameraUniformBuffer), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
 			cubeInstanceBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Instance Storage Buffers", cubeUniformBufferValue.Size, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
@@ -210,7 +308,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Created image");
 		}
 
-		private void CreateCubeDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
+		private void CreateCubeDescriptorSets(DescriptorSetLayout descriptorSetLayout) {
 			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 3,
 				MaxFramesInFlight);
 
@@ -218,7 +316,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Created cube descriptor sets");
 		}
 
-		private void CreateChunkDescriptorSets(VkDescriptorSetLayout descriptorSetLayout) {
+		private void CreateChunkDescriptorSets(DescriptorSetLayout descriptorSetLayout) {
 			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
 
 			chunkDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
@@ -267,6 +365,9 @@ namespace Engine3.Test.Voxel.Graphics {
 			graphicsCommandBuffer.CmdBindVertexBuffer(chunkVertexBuffer, 0);
 			graphicsCommandBuffer.CmdBindIndexBuffer(chunkIndexBuffer, chunkIndexBuffer.BufferSize);
 			graphicsCommandBuffer.CmdDrawIndexed((uint)chunkIndicesCount, 1, 0, 0, 0);
+
+			// Gizmo
+			xyzGizmoRenderingImpl?.RecordCommandBuffer(graphicsCommandBuffer, FrameIndex, SwapChain.Extent);
 		}
 
 		protected override void CopyBuffers(float delta) {
@@ -274,8 +375,12 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			cubeUniformBufferValue.Models[0] = Matrix4x4.CreateRotationY(float.Lerp(VoxelTest.PrevCubeRotation, VoxelTest.CubeRotation, delta) * float.DegreesToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition);
 
-			cameraUniformBuffer.Copy(new CameraUniformBuffer(camera.Projection with { M22 = -camera.Projection.M22, }, camera.View), FrameIndex); // TODO lerp camera position & rotation
+			Matrix4x4 proj = camera.Projection with { M22 = -camera.Projection.M22, };
+
+			cameraUniformBuffer.Copy(new ProjectionView(proj, camera.View), FrameIndex); // TODO lerp camera position & rotation
 			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
+
+			xyzGizmoRenderingImpl?.Copy(proj, camera.Orientation, FrameIndex);
 
 			if (shouldRegenerateChunk) {
 				if (World is null) { return; }

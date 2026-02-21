@@ -2,7 +2,7 @@ using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
-using Engine3.Test.Core.Graphics;
+using Engine3.Client.Graphics.Vertex;
 using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
@@ -23,7 +23,7 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
 
-		public override void Setup() {
+		protected override void Setup() {
 			base.Setup();
 
 			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);

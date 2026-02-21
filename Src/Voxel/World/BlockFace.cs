@@ -1,19 +1,27 @@
+using System.Numerics;
+
 namespace Engine3.Test.Voxel.World {
-	[Flags]
 	public enum BlockFace : byte {
-		None = 0,
-		North = 1 << 0,
-		East = 1 << 1,
-		South = 1 << 2,
-		West = 1 << 3,
-		Up = 1 << 4,
-		Down = 1 << 5,
-		All = North | East | South | West | Up | Down,
+		North = 0,
+		East,
+		South,
+		West,
+		Up,
+		Down,
 	}
 
 	public static class BlockFaceExtensions {
-		extension(BlockFace value) {
-			public bool HasFlagFast(BlockFace flag) => (value & flag) != 0;
+		extension(BlockFace self) {
+			public Vector3 ToVector =>
+					self switch {
+							BlockFace.North => -Vector3.UnitZ,
+							BlockFace.East => Vector3.UnitX,
+							BlockFace.South => Vector3.UnitZ,
+							BlockFace.West => -Vector3.UnitX,
+							BlockFace.Up => Vector3.UnitY,
+							BlockFace.Down => -Vector3.UnitY,
+							_ => throw new ArgumentOutOfRangeException(nameof(self), self, null),
+					};
 		}
 	}
 }

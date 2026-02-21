@@ -42,23 +42,22 @@ namespace Engine3.Test.Voxel {
 
 			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
 			Camera.Position = new(0, 0, 2.5f);
-			Camera.YawDegrees = 270;
 
 			CameraController = new(Window, Camera);
 
 			VoxelRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
-
-			renderer.Setup();
+			renderer.OnSetupDoneEvent += () => {
+				Window?.Show();
+				Logger.Info("Showing window");
+			};
 
 			AddRenderer(renderer);
 
-			Logger.Info("Setup done. Showing windows");
-
-			Window.Show();
-
-			Logger.Info("Creating World");
+			Logger.Debug("Creating World");
 			World = new(renderer);
 			renderer.World = World;
+
+			Logger.Info("Setup done");
 		}
 
 		protected override void Update() {

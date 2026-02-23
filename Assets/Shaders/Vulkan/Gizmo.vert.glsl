@@ -11,9 +11,9 @@ layout (set = 0, binding = 0) uniform ProjectionModelBuffer {
 
 layout (push_constant, std430) uniform PushConsants {
 	uint materialIndex;
-} pc;
+} pushConsants;
 
 void main() {
 	gl_Position = projectionModelBuffer.projection * projectionModelBuffer.model * vec4(inPosition, 1);
-	outMaterialIndex = pc.materialIndex;
+	outMaterialIndex = pushConsants.materialIndex;
 }

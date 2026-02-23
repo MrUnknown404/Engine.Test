@@ -19,10 +19,10 @@ using StbiSharp;
 using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics {
-	public unsafe class VoxelRenderer : VulkanRenderer {
+	public unsafe class VoxelRenderer : VulkanNodeRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private XyzGizmoRenderingImpl? xyzGizmoRenderingImpl;
+		private XyzGizmoRecorderNode? xyzGizmoRecorderNode;
 
 		public World.World? World { private get; set; }
 
@@ -59,7 +59,6 @@ namespace Engine3.Test.Voxel.Graphics {
 		protected override DepthImage DepthImage => depthImage;
 
 		private bool shouldRegenerateChunk = true;
-
 		private ulong chunkIndicesCount;
 
 		public VoxelRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window) {
@@ -138,19 +137,27 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {
-			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawFunc);
+			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
+
+			if (xyzGizmoRecorderNode != null) {
+				bool showXyzGizmo = xyzGizmoRecorderNode.ShouldDraw;
+				if (ImGui.Checkbox("Show XYZ Gizmo", ref showXyzGizmo)) { xyzGizmoRecorderNode.ShouldDraw = showXyzGizmo; }
+			}
 
 			ImGui.Text("test");
 
 			return;
 
-			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
+			void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
 		}
 
 		protected override void Setup() {
 			base.Setup();
 
-			xyzGizmoRenderingImpl = new(LogicalGpu, TransferCommandPool, SwapChain.ImageFormat, gameAssembly, MaxFramesInFlight);
+			xyzGizmoRecorderNode = new(LogicalGpu, TransferCommandPool, SwapChain, gameAssembly, MaxFramesInFlight, camera);
+			AddNode(xyzGizmoRecorderNode);
+
+			// TODO world node
 
 			CreateCubeGraphicsPipeline(out DescriptorSetLayout cubeDescriptorSetLayout);
 			CreateChunkGraphicsPipeline(out DescriptorSetLayout chunkDescriptorSetLayout);
@@ -323,8 +330,8 @@ namespace Engine3.Test.Voxel.Graphics {
 			graphicsCommandBuffer.CmdBindIndexBuffer(chunkIndexBuffer, chunkIndexBuffer.BufferSize);
 			graphicsCommandBuffer.CmdDrawIndexed((uint)chunkIndicesCount, 1, 0, 0, 0);
 
-			// Gizmo
-			xyzGizmoRenderingImpl?.RecordCommandBuffer(graphicsCommandBuffer, FrameIndex, SwapChain.Extent);
+			// nodes
+			base.RecordCommandBuffer(graphicsCommandBuffer);
 		}
 
 		protected override void CopyBuffers(float delta) {
@@ -332,12 +339,13 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			cubeUniformBufferValue.Models[0] = Matrix4x4.CreateRotationY(float.Lerp(VoxelTest.PrevCubeRotation, VoxelTest.CubeRotation, delta) * float.DegreesToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition);
 
-			Matrix4x4 proj = camera.Projection with { M22 = -camera.Projection.M22, };
+			Matrix4x4 proj = camera.Projection;
 
 			cameraUniformBuffer.Copy(new ProjectionView(proj, camera.View), FrameIndex); // TODO lerp camera position & rotation
 			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
 
-			xyzGizmoRenderingImpl?.Copy(proj, camera.Orientation, FrameIndex);
+			// nodes
+			base.CopyBuffers(delta);
 
 			if (shouldRegenerateChunk) {
 				if (World is null) { return; }

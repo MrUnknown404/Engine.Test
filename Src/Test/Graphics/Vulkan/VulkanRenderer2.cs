@@ -49,5 +49,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
 		}
+
+		protected override void CopyBuffers(float delta) { }
 	}
 }

@@ -18,7 +18,7 @@ namespace Engine3.Test.Test {
 		public static float PrevCubeRotation { get; private set; }
 		public static float CubeRotation { get; private set; }
 
-		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { DisabledCallbackIds = [ 131185, ], }) {
+		internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { Settings = new() { DisabledCallbackIds = [ 131185, ], }, }) {
 			OnSetupFinishedEvent += OnSetupFinished;
 			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, FrameTimeGraphSize = 1000, };
 		}
@@ -30,7 +30,7 @@ namespace Engine3.Test.Test {
 
 			Logger.Debug("Making Window 1...");
 			Window1 = new(graphicsBackend, Title, 854, 480) { ClearColor = clearColor, };
-			Window1.OnCloseWindowEvent += Shutdown;
+			Window1.OnCloseWindowEvent += RequestShutdown;
 
 			Logger.Debug("Making Window 2...");
 			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };

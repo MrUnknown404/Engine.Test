@@ -21,7 +21,7 @@ namespace Engine3.Test.Test {
 
 		internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
 			new VulkanGraphicsBackend(new()) {
-					EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+					Settings = new() { EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt, },
 			}) {
 			OnSetupFinishedEvent += OnSetupFinished;
 			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, FrameTimeGraphSize = 1000, };
@@ -34,7 +34,7 @@ namespace Engine3.Test.Test {
 
 			Logger.Debug("Making Window 1...");
 			Window1 = new(graphicsBackend, Name, 854, 480) { ClearColor = clearColor, };
-			Window1.OnCloseWindowEvent += Shutdown;
+			Window1.OnCloseWindowEvent += RequestShutdown;
 			Window1.OnResize += (w, h) => Camera?.PerspectiveAspectRatio = (float)w / h;
 
 			Logger.Debug("Making Window 2...");

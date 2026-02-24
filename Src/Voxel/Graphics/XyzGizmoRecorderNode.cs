@@ -17,7 +17,7 @@ using GLTFMaterial = SharpGLTF.Schema2.Material;
 using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics {
-	public unsafe class XyzGizmoRecorderNode : VulkanRecorderNodeEnd { // TODO once this is done merge into engine
+	public unsafe class XyzGizmoRecorderNode : VulkanRecorderNode { // TODO once this is done merge into engine
 		private static Matrix4x4 GizmoTransform { get; } = Matrix4x4.CreateScale(0.1f) * Matrix4x4.CreateTranslation(-Vector3.UnitZ); // TODO scale based on viewport size. edit: just gonna do lines
 
 		private readonly GraphicsPipeline gizmoGraphicsPipeline;

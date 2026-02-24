@@ -15,12 +15,12 @@ namespace Engine3.Test.Test {
 		private char[,] buffer;
 
 		internal ConsoleTest() : base("Console Test", new Version4Interweaved(0, 0, 0), new ConsoleGraphicsBackend()) {
-			OnSetupFinishedEvent += OnOnSetupFinishedEvent;
+			OnSetupFinishedEvent += OnSetupFinished;
 			Console.CursorVisible = false;
 			buffer = NewBuffer(Console.BufferWidth, Console.BufferHeight);
 		}
 
-		private static void OnOnSetupFinishedEvent() { }
+		private static void OnSetupFinished() { }
 
 		protected override void Update() { // this only works in rider's console. i'm getting junk with external console
 			if (Console.KeyAvailable) { Console.ReadKey(true); } // destroy input?

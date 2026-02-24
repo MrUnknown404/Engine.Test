@@ -25,7 +25,9 @@ namespace Engine3.Test.LightCycle {
 		public LightCycleTest(bool useVulkan) : base("Light Cycle Test", new BuildVersion(0),
 			useVulkan ?
 					new VulkanGraphicsBackend(new()) {
-							EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+							Settings = new() {
+									EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+							},
 					} :
 					new OpenGLGraphicsBackend(new())) {
 			this.useVulkan = useVulkan;
@@ -49,7 +51,7 @@ namespace Engine3.Test.LightCycle {
 				renderer = new OpenGLLightCycleRenderer(backend, (OpenGLWindow)window);
 			}
 
-			window.OnCloseWindowEvent += Shutdown;
+			window.OnCloseWindowEvent += RequestShutdown;
 
 			AddWindow(window);
 			AddRenderer(renderer);

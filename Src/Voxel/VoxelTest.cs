@@ -23,7 +23,9 @@ namespace Engine3.Test.Voxel {
 		internal VoxelTest(bool useVulkan) : base("Voxel Test", new BuildVersion(),
 			useVulkan ?
 					new VulkanGraphicsBackend(new()) {
-							EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+							Settings = new() {
+									EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+							},
 					} :
 					throw new NotImplementedException()) {
 			OnSetupFinishedEvent += OnSetupFinished;
@@ -35,7 +37,7 @@ namespace Engine3.Test.Voxel {
 
 			Logger.Debug("Making Window...");
 			Window = new(graphicsBackend, Name, 854, 480) { ClearColor = new(0.01f, 0.01f, 0.01f, 1), };
-			Window.OnCloseWindowEvent += Shutdown;
+			Window.OnCloseWindowEvent += RequestShutdown;
 			Window.OnResize += (w, h) => Camera?.PerspectiveAspectRatio = (float)w / h;
 
 			AddWindow(Window);

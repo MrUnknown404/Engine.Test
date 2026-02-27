@@ -11,7 +11,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		[MustUseReturnValue]
 		public static uint[] CreateChunkIndices(Chunk chunk) { // TODO optimize. eventually use a compute shader?
-			const bool ShowBorder = false;
+			const bool ShowBorder = true;
 			const byte ChunkSize = Chunk.Size - 1;
 
 			List<uint> indices = new();
@@ -58,8 +58,6 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		[MustUseReturnValue]
 		public static ChunkVertex[] GetChunkVertices() {
-			const float S = 0.5f;
-
 			ChunkVertex[] chunkVertices = new ChunkVertex[Chunk.ArraySize * FaceCount * VerticesPerFace];
 
 			for (ushort cubeIndex = 0; cubeIndex < Chunk.ArraySize; cubeIndex++) {

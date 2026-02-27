@@ -6,6 +6,7 @@ using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
+using VulkanRenderer2 = Engine3.Test.Test.Graphics.Vulkan.VulkanRenderer2;
 
 namespace Engine3.Test.Test {
 	public class VulkanTest : GameClient {
@@ -16,6 +17,7 @@ namespace Engine3.Test.Test {
 
 		public VulkanWindow? Window1 { get; set; }
 		public VulkanWindow? Window2 { get; set; }
+		public VulkanWindow? Window3 { get; set; }
 
 		public Camera? Camera { get; set; }
 
@@ -40,21 +42,29 @@ namespace Engine3.Test.Test {
 			Logger.Debug("Making Window 2...");
 			Window2 = new(graphicsBackend, "Window 2", 500, 500) { ClearColor = clearColor, };
 
+			Logger.Debug("Making Window 3...");
+			Window3 = new(graphicsBackend, "Window 3", 500, 500) { ClearColor = clearColor, };
+
 			AddWindow(Window1);
 			AddWindow(Window2);
+			AddWindow(Window3);
 
 			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
 			Camera.Position = new(0, 0, 2.5f);
 
 			VulkanRenderer1 renderer1 = new(this, graphicsBackend, Window1, Camera, Assembly);
 			VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
+			TestRenderPassRenderer renderer3 = new(this, graphicsBackend, Window3, Camera, Assembly);
+
 			AddRenderer(renderer1);
 			AddRenderer(renderer2);
+			AddRenderer(renderer3);
 
 			Logger.Info("Setup done. Showing windows");
 
 			Window1.Show();
 			Window2.Show();
+			Window3.Show();
 		}
 
 		protected override void Update() {

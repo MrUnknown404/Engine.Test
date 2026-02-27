@@ -8,6 +8,7 @@ using Engine3.Client.Graphics.DataStructs;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Voxel.Graphics.DataStructs;
 using Engine3.Utility;
 using OpenTK.Graphics.Vulkan;
@@ -90,7 +91,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			// 	return new(MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(vertices)).ToArray(), indices.ToArray());
 			// }
 
-			[SuppressMessage("ReSharper", "InconsistentNaming")]
+			[SuppressMessage("ReSharper", "InconsistentNaming")] // TODO move
 			static RenderMesh GltfMeshToMesh_VertexXyz(IMeshPrimitiveDecoder<GLTFMaterial> meshPrimitiveDecoder) {
 				List<VertexXyz> vertices = new();
 				List<uint> indices = new();
@@ -138,7 +139,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			return;
 
-			uint MaterialToIndex(Material material) {
+			uint MaterialToIndex(Material material) { // TODO cache
 				for (uint i = 0; i < MaterialUniformData.Length; i++) {
 					if (MaterialUniformData[i] == material) { return i; }
 				}

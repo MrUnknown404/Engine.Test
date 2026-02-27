@@ -4,10 +4,11 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
-	public unsafe class VulkanRenderer2 : VulkanRenderer {
+	public unsafe class VulkanRenderer2 : VulkanRendererBase {
 		private const string TestShaderName = "Test";
 
 		private GraphicsPipeline? graphicsPipeline;
@@ -37,17 +38,17 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			vertexBuffer.Copy(vertices);
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
 			if (vertexBuffer == null || graphicsPipeline == null) { return; }
 
-			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
+			commandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
 
-			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
+			commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
-			graphicsCommandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
+			commandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
 
-			graphicsCommandBuffer.CmdDraw((uint)vertices.Length);
+			commandBuffer.CmdDraw((uint)vertices.Length);
 		}
 
 		protected override void CopyBuffers(float delta) { }

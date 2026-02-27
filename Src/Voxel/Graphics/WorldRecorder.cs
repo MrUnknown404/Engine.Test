@@ -2,13 +2,14 @@ using System.Reflection;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Voxel.Graphics.Vertex;
 using JetBrains.Annotations;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Voxel.Graphics {
-	public unsafe class VulkanWorldRecorder : VulkanRecorderNode {
+	public unsafe class WorldRecorder : VulkanRecorderNode {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public World.World? World { private get; set; }
@@ -28,7 +29,7 @@ namespace Engine3.Test.Voxel.Graphics {
 		private bool shouldRegenerateChunk = true;
 		private ulong chunkIndicesCount;
 
-		public VulkanWorldRecorder(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, SwapChain swapChain, Assembly gameAssembly, byte maxFramesInFlight, DescriptorBuffers cameraUniformBuffer, VulkanImage image,
+		public WorldRecorder(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, SwapChain swapChain, Assembly gameAssembly, byte maxFramesInFlight, DescriptorBuffers cameraUniformBuffer, VulkanImage image,
 			TextureSampler textureSampler) {
 			this.gameAssembly = gameAssembly;
 			this.logicalGpu = logicalGpu;

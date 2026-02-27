@@ -1,7 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.DataStructs;
-using Engine3.Client.Graphics.Vertex;
 using Engine3.Test.Core.Test;
 using Engine3.Test.LightCycle;
 using Engine3.Test.Test;
@@ -11,6 +9,7 @@ using NLog;
 
 #if DEBUG
 using Engine3.Debug;
+using Engine3.Test.Voxel.Graphics.DataStructs;
 #endif
 
 namespace Engine3.Test {
@@ -25,11 +24,7 @@ namespace Engine3.Test {
 #if DEBUG
 			LoggerH.ConsoleLogLevel = LogLevel.Trace;
 
-			StructLayoutDumper.AddStructs += static () => {
-				StructLayoutDumper.AddStruct<VertexXyzRgb>();
-				StructLayoutDumper.AddStruct<VertexXyzUvRgb>();
-				StructLayoutDumper.AddStruct<ProjectionView>();
-			};
+			StructLayoutDumper.AddStructs += static () => StructLayoutDumper.AddStruct<MaterialPushConstants>();
 #endif
 
 			GameClient gameClient = TestType switch {

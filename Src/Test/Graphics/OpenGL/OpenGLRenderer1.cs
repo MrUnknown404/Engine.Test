@@ -4,6 +4,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
+using Engine3.Client.Graphics.OpenGL.Renderers;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
@@ -12,7 +13,7 @@ using StbiSharp;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
 namespace Engine3.Test.Test.Graphics.OpenGL {
-	public unsafe class OpenGLRenderer1 : OpenGLRenderer {
+	public unsafe class OpenGLRenderer1 : OpenGLRendererBase {
 		private const string TestShaderName = "Test";
 
 		private OpenGLShader? vertexShader;

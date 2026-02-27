@@ -6,11 +6,12 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.LightCycle.Graphics {
-	public unsafe class VulkanLightCycleRenderer : VulkanRenderer {
+	public unsafe class VulkanLightCycleRenderer : VulkanRendererBase {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private const string ShaderName = "Cycle";
@@ -137,7 +138,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
 			if (graphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || cubeDescriptorSet == null) { throw new NullReferenceException(); }
 
 			if (gameManager.Map is not { } map) {
@@ -145,16 +146,16 @@ namespace Engine3.Test.LightCycle.Graphics {
 				return;
 			}
 
-			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
+			commandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
-			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
+			commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			// Cube
-			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
-			graphicsCommandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
-			graphicsCommandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
-			graphicsCommandBuffer.CmdDrawIndexed((uint)cubeIndices.Length);
+			commandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
+			commandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
+			commandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
+			commandBuffer.CmdDrawIndexed((uint)cubeIndices.Length);
 		}
 
 		protected override void CopyBuffers(float delta) {

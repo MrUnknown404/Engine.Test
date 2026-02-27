@@ -9,6 +9,7 @@ using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Core.Graphics;
 using Engine3.Test.Voxel.World;
 using Engine3.Utility;
@@ -22,7 +23,7 @@ namespace Engine3.Test.Voxel.Graphics {
 	public unsafe class VoxelRenderer : VulkanNodeRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private VulkanWorldRecorder? worldRecorderNode;
+		private WorldRecorder? worldRecorderNode;
 		private XyzGizmoRecorderNode? xyzGizmoRecorderNode;
 
 		private GraphicsPipeline cubeGraphicsPipeline = null!;
@@ -45,11 +46,14 @@ namespace Engine3.Test.Voxel.Graphics {
 		private readonly uint[] cubeIndices;
 
 		private readonly Vector3 cubePosition = new(0, 0, -5);
-		private readonly ObjectUniformBuffer cubeUniformBufferValue = new(1);
+		private readonly ModelsBuffer cubeUniformBufferValue = new(1);
 
 		private readonly Assembly gameAssembly;
 
-		protected override DepthImage DepthImage => depthImage;
+		protected override DepthImage DepthImage => depthImage; //  TODO
+
+		public static float PrevCubeRotation { get; private set; }
+		public static float CubeRotation { get; private set; }
 
 		public VoxelRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window) {
 			this.camera = camera;
@@ -145,7 +149,7 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(GraphicsBackend.Settings, new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
@@ -174,36 +178,42 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
 			if (cubeGraphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || cubeDescriptorSet == null) { throw new NullReferenceException(); }
 
-			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
+			commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			// Cube
-			graphicsCommandBuffer.CmdBindGraphicsPipeline(cubeGraphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
+			commandBuffer.CmdBindGraphicsPipeline(cubeGraphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
-			graphicsCommandBuffer.CmdBindDescriptorSet(cubeGraphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
-			graphicsCommandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
-			graphicsCommandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
-			graphicsCommandBuffer.CmdDrawIndexed((uint)cubeIndices.Length, 1, 0, 0, 0);
+			commandBuffer.CmdBindDescriptorSet(cubeGraphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
+			commandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
+			commandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
+			commandBuffer.CmdDrawIndexed((uint)cubeIndices.Length, 1, 0, 0, 0);
 
 			// nodes
-			base.RecordCommandBuffer(graphicsCommandBuffer);
+			base.RecordCommandBuffer(commandBuffer);
 		}
 
 		protected override void CopyBuffers(float delta) {
 			if (cubeInstanceBuffers == null || cameraUniformBuffer == null) { throw new NullReferenceException(); }
 
-			Matrix4x4 proj = camera.Projection;
+			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex); // TODO lerp camera position & rotation
 
-			cameraUniformBuffer.Copy(new ProjectionView(proj, camera.View), FrameIndex); // TODO lerp camera position & rotation
-
-			cubeUniformBufferValue.Models[0] = Matrix4x4.CreateRotationY(float.Lerp(VoxelTest.PrevCubeRotation, VoxelTest.CubeRotation, delta) * float.DegreesToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition);
+			cubeUniformBufferValue.Models[0] = Matrix4x4.CreateRotationY(float.Lerp(PrevCubeRotation, CubeRotation, delta) * float.DegreesToRadians(90f)) * Matrix4x4.CreateTranslation(cubePosition);
 			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
 
 			// nodes
 			base.CopyBuffers(delta);
+		}
+
+		protected override void Update() {
+			const float Rotation = float.Pi / 3f / 60f;
+
+			PrevCubeRotation = CubeRotation;
+			CubeRotation += Rotation;
+			CubeRotation %= 360;
 		}
 
 		public void MarkChunkDirty() => worldRecorderNode?.MarkChunkDirty();

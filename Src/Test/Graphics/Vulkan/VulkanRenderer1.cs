@@ -10,6 +10,7 @@ using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Core.Graphics;
 using Engine3.Utility;
 using ImGuiNET;
@@ -18,7 +19,7 @@ using OpenTK.Graphics.Vulkan;
 using StbiSharp;
 
 namespace Engine3.Test.Test.Graphics.Vulkan {
-	public unsafe class VulkanRenderer1 : VulkanRenderer {
+	public unsafe class VulkanRenderer1 : VulkanRendererBase {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private const uint CubeCount = 100;
@@ -61,8 +62,8 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		private readonly Vector3[] cubePositions = new Vector3[CubeCount];
 		private readonly Vector3 quadPosition = new(-2, 0, -2);
 
-		private readonly ObjectUniformBuffer cubeUniformBufferValue = new(CubeCount);
-		private readonly ObjectUniformBuffer quadUniformBufferValue = new(1);
+		private readonly ModelsBuffer cubeUniformBufferValue = new(CubeCount);
+		private readonly ModelsBuffer quadUniformBufferValue = new(1);
 
 		private readonly Assembly gameAssembly;
 
@@ -184,7 +185,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(GraphicsBackend.Settings, new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
@@ -220,27 +221,27 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			Logger.Debug("Updated descriptor sets");
 		}
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer graphicsCommandBuffer) {
+		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
 			if (graphicsPipeline == null || cubeVertexBuffer == null || cubeIndexBuffer == null || quadVertexBuffer == null || quadIndexBuffer == null || cubeDescriptorSet == null || quadDescriptorSet == null) {
 				throw new NullReferenceException();
 			}
 
-			graphicsCommandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
+			commandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline); // TODO integrate graphics pipeline binding into VulkanRenderer?
 
-			graphicsCommandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			graphicsCommandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
+			commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+			commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
 
 			// Cube
-			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
-			graphicsCommandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
-			graphicsCommandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
-			graphicsCommandBuffer.CmdDrawIndexed((uint)cubeIndices.Length, CubeCount, 0, 0, 0);
+			commandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, cubeDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
+			commandBuffer.CmdBindVertexBuffer(cubeVertexBuffer, 0);
+			commandBuffer.CmdBindIndexBuffer(cubeIndexBuffer, cubeIndexBuffer.BufferSize);
+			commandBuffer.CmdDrawIndexed((uint)cubeIndices.Length, CubeCount, 0, 0, 0);
 
 			// Quad
-			graphicsCommandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, quadDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
-			graphicsCommandBuffer.CmdBindVertexBuffer(quadVertexBuffer, 0);
-			graphicsCommandBuffer.CmdBindIndexBuffer(quadIndexBuffer, quadIndexBuffer.BufferSize);
-			graphicsCommandBuffer.CmdDrawIndexed((uint)quadIndices.Length);
+			commandBuffer.CmdBindDescriptorSet(graphicsPipeline.Layout, quadDescriptorSet.GetCurrent(FrameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
+			commandBuffer.CmdBindVertexBuffer(quadVertexBuffer, 0);
+			commandBuffer.CmdBindIndexBuffer(quadIndexBuffer, quadIndexBuffer.BufferSize);
+			commandBuffer.CmdDrawIndexed((uint)quadIndices.Length);
 		}
 
 		protected override void CopyBuffers(float delta) {

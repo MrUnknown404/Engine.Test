@@ -4,9 +4,9 @@ namespace Engine3.Test.Voxel.World {
 	public class World {
 		public Chunk Chunk { get; }
 
-		private readonly VoxelRenderer renderer;
+		private readonly VoxelRenderPassRenderer renderer;
 
-		public World(VoxelRenderer renderer) {
+		public World(VoxelRenderPassRenderer renderer) {
 			this.renderer = renderer;
 			Chunk = new(this, new());
 			MarkChunkDirty(Chunk);

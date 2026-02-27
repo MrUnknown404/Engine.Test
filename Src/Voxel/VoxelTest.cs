@@ -11,9 +11,6 @@ namespace Engine3.Test.Voxel {
 	public class VoxelTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public static float PrevCubeRotation { get; private set; }
-		public static float CubeRotation { get; private set; }
-
 		public VulkanWindow? Window { get; set; }
 
 		public Camera? Camera { get; set; }
@@ -48,7 +45,7 @@ namespace Engine3.Test.Voxel {
 
 			CameraController = new(Window, Camera);
 
-			VoxelRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
+			VoxelRenderPassRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
 			renderer.OnSetupDoneEvent += () => {
 				renderer.SetWorld(World !); // shouldn't be null here
 
@@ -64,15 +61,7 @@ namespace Engine3.Test.Voxel {
 			Logger.Info("Setup done");
 		}
 
-		protected override void Update() {
-			const float Rotation = float.Pi / 3f / 60f;
-
-			PrevCubeRotation = CubeRotation;
-			CubeRotation += Rotation;
-			CubeRotation %= 360;
-
-			CameraController?.Update();
-		}
+		protected override void Update() => CameraController?.Update();
 
 		protected override void Cleanup() { }
 	}

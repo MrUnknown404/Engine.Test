@@ -17,8 +17,8 @@ namespace Engine3.Test.LightCycle {
 			this.cycleProperties = cycleProperties;
 		}
 
-		public void AddCycles(KeyManager keyManager) {
-			cycles.Add(new(Guid.CreateVersion7(), new PlayerCycleController(new PlayerInputProvider(keyManager)), cycleProperties)); //
+		public void AddCycles(KeyboardManager keyboardManager) {
+			cycles.Add(new(Guid.CreateVersion7(), new PlayerCycleController(new PlayerInputProvider(keyboardManager)), cycleProperties)); //
 		}
 
 		public void Update() {

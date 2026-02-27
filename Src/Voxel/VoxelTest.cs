@@ -1,6 +1,7 @@
 using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Exceptions;
+using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics;
 using Engine3.Utility.Versions;
 using NLog;
@@ -29,7 +30,7 @@ namespace Engine3.Test.Voxel {
 					} :
 					throw new NotImplementedException()) {
 			OnSetupFinishedEvent += OnSetupFinished;
-			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, FrameTimeGraphSize = 1000, };
+			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
 		}
 
 		private void OnSetupFinished() {
@@ -49,6 +50,8 @@ namespace Engine3.Test.Voxel {
 
 			VoxelRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
 			renderer.OnSetupDoneEvent += () => {
+				renderer.SetWorld(World !); // shouldn't be null here
+
 				Window?.Show();
 				Logger.Info("Showing window");
 			};
@@ -56,8 +59,7 @@ namespace Engine3.Test.Voxel {
 			AddRenderer(renderer);
 
 			Logger.Debug("Creating World");
-			World = new(renderer);
-			renderer.World = World;
+			World = new(renderer) { Chunk = { [0, 0, 0] = Block.Air, }, };
 
 			Logger.Info("Setup done");
 		}

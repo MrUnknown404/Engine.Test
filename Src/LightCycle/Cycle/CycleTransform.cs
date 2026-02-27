@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 
 namespace Engine3.Test.LightCycle.Cycle {
 	[PublicAPI]
-	public class CycleTransform : ITransform<CycleTransform> {
+	public class CycleTransform : ITransform<CycleTransform>, IEquatable<CycleTransform> {
 		public static CycleTransform Zero => new();
 
 		public Vector2 Position { get; set; }

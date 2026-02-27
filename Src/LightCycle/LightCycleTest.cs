@@ -57,7 +57,7 @@ namespace Engine3.Test.LightCycle {
 			AddRenderer(renderer);
 
 			Logger.Info($"Setting up {nameof(GameManager)}");
-			gameManager.Setup(window.KeyManager);
+			gameManager.Setup(window.KeyboardManager);
 
 			Logger.Info("Setup done. Showing windows");
 

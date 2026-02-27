@@ -1,22 +1,13 @@
-using System.Numerics;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
 using JetBrains.Annotations;
 
 namespace Engine3.Test.Voxel {
-	public static class PlaneBuilder {
-		[MustUseReturnValue]
-		public static Vector3[] BuildPlane(Vector3 position, Vector2 scale, Vector3 normal) {
-			float hx = scale.X / 2f, hy = scale.Y / 2f;
-
-			//
-			throw new NotImplementedException();
-		}
-	}
-
 	public static class CubeBuilder {
+		private static readonly uint[] FaceIndices = [ 0, 1, 2, 2, 3, 0, ];
+
 		[MustUseReturnValue]
-		public static VertexXyzUvRgb[] BuildFace(BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
+		public static VertexXyzUv[] BuildFace(BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
 			float h = size / 2f;
 			float x0 = x - h, x1 = x + h;
 			float y0 = y - h, y1 = y + h;
@@ -24,41 +15,58 @@ namespace Engine3.Test.Voxel {
 
 			const float U0 = 0, U1 = 1;
 			const float V0 = 0, V1 = 1;
-			const byte R = 1, G = 1, B = 1;
 
-			// return face switch { // (U shape)
-			// 		// BlockFace.North => expr,
-			// 		// BlockFace.East => expr,
-			// 		// BlockFace.South => expr,
-			// 		// BlockFace.West => expr,
-			// 		BlockFace.Up => [
-			// 				new(x0, y, z0, U0, V1, R, G, B), // Y+ (Top north)
-			// 				new(x0, y, z1, U0, V0, R, G, B), //
-			// 				new(x1, y, z1, U1, V0, R, G, B), //
-			// 				new(x1, y, z0, U1, V1, R, G, B), //
-			// 		],
-			// 		// BlockFace.Down => [
-			// 		// 		new(x0, y, z0, U0, V1, R, G, B), // Y- (Top north)
-			// 		// 		new(x0, y, z1, U0, V0, R, G, B), //
-			// 		// 		new(x1, y, z1, U1, V0, R, G, B), //
-			// 		// 		new(x1, y, z0, U1, V1, R, G, B), //
-			// 		// ],
-			// 		_ => throw new ArgumentOutOfRangeException(nameof(face), face, null),
-			// };
-
-			throw new NotImplementedException();
+			return face switch { // (U shape)
+					BlockFace.North => [
+							new(x1, y1, z0, U0, V1), // Z-
+							new(x1, y0, z0, U0, V0), //
+							new(x0, y0, z0, U1, V0), //
+							new(x0, y1, z0, U1, V1), //
+					],
+					BlockFace.East => [
+							new(x1, y1, z1, U0, V1), // X+
+							new(x1, y0, z1, U0, V0), //
+							new(x1, y0, z0, U1, V0), //
+							new(x1, y1, z0, U1, V1), //
+					],
+					BlockFace.South => [
+							new(x0, y1, z1, U0, V1), // Z+
+							new(x0, y0, z1, U0, V0), //
+							new(x1, y0, z1, U1, V0), //
+							new(x1, y1, z1, U1, V1), //
+					],
+					BlockFace.West => [
+							new(x0, y1, z0, U0, V1), // X-
+							new(x0, y0, z0, U0, V0), //
+							new(x0, y0, z1, U1, V0), //
+							new(x0, y1, z1, U1, V1), //
+					],
+					BlockFace.Up => [
+							new(x0, y1, z0, U0, V1), // Y+
+							new(x0, y1, z1, U0, V0), //
+							new(x1, y1, z1, U1, V0), //
+							new(x1, y1, z0, U1, V1), //
+					],
+					BlockFace.Down => [
+							new(x1, y0, z0, U0, V1), // Y-
+							new(x1, y0, z1, U0, V0), //
+							new(x0, y0, z1, U1, V0), //
+							new(x0, y0, z0, U1, V1), //
+					],
+					_ => throw new ArgumentOutOfRangeException(nameof(face), face, null),
+			};
 		}
 
-		public static void BuildFace(ref VertexXyzUvRgb[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
-			VertexXyzUvRgb[] a = BuildFace(face, size, x, y, z);
-			for (int i = 0; i < a.Length; i++) { array[index + i] = a[i]; }
+		public static void BuildFace(ref VertexXyzUv[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
+			VertexXyzUv[] vertices = BuildFace(face, size, x, y, z);
+			for (int i = 0; i < vertices.Length; i++) { array[index + i] = vertices[i]; }
 		}
 
-		[MustUseReturnValue]
-		public static VertexXyzUvRgb[] BuildCube(BlockFaceMask faceMask, float size) {
+		public static void BuildCube(BlockFaceMask faceMask, float size, byte x, byte y, byte z, out VertexXyzUv[] vertices, out uint[] indices) {
 			if (faceMask == BlockFaceMask.None) { throw new ArgumentException(); }
 
-			const byte VertexPerFace = 4;
+			const byte VerticesPerFace = 4;
+			const byte IndicesPerFace = 6;
 
 			bool hasNorth = faceMask.HasFlagFast(BlockFaceMask.North);
 			bool hasEast = faceMask.HasFlagFast(BlockFaceMask.East);
@@ -67,39 +75,113 @@ namespace Engine3.Test.Voxel {
 			bool hasUp = faceMask.HasFlagFast(BlockFaceMask.Up);
 			bool hasDown = faceMask.HasFlagFast(BlockFaceMask.Down);
 
-			byte count = (byte)new[] { hasNorth, hasEast, hasSouth, hasWest, hasUp, hasDown, }.AsValueEnumerable().Count(static b => b);
+			byte count = (byte)new[] { hasNorth, hasEast, hasSouth, hasWest, hasUp, hasDown, }.AsValueEnumerable().Count(static b => b); // it would probably be faster to just check
 
-			VertexXyzUvRgb[] array = new VertexXyzUvRgb[count * VertexPerFace];
-			uint offset = 0;
+			vertices = new VertexXyzUv[count * VerticesPerFace]; // should i just use a list?
+			indices = new uint[count * IndicesPerFace];
+
+			uint indexOffset = 0;
+			uint vertexOffset = 0;
 
 			if (hasNorth) {
-				BuildFace(ref array, offset, BlockFace.North, size);
-				offset += VertexPerFace;
+				BuildFace(ref vertices, vertexOffset, BlockFace.North, size, x, y, z);
+				BuildIndices(ref indices, indexOffset++);
+
+				vertexOffset += VerticesPerFace;
 			}
 
 			if (hasEast) {
-				BuildFace(ref array, offset, BlockFace.East, size);
-				offset += VertexPerFace;
+				BuildFace(ref vertices, vertexOffset, BlockFace.East, size, x, y, z);
+				BuildIndices(ref indices, indexOffset++);
+
+				vertexOffset += VerticesPerFace;
 			}
 
 			if (hasSouth) {
-				BuildFace(ref array, offset, BlockFace.South, size);
-				offset += VertexPerFace;
+				BuildFace(ref vertices, vertexOffset, BlockFace.South, size, x, y, z);
+				BuildIndices(ref indices, indexOffset++);
+
+				vertexOffset += VerticesPerFace;
 			}
 
 			if (hasWest) {
-				BuildFace(ref array, offset, BlockFace.West, size);
-				offset += VertexPerFace;
+				BuildFace(ref vertices, vertexOffset, BlockFace.West, size, x, y, z);
+				BuildIndices(ref indices, indexOffset++);
+
+				vertexOffset += VerticesPerFace;
 			}
 
 			if (hasUp) {
-				BuildFace(ref array, offset, BlockFace.Up, size, y: size / 2f);
-				offset += VertexPerFace;
+				BuildFace(ref vertices, vertexOffset, BlockFace.Up, size, x, y, z);
+				BuildIndices(ref indices, indexOffset++);
+
+				vertexOffset += VerticesPerFace;
 			}
 
-			if (hasDown) { BuildFace(ref array, offset, BlockFace.Down, size, y: -(size / 2f)); }
+			if (hasDown) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.Down, size, x, y, z);
+				BuildIndices(ref indices, indexOffset);
+			}
 
-			return array;
+			return;
+
+			void BuildIndices(ref uint[] indices, uint offset) {
+				for (int j = 0; j < IndicesPerFace; j++) { indices[offset * IndicesPerFace + j] = offset * VerticesPerFace + FaceIndices[j]; }
+			}
+		}
+
+		[MustUseReturnValue]
+		public static VertexXyzUv[] BuildCube(BlockFaceMask faceMask, float size, byte x, byte y, byte z) {
+			if (faceMask == BlockFaceMask.None) { throw new ArgumentException(); }
+
+			const byte VerticesPerFace = 4;
+
+			bool hasNorth = faceMask.HasFlagFast(BlockFaceMask.North);
+			bool hasEast = faceMask.HasFlagFast(BlockFaceMask.East);
+			bool hasSouth = faceMask.HasFlagFast(BlockFaceMask.South);
+			bool hasWest = faceMask.HasFlagFast(BlockFaceMask.West);
+			bool hasUp = faceMask.HasFlagFast(BlockFaceMask.Up);
+			bool hasDown = faceMask.HasFlagFast(BlockFaceMask.Down);
+
+			byte count = (byte)new[] { hasNorth, hasEast, hasSouth, hasWest, hasUp, hasDown, }.AsValueEnumerable().Count(static b => b); // it would probably be faster to just check
+
+			VertexXyzUv[] vertices = new VertexXyzUv[count * VerticesPerFace]; // should i just use a list?
+
+			uint vertexOffset = 0;
+
+			if (hasNorth) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.North, size, x, y, z);
+
+				vertexOffset += VerticesPerFace;
+			}
+
+			if (hasEast) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.East, size, x, y, z);
+
+				vertexOffset += VerticesPerFace;
+			}
+
+			if (hasSouth) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.South, size, x, y, z);
+
+				vertexOffset += VerticesPerFace;
+			}
+
+			if (hasWest) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.West, size, x, y, z);
+
+				vertexOffset += VerticesPerFace;
+			}
+
+			if (hasUp) {
+				BuildFace(ref vertices, vertexOffset, BlockFace.Up, size, x, y, z);
+
+				vertexOffset += VerticesPerFace;
+			}
+
+			if (hasDown) { BuildFace(ref vertices, vertexOffset, BlockFace.Down, size, x, y, z); }
+
+			return vertices;
 		}
 	}
 }

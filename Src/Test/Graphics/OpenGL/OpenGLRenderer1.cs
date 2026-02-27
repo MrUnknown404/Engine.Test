@@ -8,7 +8,6 @@ using Engine3.Client.Graphics.Vertex;
 using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
-using OpenTK.Platform;
 using StbiSharp;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
@@ -36,9 +35,8 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 
 			ImGuiBackend = new(window, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window), };
 
-			Toolkit.Window.GetFramebufferSize(Window.WindowHandle, out Vector2i framebufferSize);
-
-			camera = Camera.CreatePerspective((float)framebufferSize.X / framebufferSize.Y, 90, 0.1f, 10);
+			Vector2i frameBufferSize = window.GetFrameBufferSize();
+			camera = Camera.CreatePerspective((float)frameBufferSize.X / frameBufferSize.Y, 90, 0.1f, 10);
 			camera.Position = new(0, 0, 5f);
 		}
 

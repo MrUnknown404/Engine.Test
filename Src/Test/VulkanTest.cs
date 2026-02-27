@@ -24,7 +24,7 @@ namespace Engine3.Test.Test {
 					Settings = new() { EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt, },
 			}) {
 			OnSetupFinishedEvent += OnSetupFinished;
-			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, FrameTimeGraphSize = 1000, };
+			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
 		}
 
 		private void OnSetupFinished() {

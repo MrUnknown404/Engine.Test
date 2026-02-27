@@ -2,13 +2,16 @@ using System.Diagnostics.CodeAnalysis;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
 using Engine3.Client.Graphics.Vertex;
-using Engine3.Debug;
 using Engine3.Test.Core.Test;
 using Engine3.Test.LightCycle;
 using Engine3.Test.Test;
 using Engine3.Test.Voxel;
 using Engine3.Utility;
 using NLog;
+
+#if DEBUG
+using Engine3.Debug;
+#endif
 
 namespace Engine3.Test {
 	public static class Entry {
@@ -19,9 +22,9 @@ namespace Engine3.Test {
 
 		[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 		private static void Main() { // TODO args to change api
+#if DEBUG
 			LoggerH.ConsoleLogLevel = LogLevel.Trace;
 
-#if DEBUG
 			StructLayoutDumper.AddStructs += static () => {
 				StructLayoutDumper.AddStruct<VertexXyzRgb>();
 				StructLayoutDumper.AddStruct<VertexXyzUvRgb>();

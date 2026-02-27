@@ -1,6 +1,9 @@
 #version 460
 
 layout (location = 0) in vec3 inPosition;
+layout (location = 1) in vec2 inUVs;
+
+layout (location = 0) out vec2 fragUVs;
 
 layout (binding = 0) uniform CameraBuffer {
 	mat4 projection;
@@ -9,4 +12,5 @@ layout (binding = 0) uniform CameraBuffer {
 
 void main() {
 	gl_Position = cameraBuffer.projection * cameraBuffer.view * vec4(inPosition, 1);
+	fragUVs = inUVs;
 }

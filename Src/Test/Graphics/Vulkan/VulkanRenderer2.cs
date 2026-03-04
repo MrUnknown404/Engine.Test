@@ -18,21 +18,21 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		private readonly VertexXyzRgb[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 		private readonly Assembly gameAssembly;
 
-		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
+		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, false) => this.gameAssembly = gameAssembly;
 
 		protected override void Setup() {
 			base.Setup();
 
-			VulkanShader vertexShader = LogicalGpu.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
+			graphicsPipeline = GraphicsResourceProvider.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
 				VertexXyzRgb.GetBindingDescriptions()) { FrontFace = VkFrontFace.FrontFaceClockwise, });
 
-			LogicalGpu.EnqueueDestroy(vertexShader);
-			LogicalGpu.EnqueueDestroy(fragmentShader);
+			GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+			GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = LogicalGpu.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
 
 			vertexBuffer.Copy(vertices);

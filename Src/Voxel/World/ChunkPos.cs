@@ -9,5 +9,7 @@ namespace Engine3.Test.Voxel.World {
 			Y = y;
 			Z = z;
 		}
+
+		public ChunkPos Offset(int x, int y, int z) => new(X + x, Y + y, Z + z);
 	}
 }

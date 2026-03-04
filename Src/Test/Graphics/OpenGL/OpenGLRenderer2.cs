@@ -27,17 +27,17 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		protected override void Setup() {
 			base.Setup();
 
-			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = ResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
-			programPipeline = ResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
+			vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+			fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
+			programPipeline = GraphicsResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			// ResourceProvider.EnqueueDestroy(vertexShader);
-			// ResourceProvider.EnqueueDestroy(fragmentShader);
+			// GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+			// GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
+			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = GraphicsResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
 			indexBuffer.Copy(indices);
 		}
 

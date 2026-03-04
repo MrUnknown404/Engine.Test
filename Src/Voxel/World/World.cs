@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Engine3.Test.Voxel.Blocks;
 using NLog;
 
 namespace Engine3.Test.Voxel.World {
@@ -21,8 +22,8 @@ namespace Engine3.Test.Voxel.World {
 				}
 			}
 
-			// ChunkPos chunkPos = new();
-			// chunks[chunkPos][0, 0, 0] = Block.Air;
+			ChunkPos chunkPos = new();
+			chunks[chunkPos][0, 0, 0] = Block.Air;
 			// chunks[chunkPos][1, 0, 0] = Block.Air;
 
 			// chunkPos = new() { Y = 1, };

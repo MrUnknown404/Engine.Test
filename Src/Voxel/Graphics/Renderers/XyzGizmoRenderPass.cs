@@ -17,7 +17,7 @@ using SharpGLTF.Runtime;
 using GLTFMaterial = SharpGLTF.Schema2.Material;
 using Vector3 = System.Numerics.Vector3;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class XyzGizmoRenderPass : VulkanRenderPass { // TODO once this is done merge into engine
 		private const string DebugName = "Xyz Gizmo";
 		private const string FileName = "XyzGizmo";
@@ -26,10 +26,10 @@ namespace Engine3.Test.Voxel.Graphics {
 		private static readonly Material[] MaterialUniformData = [ new(Color4.Red), new(Color4.Green), new(Color4.Blue), new(Color4.White), ]; // TODO read from model & remove static
 
 		private readonly DescriptorSets sceneDescriptorSets;
-		private readonly DescriptorSets materialDescriptorSets;
+		private readonly DescriptorSet materialDescriptorSet;
 
 		private readonly DescriptorBuffers sceneUniformBuffers;
-		private readonly DescriptorBuffers materialStorageBuffers; // TODO DescriptorBuffer class
+		private readonly DescriptorBuffer materialStorageBuffer;
 
 		private readonly Camera camera;
 
@@ -40,10 +40,10 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private static int tempMaterialCounter;
 
-		public XyzGizmoRenderPass(LogicalGpu logicalGpu, SwapChain swapChain, TransferCommandPool transferCommandPool, Assembly assembly, byte maxFramesInFlight, Camera camera) : base(
-			logicalGpu, CreatePipeline(logicalGpu, swapChain, assembly, out DescriptorSetLayout sceneLayout, out DescriptorSetLayout materialLayout)) {
+		public XyzGizmoRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, Camera camera) : base(renderer,
+			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout sceneLayout, out DescriptorSetLayout materialLayout)) {
 			this.camera = camera;
-			swapChainExtent = swapChain.Extent;
+			swapChainExtent = renderer.SwapChain.Extent;
 
 			// model
 			xyzGizmoModel = AssetH.LoadModel(FileName, static meshPrimitiveDecoder => {
@@ -55,30 +55,30 @@ namespace Engine3.Test.Voxel.Graphics {
 			xyzGizmoModel.Collect(out byte[] vertices, out uint[] indices);
 
 			// buffers
-			VertexBuffer = logicalGpu.CreateBuffer($"{DebugName} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{DebugName} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)vertices.Length);
 
-			IndexBuffer = logicalGpu.CreateBuffer($"{DebugName} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{DebugName} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * indices.Length));
 
 			// descriptors
-			sceneUniformBuffers = logicalGpu.CreateDescriptorBuffers($"{DebugName} Scene Uniform Buffer", (ulong)sizeof(ProjectionModel), maxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			sceneUniformBuffers = GraphicsResourceProvider.CreateDescriptorBuffers($"{DebugName} Scene Uniform Buffer", (ulong)sizeof(ProjectionModel), renderer.MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
-			materialStorageBuffers = logicalGpu.CreateDescriptorBuffers($"{DebugName} Material Storage Buffer", (ulong)(sizeof(Material) * MaterialUniformData.Length), maxFramesInFlight,
-				VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
+			materialStorageBuffer = GraphicsResourceProvider.CreateDescriptorBuffer($"{DebugName} Material Storage Buffer", (ulong)(sizeof(Material) * MaterialUniformData.Length), VkDescriptorType.DescriptorTypeStorageBuffer,
+				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
-			DescriptorPool descriptorPool = logicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, ], 2, maxFramesInFlight);
+			DescriptorPool descriptorPool = GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, ], 2, renderer.MaxFramesInFlight);
 
-			sceneDescriptorSets = descriptorPool.AllocateDescriptorSet(sceneLayout);
-			materialDescriptorSets = descriptorPool.AllocateDescriptorSet(materialLayout);
+			sceneDescriptorSets = descriptorPool.AllocateDescriptorSets(sceneLayout);
+			materialDescriptorSet = descriptorPool.AllocateDescriptorSet(materialLayout);
 
 			sceneDescriptorSets.UpdateDescriptorSet(0, sceneUniformBuffers);
-			materialDescriptorSets.UpdateDescriptorSet(0, materialStorageBuffers);
+			materialDescriptorSet.UpdateDescriptorSet(0, materialStorageBuffer);
 
 			// initial copy
-			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, indices), ]);
-			materialStorageBuffers.Copy(MaterialUniformData, 0);
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, indices), ]);
+			materialStorageBuffer.Copy(MaterialUniformData);
 
 			return;
 
@@ -113,7 +113,7 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
-			commandBuffer.CmdBindDescriptorSets(GraphicsPipeline.Layout, [ sceneDescriptorSets.GetCurrent(frameIndex), materialDescriptorSets.GetCurrent(0), ],
+			commandBuffer.CmdBindDescriptorSets(GraphicsPipeline.Layout, [ sceneDescriptorSets.GetCurrent(frameIndex), materialDescriptorSet.VkDescriptorSet, ],
 				VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
 
 			commandBuffer.CmdClearDepth(swapChainExtent);
@@ -137,14 +137,15 @@ namespace Engine3.Test.Voxel.Graphics {
 			}
 		}
 
-		private static GraphicsPipeline CreatePipeline(LogicalGpu logicalGpu, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout sceneDescriptorSetLayout, out DescriptorSetLayout materialDescriptorSetLayout) {
-			VulkanShader vertexShader = logicalGpu.CreateShader($"{DebugName} Vertex Shader", FileName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = logicalGpu.CreateShader($"{DebugName} Fragment Shader", FileName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout sceneDescriptorSetLayout,
+			out DescriptorSetLayout materialDescriptorSetLayout) {
+			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{DebugName} Vertex Shader", FileName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{DebugName} Fragment Shader", FileName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			sceneDescriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
-			materialDescriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageFragmentBit, 0), ]);
+			sceneDescriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+			materialDescriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageFragmentBit, 0), ]);
 
-			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
+			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{DebugName} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyz.GetAttributeDescriptions(), VertexXyz.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ sceneDescriptorSetLayout.VkDescriptorSetLayout, materialDescriptorSetLayout.VkDescriptorSetLayout, ],
 						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(MaterialPushConstants), }, ],
@@ -152,8 +153,8 @@ namespace Engine3.Test.Voxel.Graphics {
 						EnableDepthWrite = true,
 				});
 
-			logicalGpu.EnqueueDestroy(vertexShader);
-			logicalGpu.EnqueueDestroy(fragmentShader);
+			graphicsResourceProvider.EnqueueDestroy(vertexShader);
+			graphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
 			return pipeline;
 		}

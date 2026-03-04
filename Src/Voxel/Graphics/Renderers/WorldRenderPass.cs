@@ -13,7 +13,7 @@ using NLog;
 using OpenTK.Graphics.Vulkan;
 using StbiSharp;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class WorldRenderPass : VulkanRenderPass {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -35,40 +35,41 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private readonly byte maxFramesInFlight;
 
-		public WorldRenderPass(SurfaceCapablePhysicalGpu physicalGpu, LogicalGpu logicalGpu, SwapChain swapChain, TransferCommandPool transferCommandPool, Assembly assembly, byte maxFramesInFlight,
-			DescriptorBuffers cameraUniformBuffer) : base(logicalGpu, CreatePipeline(logicalGpu, swapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
-			this.transferCommandPool = transferCommandPool;
-			this.maxFramesInFlight = maxFramesInFlight;
+		public WorldRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
+			transferCommandPool = TransferCommandPool;
+			maxFramesInFlight = MaxFramesInFlight;
 
 			ChunkVertex[] vertices = ChunkMeshBuilder.GetChunkVertices();
 
-			VertexBuffer = logicalGpu.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(ChunkVertex) * vertices.Length));
+			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkVertex) * vertices.Length));
 
-			IndexBuffer = logicalGpu.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				sizeof(uint));
+			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, sizeof(uint));
 
-			indirectCmdBuffer = logicalGpu.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, 1);
+			indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, 1);
 
 			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
 
-			perChunkDataDescriptorBuffer = logicalGpu.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
-			TextureSampler textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, physicalGpu.PhysicalDeviceProperties2.properties.limits));
+			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
 			VulkanImage image;
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, assembly)) {
-				image = LogicalGpu.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
-				transferCommandPool.CopyToImage(image, physicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
+				image = GraphicsResourceProvider.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
+				transferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
 			}
 
 			// descriptors
-			DescriptorPool descriptorPool = logicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
-				maxFramesInFlight);
+			DescriptorPool descriptorPool =
+					GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
+						maxFramesInFlight);
 
-			descriptorSets = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
+			descriptorSets = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
 			Logger.Debug("Created world descriptor sets");
 
 			descriptorSets.UpdateDescriptorSet(0, cameraUniformBuffer);
@@ -76,23 +77,23 @@ namespace Engine3.Test.Voxel.Graphics {
 			descriptorSets.UpdateDescriptorSet(2, image.ImageView, textureSampler.Sampler);
 		}
 
-		private static GraphicsPipeline CreatePipeline(LogicalGpu logicalGpu, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = logicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = logicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
+			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			descriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([
+			descriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 					new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 1), //
 					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), //
 			]);
 
-			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
+			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUv.GetAttributeDescriptions(), VertexXyzUv.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ], EnableDepthTest = true, EnableDepthWrite = true,
 				});
 
-			logicalGpu.EnqueueDestroy(vertexShader);
-			logicalGpu.EnqueueDestroy(fragmentShader);
+			graphicsResourceProvider.EnqueueDestroy(vertexShader);
+			graphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
 			return pipeline;
 		}
@@ -119,12 +120,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			uint indexOffset = 0;
 
 			foreach (ChunkPos position in positions) {
-				if (!world.TryGetChunk(position, out Chunk? chunk)) {
-					Logger.Error("Failed to get chunk");
-					continue;
-				}
-
-				uint[] chunkIndices = ChunkMeshBuilder.CreateChunkIndices(chunk);
+				uint[] chunkIndices = ChunkMeshBuilder.CreateChunkIndices(world, position, true);
 				indices.AddRange(chunkIndices);
 
 				cmds.Add(new() {
@@ -136,19 +132,17 @@ namespace Engine3.Test.Voxel.Graphics {
 				});
 
 				indexOffset += (uint)chunkIndices.Length;
-
-				drawCount++;
 			}
 
 			drawCount = (uint)positions.Length;
 
-			if (drawCount != 0) {
+			if (indices.Count != 0) {
 				ulong indexBufferSize = (ulong)(indices.Count * sizeof(uint));
 
 				if (IndexBuffer!.BufferSize < indexBufferSize) { // index buffer should never be null. just smol
-					LogicalGpu.EnqueueDestroy(IndexBuffer);
+					GraphicsResourceProvider.EnqueueDestroy(IndexBuffer);
 
-					IndexBuffer = LogicalGpu.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+					IndexBuffer = GraphicsResourceProvider.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
 						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
 				}
 
@@ -159,9 +153,9 @@ namespace Engine3.Test.Voxel.Graphics {
 			if (positions.Length > (int)perChunkDataBuffer.Count) {
 				perChunkDataBuffer = new((uint)positions.Length);
 
-				LogicalGpu.EnqueueDestroy(perChunkDataDescriptorBuffer);
+				GraphicsResourceProvider.EnqueueDestroy(perChunkDataDescriptorBuffer);
 
-				perChunkDataDescriptorBuffer = LogicalGpu.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count, maxFramesInFlight,
+				perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count, maxFramesInFlight,
 					VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 				descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
@@ -175,9 +169,9 @@ namespace Engine3.Test.Voxel.Graphics {
 				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * cmds.Count);
 
 				if (indirectCmdBuffer.BufferSize < cmdBufferSize) {
-					LogicalGpu.EnqueueDestroy(indirectCmdBuffer);
+					GraphicsResourceProvider.EnqueueDestroy(indirectCmdBuffer);
 
-					indirectCmdBuffer = LogicalGpu.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, cmdBufferSize);
+					indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, cmdBufferSize);
 				}
 
 				indirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));

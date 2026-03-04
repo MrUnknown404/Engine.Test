@@ -19,7 +19,7 @@ using OpenTK.Graphics.Vulkan;
 using StbiSharp;
 using Vector3 = System.Numerics.Vector3;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class VoxelRenderer : VulkanNodeRenderer {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -27,8 +27,6 @@ namespace Engine3.Test.Voxel.Graphics {
 		private XyzGizmoRecorderNode? xyzGizmoRecorderNode;
 
 		private GraphicsPipeline cubeGraphicsPipeline = null!;
-
-		private DepthImage depthImage = null!;
 
 		private DescriptorBuffers cameraUniformBuffer = null!;
 
@@ -50,12 +48,10 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private readonly Assembly gameAssembly;
 
-		protected override DepthImage DepthImage => depthImage; //  TODO
-
 		public static float PrevCubeRotation { get; private set; }
 		public static float CubeRotation { get; private set; }
 
-		public VoxelRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window) {
+		public VoxelRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window, true) {
 			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
@@ -92,10 +88,8 @@ namespace Engine3.Test.Voxel.Graphics {
 			CreateDescriptorSets(cubeDescriptorSetLayout);
 			UpdateDescriptorSets();
 
-			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
-
-			worldRecorderNode = new(LogicalGpu, TransferCommandPool, SwapChain, gameAssembly, MaxFramesInFlight, cameraUniformBuffer, image, textureSampler);
-			xyzGizmoRecorderNode = new(LogicalGpu, TransferCommandPool, SwapChain, gameAssembly, MaxFramesInFlight, camera);
+			worldRecorderNode = new(this, gameAssembly, cameraUniformBuffer, image, textureSampler);
+			xyzGizmoRecorderNode = new(this, gameAssembly, camera);
 
 			AddNode(worldRecorderNode);
 			AddNode(xyzGizmoRecorderNode);
@@ -104,34 +98,34 @@ namespace Engine3.Test.Voxel.Graphics {
 		private void CreateCubeGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
 			const string Name = "Test";
 
-			VulkanShader vertexShader = LogicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = GraphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([
+			descriptorSetLayout = GraphicsResourceProvider.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 					new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 1), //
 					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), //
 			]);
 
 			// ew
-			cubeGraphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
+			cubeGraphicsPipeline = GraphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUvRgb.GetAttributeDescriptions(), VertexXyzUvRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ], EnableDepthTest = true, EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created cube graphics pipeline");
 
-			LogicalGpu.EnqueueDestroy(vertexShader);
-			LogicalGpu.EnqueueDestroy(fragmentShader);
+			GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+			GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 		}
 
 		private void CreateBuffers() {
 			// cube
-			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			cubeVertexBuffer = GraphicsResourceProvider.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzUvRgb) * cubeVertices.Length));
 
-			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(uint) * cubeIndices.Length));
+			cubeIndexBuffer = GraphicsResourceProvider.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * cubeIndices.Length));
 
 			// copy
 			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(cubeVertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(cubeIndexBuffer, cubeIndices), ]);
@@ -139,21 +133,21 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Created & copied vertex/index buffers");
 
 			// descriptor buffers
-			cameraUniformBuffer = LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
-			cubeInstanceBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Instance Storage Buffers", cubeUniformBufferValue.Size, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+			cubeInstanceBuffers = GraphicsResourceProvider.CreateDescriptorBuffers("Cube Instance Storage Buffers", cubeUniformBufferValue.Size, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			Logger.Debug("Created uniform buffers");
 		}
 
 		private void CreateSamplerAndTextures() {
-			textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
+			textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, Window.SelectedGpu.PhysicalDeviceProperties2.properties.limits));
 			Logger.Debug("Created texture sampler");
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
-				image = LogicalGpu.CreateImage("Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
+				image = GraphicsResourceProvider.CreateImage("Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
 				TransferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
 			}
 
@@ -161,10 +155,11 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void CreateDescriptorSets(DescriptorSetLayout cubeLayout) {
-			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
-				MaxFramesInFlight);
+			DescriptorPool descriptorPool =
+					GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
+						MaxFramesInFlight);
 
-			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(cubeLayout);
+			cubeDescriptorSet = descriptorPool.AllocateDescriptorSets(cubeLayout);
 			Logger.Debug("Created descriptor sets");
 		}
 

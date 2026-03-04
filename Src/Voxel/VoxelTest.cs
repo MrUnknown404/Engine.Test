@@ -2,6 +2,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Exceptions;
 using Engine3.Test.Voxel.Graphics;
+using Engine3.Test.Voxel.Graphics.Renderers;
 using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Graphics.Vulkan;

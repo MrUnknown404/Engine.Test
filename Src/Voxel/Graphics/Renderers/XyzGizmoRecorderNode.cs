@@ -17,15 +17,15 @@ using SharpGLTF.Runtime;
 using GLTFMaterial = SharpGLTF.Schema2.Material;
 using Vector3 = System.Numerics.Vector3;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class XyzGizmoRecorderNode : VulkanRecorderNode { // TODO once this is done merge into engine
 		private static Matrix4x4 GizmoTransform { get; } = Matrix4x4.CreateScale(0.1f) * Matrix4x4.CreateTranslation(-Vector3.UnitZ); // TODO scale based on viewport size. edit: just gonna do lines
 
 		private readonly GraphicsPipeline gizmoGraphicsPipeline;
 		private readonly DescriptorSets sceneDescriptorSets;
-		private readonly DescriptorSets materialDescriptorSets;
+		private readonly DescriptorSet materialDescriptorSet;
 		private readonly DescriptorBuffers sceneUniformBuffers;
-		private readonly DescriptorBuffers materialUniformBuffers; // TODO DescriptorBuffer class
+		private readonly DescriptorBuffer materialUniformBuffer;
 
 		private readonly VulkanBuffer xyzGizmoVertexBuffer;
 		private readonly VulkanBuffer xyzGizmoIndexBuffer;
@@ -40,11 +40,11 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private static int tempMaterialCounter;
 
-		public XyzGizmoRecorderNode(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, SwapChain swapChain, Assembly gameAssembly, byte maxFramesInFlight, Camera camera) {
-			swapChainExtent = swapChain.Extent;
+		public XyzGizmoRecorderNode(VulkanNodeRenderer renderer, Assembly gameAssembly, Camera camera) : base(renderer) {
+			swapChainExtent = renderer.SwapChain.Extent;
 			this.camera = camera;
 
-			gizmoGraphicsPipeline = CreatePipeline(logicalGpu, swapChain.ImageFormat, gameAssembly, out DescriptorSetLayout sceneLayout, out DescriptorSetLayout materialLayout);
+			gizmoGraphicsPipeline = CreatePipeline(GraphicsResourceProvider, renderer.SwapChain.ImageFormat, gameAssembly, out DescriptorSetLayout sceneLayout, out DescriptorSetLayout materialLayout);
 
 			xyzGizmoModel = AssetH.LoadModel("XYZGizmo", static meshPrimitiveDecoder => {
 				RenderMesh renderMesh = GltfMeshToMesh_VertexXyz(meshPrimitiveDecoder);
@@ -54,13 +54,13 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			xyzGizmoModel.Collect(out byte[] vertices, out uint[] indices);
 
-			CreateBuffers(logicalGpu, maxFramesInFlight, vertices, indices, (byte)MaterialUniformData.Length, out xyzGizmoVertexBuffer, out xyzGizmoIndexBuffer, out sceneUniformBuffers, out materialUniformBuffers);
+			CreateBuffers(GraphicsResourceProvider, MaxFramesInFlight, vertices, indices, (byte)MaterialUniformData.Length, out xyzGizmoVertexBuffer, out xyzGizmoIndexBuffer, out sceneUniformBuffers, out materialUniformBuffer);
 
-			CreateDescriptorSets(logicalGpu, sceneLayout, materialLayout, maxFramesInFlight, sceneUniformBuffers, materialUniformBuffers, out sceneDescriptorSets, out materialDescriptorSets);
+			CreateDescriptorSets(GraphicsResourceProvider, sceneLayout, materialLayout, MaxFramesInFlight, sceneUniformBuffers, materialUniformBuffer, out sceneDescriptorSets, out materialDescriptorSet);
 
 			// initial copy
-			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoVertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoIndexBuffer, indices), ]);
-			materialUniformBuffers.Copy(MaterialUniformData, 0);
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoVertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(xyzGizmoIndexBuffer, indices), ]);
+			materialUniformBuffer.Copy(MaterialUniformData, 0);
 
 			return;
 
@@ -120,7 +120,7 @@ namespace Engine3.Test.Voxel.Graphics {
 			if (!ShouldDraw) { return; }
 
 			graphicsCommandBuffer.CmdBindGraphicsPipeline(gizmoGraphicsPipeline.Pipeline);
-			graphicsCommandBuffer.CmdBindDescriptorSets(gizmoGraphicsPipeline.Layout, [ sceneDescriptorSets.GetCurrent(frameIndex), materialDescriptorSets.GetCurrent(0), ],
+			graphicsCommandBuffer.CmdBindDescriptorSets(gizmoGraphicsPipeline.Layout, [ sceneDescriptorSets.GetCurrent(frameIndex), materialDescriptorSet.VkDescriptorSet, ],
 				VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
 
 			graphicsCommandBuffer.CmdBindVertexBuffer(xyzGizmoVertexBuffer, 0);
@@ -155,17 +155,17 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		protected override void OnSwapChainChange(SwapChain newSwapChain) => swapChainExtent = newSwapChain.Extent;
 
-		private static GraphicsPipeline CreatePipeline(LogicalGpu logicalGpu, VkFormat swapChainImageFormat, Assembly gameAssembly, out DescriptorSetLayout sceneDescriptorSetLayout,
+		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, VkFormat swapChainImageFormat, Assembly gameAssembly, out DescriptorSetLayout sceneDescriptorSetLayout,
 			out DescriptorSetLayout materialDescriptorSetLayout) {
 			const string Name = "Gizmo";
 
-			VulkanShader vertexShader = logicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = logicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			sceneDescriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
-			materialDescriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageFragmentBit, 0), ]);
+			sceneDescriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+			materialDescriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageFragmentBit, 0), ]);
 
-			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
+			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", swapChainImageFormat, [ vertexShader, fragmentShader, ], VertexXyz.GetAttributeDescriptions(), VertexXyz.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ sceneDescriptorSetLayout.VkDescriptorSetLayout, materialDescriptorSetLayout.VkDescriptorSetLayout, ],
 						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(MaterialPushConstants), }, ],
@@ -173,36 +173,36 @@ namespace Engine3.Test.Voxel.Graphics {
 						EnableDepthWrite = true,
 				});
 
-			logicalGpu.EnqueueDestroy(vertexShader);
-			logicalGpu.EnqueueDestroy(fragmentShader);
+			graphicsResourceProvider.EnqueueDestroy(vertexShader);
+			graphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
 			return pipeline;
 		}
 
-		private static void CreateBuffers(LogicalGpu logicalGpu, byte maxFramesInFlight, byte[] vertices, uint[] indices, byte materialCount, out VulkanBuffer vertexBuffer, out VulkanBuffer indexBuffer,
-			out DescriptorBuffers sceneDescriptorBuffers, out DescriptorBuffers materialDescriptorBuffers) {
-			vertexBuffer = logicalGpu.CreateBuffer("Gizmo Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)vertices.Length);
+		private static void CreateBuffers(VulkanResourceProvider graphicsResourceProvider, byte maxFramesInFlight, byte[] vertices, uint[] indices, byte materialCount, out VulkanBuffer vertexBuffer, out VulkanBuffer indexBuffer,
+			out DescriptorBuffers sceneDescriptorBuffers, out DescriptorBuffer materialDescriptorBuffer) {
+			vertexBuffer = graphicsResourceProvider.CreateBuffer("Gizmo Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)vertices.Length);
 
-			indexBuffer = logicalGpu.CreateBuffer("Gizmo Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = graphicsResourceProvider.CreateBuffer("Gizmo Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * indices.Length));
 
-			sceneDescriptorBuffers = logicalGpu.CreateDescriptorBuffers("Gizmo Scene Uniform Buffer", (ulong)sizeof(ProjectionModel), maxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			sceneDescriptorBuffers = graphicsResourceProvider.CreateDescriptorBuffers("Gizmo Scene Uniform Buffer", (ulong)sizeof(ProjectionModel), maxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
-			materialDescriptorBuffers = logicalGpu.CreateDescriptorBuffers("Gizmo Material Storage Buffer", (ulong)(sizeof(Material) * materialCount), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+			materialDescriptorBuffer = graphicsResourceProvider.CreateDescriptorBuffer("Gizmo Material Storage Buffer", (ulong)(sizeof(Material) * materialCount), VkDescriptorType.DescriptorTypeStorageBuffer,
 				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 		}
 
-		private static void CreateDescriptorSets(LogicalGpu logicalGpu, DescriptorSetLayout sceneDescriptorSetLayout, DescriptorSetLayout materialDescriptorSetLayout, byte maxFramesInFlight,
-			DescriptorBuffers sceneDescriptorBuffers, DescriptorBuffers materialDescriptorBuffers, out DescriptorSets sceneDescriptorSets, out DescriptorSets materialDescriptorSets) {
-			DescriptorPool descriptorPool = logicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, ], 2, maxFramesInFlight);
+		private static void CreateDescriptorSets(VulkanResourceProvider graphicsResourceProvider, DescriptorSetLayout sceneDescriptorSetLayout, DescriptorSetLayout materialDescriptorSetLayout, byte maxFramesInFlight,
+			DescriptorBuffers sceneDescriptorBuffers, DescriptorBuffer materialDescriptorBuffer, out DescriptorSets sceneDescriptorSets, out DescriptorSet materialDescriptorSet) {
+			DescriptorPool descriptorPool = graphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, ], 2, maxFramesInFlight);
 
-			sceneDescriptorSets = descriptorPool.AllocateDescriptorSet(sceneDescriptorSetLayout);
-			materialDescriptorSets = descriptorPool.AllocateDescriptorSet(materialDescriptorSetLayout);
+			sceneDescriptorSets = descriptorPool.AllocateDescriptorSets(sceneDescriptorSetLayout);
+			materialDescriptorSet = descriptorPool.AllocateDescriptorSet(materialDescriptorSetLayout);
 
 			sceneDescriptorSets.UpdateDescriptorSet(0, sceneDescriptorBuffers);
-			materialDescriptorSets.UpdateDescriptorSet(0, materialDescriptorBuffers);
+			materialDescriptorSet.UpdateDescriptorSet(0, materialDescriptorBuffer);
 		}
 	}
 }

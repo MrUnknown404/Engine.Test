@@ -8,7 +8,7 @@ using JetBrains.Annotations;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class WorldRecorder : VulkanRecorderNode {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -23,37 +23,36 @@ namespace Engine3.Test.Voxel.Graphics {
 		private readonly PerChunkDataBuffer chunkDataBufferValue = new(1); // TODO offset chunk by this
 
 		private readonly Assembly gameAssembly;
-		private readonly LogicalGpu logicalGpu;
 		private readonly TransferCommandPool transferCommandPool;
 
 		private bool shouldRegenerateChunk = true;
 		private ulong chunkIndicesCount;
 
-		public WorldRecorder(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, SwapChain swapChain, Assembly gameAssembly, byte maxFramesInFlight, DescriptorBuffers cameraUniformBuffer, VulkanImage image,
-			TextureSampler textureSampler) {
+		public WorldRecorder(VoxelRenderer renderer, Assembly gameAssembly, DescriptorBuffers cameraUniformBuffer, VulkanImage image, TextureSampler textureSampler) : base(renderer) {
 			this.gameAssembly = gameAssembly;
-			this.logicalGpu = logicalGpu;
-			this.transferCommandPool = transferCommandPool;
+			transferCommandPool = renderer.TransferCommandPool;
 
-			CreateBuffers(logicalGpu, transferCommandPool, ChunkMeshBuilder.GetChunkVertices(), out chunkVertexBuffer, out chunkIndexBuffer);
+			CreateBuffers(transferCommandPool, ChunkMeshBuilder.GetChunkVertices(), out chunkVertexBuffer, out chunkIndexBuffer);
 
-			chunkGraphicsPipeline = CreateGraphicsPipeline(logicalGpu, swapChain, out DescriptorSetLayout chunkLayout);
+			chunkGraphicsPipeline = CreateGraphicsPipeline(renderer.SwapChain, out DescriptorSetLayout chunkLayout);
 
-			DescriptorPool descriptorPool = logicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
-				maxFramesInFlight);
+			DescriptorPool descriptorPool =
+					GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
+						renderer.MaxFramesInFlight);
 
-			chunkDescriptorSet = descriptorPool.AllocateDescriptorSet(chunkLayout);
+			chunkDescriptorSet = descriptorPool.AllocateDescriptorSets(chunkLayout);
 			Logger.Debug("Created world descriptor sets");
 
 			chunkDescriptorSet.UpdateDescriptorSet(0, cameraUniformBuffer);
 			chunkDescriptorSet.UpdateDescriptorSet(1, image.ImageView, textureSampler.Sampler);
 		}
 
-		private void CreateBuffers(LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, ChunkVertex[] vertices, out VulkanBuffer vertexBuffer, out VulkanBuffer indexBuffer) {
-			vertexBuffer = logicalGpu.CreateBuffer("Chunk Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(ChunkVertex) * vertices.Length));
+		private void CreateBuffers(TransferCommandPool transferCommandPool, ChunkVertex[] vertices, out VulkanBuffer vertexBuffer, out VulkanBuffer indexBuffer) {
+			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Chunk Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkVertex) * vertices.Length));
 
-			indexBuffer = logicalGpu.CreateBuffer("Chunk Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, 1);
+			indexBuffer = GraphicsResourceProvider.CreateBuffer("Chunk Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, 1);
 
 			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(chunkVertexBuffer, vertices), ]);
 
@@ -61,26 +60,26 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		[MustUseReturnValue]
-		private GraphicsPipeline CreateGraphicsPipeline(LogicalGpu logicalGpu, SwapChain swapChain, out DescriptorSetLayout descriptorSetLayout) {
+		private GraphicsPipeline CreateGraphicsPipeline(SwapChain swapChain, out DescriptorSetLayout descriptorSetLayout) {
 			const string Name = "Chunk";
 
-			VulkanShader vertexShader = logicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = logicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
+			VulkanShader vertexShader = GraphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
+			VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);
 
-			descriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([
+			descriptorSetLayout = GraphicsResourceProvider.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1), //
 			]);
 
-			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
+			GraphicsPipeline pipeline = GraphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ], EnableDepthTest = true, EnableDepthWrite = true,
 				});
 
 			Logger.Debug("Created world graphics pipeline");
 
-			logicalGpu.EnqueueDestroy(vertexShader);
-			logicalGpu.EnqueueDestroy(fragmentShader);
+			GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+			GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
 			return pipeline;
 		}

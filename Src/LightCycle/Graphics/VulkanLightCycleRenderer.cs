@@ -23,8 +23,6 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		private GraphicsPipeline? graphicsPipeline;
 
-		private DepthImage? depthImage;
-
 		private VulkanBuffer? cubeVertexBuffer;
 		private VulkanBuffer? cubeIndexBuffer;
 		private DescriptorBuffers? cubeUniformBuffers;
@@ -42,9 +40,7 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 		private readonly TestUniformBufferObject cubeUniformBufferObject = new();
 
-		protected override DepthImage? DepthImage => depthImage;
-
-		public VulkanLightCycleRenderer(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window) {
+		public VulkanLightCycleRenderer(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window, true) {
 			this.gameManager = gameManager;
 
 			camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
@@ -84,18 +80,16 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 			CreateDescriptorSets(descriptorSetLayout);
 			UpdateDescriptorSets();
-
-			depthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
 		}
 
 		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = LogicalGpu.CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = LogicalGpu.CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+			VulkanShader vertexShader = GraphicsResourceProvider.CreateShader($"{ShaderName} Vertex Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader($"{ShaderName} Fragment Shader", ShaderName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			descriptorSetLayout = LogicalGpu.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+			descriptorSetLayout = GraphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
 
 			// ew
-			graphicsPipeline = LogicalGpu.CreateGraphicsPipeline(
+			graphicsPipeline = GraphicsResourceProvider.CreateGraphicsPipeline(
 				new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(), VertexXyzRgb.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
 						FrontFace = VkFrontFace.FrontFaceClockwise, // TODO oops. indices are backwards
@@ -106,27 +100,29 @@ namespace Engine3.Test.LightCycle.Graphics {
 
 			Logger.Debug("Created graphics pipeline");
 
-			LogicalGpu.EnqueueDestroy(vertexShader);
-			LogicalGpu.EnqueueDestroy(fragmentShader);
+			GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+			GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 		}
 
 		private void CreateBuffers() {
-			cubeVertexBuffer = LogicalGpu.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			cubeVertexBuffer = GraphicsResourceProvider.CreateBuffer("Cube Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzRgb) * cubeVertices.Length));
 
-			cubeIndexBuffer = LogicalGpu.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(uint) * cubeIndices.Length));
+			cubeIndexBuffer = GraphicsResourceProvider.CreateBuffer("Cube Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * cubeIndices.Length));
 
 			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(cubeVertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(cubeIndexBuffer, cubeIndices), ]);
 
 			ulong bufferSize = TestUniformBufferObject.Size;
-			cubeUniformBuffers = LogicalGpu.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
+			cubeUniformBuffers = GraphicsResourceProvider.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
+
 			Logger.Debug("Created uniform buffers");
 		}
 
 		private void CreateDescriptorSets(DescriptorSetLayout descriptorSetLayout) {
-			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
-			cubeDescriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
+			DescriptorPool descriptorPool = GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
+			cubeDescriptorSet = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
 			Logger.Debug("Created descriptor sets");
 		}
 

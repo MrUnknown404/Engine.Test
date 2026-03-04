@@ -33,42 +33,43 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		private float prevCubeRotation;
 		private float cubeRotation;
 
-		public CubeRenderPass(SurfaceCapablePhysicalGpu physicalGpu, LogicalGpu logicalGpu, SwapChain swapChain, TransferCommandPool transferCommandPool, Assembly assembly, byte maxFramesInFlight,
-			DescriptorBuffers cameraUniformBuffer) : base(logicalGpu, CreatePipeline(logicalGpu, swapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
+		public CubeRenderPass(VulkanRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			ShouldUpdate = true;
 
 			CubeBuilder.BuildCube(BlockFaceMask.All, 1, 0, 0, 0, out VertexXyzUv[] cubeVertices, out uint[] cubeIndices);
 			indexCount = (uint)cubeIndices.Length;
 
 			// buffers
-			VertexBuffer = LogicalGpu.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(VertexXyzUv) * cubeVertices.Length));
+			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(VertexXyzUv) * cubeVertices.Length));
 
-			IndexBuffer = LogicalGpu.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				(ulong)(sizeof(uint) * cubeIndices.Length));
+			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * cubeIndices.Length));
 
-			instanceBuffer = LogicalGpu.CreateDescriptorBuffers($"{Name} Instance Storage Buffers", instanceBufferValue.Size, maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+			instanceBuffer = GraphicsResourceProvider.CreateDescriptorBuffers($"{Name} Instance Storage Buffers", instanceBufferValue.Size, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// copy
-			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, cubeIndices), ]);
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, cubeIndices), ]);
 
-			for (byte i = 0; i < maxFramesInFlight; i++) { instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Models), i); }
+			for (byte i = 0; i < MaxFramesInFlight; i++) { instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Models), i); }
 
 			// textures
-			TextureSampler textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, physicalGpu.PhysicalDeviceProperties2.properties.limits));
+			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
 			VulkanImage image;
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, assembly)) {
-				image = LogicalGpu.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
-				transferCommandPool.CopyToImage(image, physicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
+				image = GraphicsResourceProvider.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
+				TransferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
 			}
 
 			// descriptors
-			DescriptorPool descriptorPool = LogicalGpu.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
-				maxFramesInFlight);
+			DescriptorPool descriptorPool =
+					GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
+						MaxFramesInFlight);
 
-			descriptorSet = descriptorPool.AllocateDescriptorSet(descriptorSetLayout);
+			descriptorSet = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
 
 			descriptorSet.UpdateDescriptorSet(0, cameraUniformBuffer);
 			descriptorSet.UpdateDescriptorSet(1, instanceBuffer);
@@ -101,23 +102,23 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			commandBuffer.CmdDrawIndexed(indexCount);
 		}
 
-		private static GraphicsPipeline CreatePipeline(LogicalGpu logicalGpu, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = logicalGpu.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = logicalGpu.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
+			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			descriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([
+			descriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
 					new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 1), //
 					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), //
 			]);
 
-			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
+			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUv.GetAttributeDescriptions(), VertexXyzUv.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ], EnableDepthTest = true, EnableDepthWrite = true,
 				});
 
-			logicalGpu.EnqueueDestroy(vertexShader);
-			logicalGpu.EnqueueDestroy(fragmentShader);
+			graphicsResourceProvider.EnqueueDestroy(vertexShader);
+			graphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
 			return pipeline;
 		}

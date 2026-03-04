@@ -44,21 +44,21 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		protected override void Setup() {
 			base.Setup();
 
-			vertexShader = ResourceProvider.CreateShader("Test Vertex Shader", $"{TestShaderName}UVs", ShaderType.Vertex, gameAssembly);
-			fragmentShader = ResourceProvider.CreateShader("Test Fragment Shader", $"{TestShaderName}UVs", ShaderType.Fragment, gameAssembly);
-			programPipeline = ResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
+			vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", $"{TestShaderName}UVs", ShaderType.Vertex, gameAssembly);
+			fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", $"{TestShaderName}UVs", ShaderType.Fragment, gameAssembly);
+			programPipeline = GraphicsResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			// ResourceProvider.EnqueueDestroy(vertexShader); // TODO RenderDoc gives an error when i destroy these but it renders fine. i think i'm doing something wrong?
-			// ResourceProvider.EnqueueDestroy(fragmentShader);
+			// GraphicsResourceProvider.EnqueueDestroy(vertexShader); // TODO RenderDoc gives an error when i destroy these but it renders fine. i think i'm doing something wrong?
+			// GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer = ResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzUvRgb) * vertices.Length));
+			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzUvRgb) * vertices.Length));
 			vertexBuffer.Copy(vertices);
 
-			indexBuffer = ResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
+			indexBuffer = GraphicsResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
 			indexBuffer.Copy(indices);
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, gameAssembly)) {
-				image = ResourceProvider.CreateImage("Test Image");
+				image = GraphicsResourceProvider.CreateImage("Test Image");
 				image.Copy(stbiImage);
 			}
 

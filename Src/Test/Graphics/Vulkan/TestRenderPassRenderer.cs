@@ -13,21 +13,17 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 	public unsafe class TestRenderPassRenderer : VulkanRenderPassRenderer {
 		private readonly DescriptorBuffers cameraUniformBuffer;
 
-		protected override DepthImage DepthImage { get; }
-
 		private readonly Camera camera;
 
-		public TestRenderPassRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window) {
-			cameraUniformBuffer = window.LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+		public TestRenderPassRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+			cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
 			ImGuiBackend = new(window, MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
 
-			DepthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
-
 			this.camera = camera;
 
-			AddRenderPass(new CubeRenderPass(window.SelectedGpu, LogicalGpu, SwapChain, TransferCommandPool, assembly, MaxFramesInFlight, cameraUniformBuffer));
+			AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {

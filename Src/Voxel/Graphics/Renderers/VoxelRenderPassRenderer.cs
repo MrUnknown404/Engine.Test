@@ -10,31 +10,27 @@ using Engine3.Test.Test.Graphics.Vulkan;
 using ImGuiNET;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Voxel.Graphics {
+namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
 		private readonly WorldRenderPass worldRenderPass;
 
 		private readonly DescriptorBuffers cameraUniformBuffer;
 
-		protected override DepthImage DepthImage { get; }
-
 		private readonly Camera camera;
 
-		public VoxelRenderPassRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window) {
-			cameraUniformBuffer = window.LogicalGpu.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+		public VoxelRenderPassRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+			cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
 			ImGuiBackend = new(window, MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
 
-			DepthImage = LogicalGpu.CreateDepthImage(TransferCommandPool, SwapChain.Extent);
-
 			this.camera = camera;
 
-			worldRenderPass = new(PhysicalGpu, LogicalGpu, SwapChain, TransferCommandPool, assembly, MaxFramesInFlight, cameraUniformBuffer);
+			worldRenderPass = new(this, assembly, cameraUniformBuffer);
 
 			AddRenderPass(worldRenderPass);
-			AddRenderPass(new CubeRenderPass(window.SelectedGpu, LogicalGpu, SwapChain, TransferCommandPool, assembly, MaxFramesInFlight, cameraUniformBuffer));
-			AddRenderPass(new XyzGizmoRenderPass(LogicalGpu, SwapChain, TransferCommandPool, assembly, MaxFramesInFlight, camera));
+			AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
+			AddRenderPass(new XyzGizmoRenderPass(this, assembly, camera));
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {

@@ -1,27 +1,27 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using Engine3.Test.Voxel.World;
+using Engine3.Test.Voxel.Graphics.DataStructs;
 
 namespace Engine3.Test.Voxel.Graphics {
 	public unsafe class PerChunkDataBuffer {
-		private static byte MatrixSize { get; } = (byte)sizeof(Matrix4x4);
+		private static byte DataSize { get; } = (byte)sizeof(PerChunkData);
 
-		public required ChunkData[] Data { get; init; }
+		public required PerChunkData[] Data { get; init; }
 
-		public ulong Count { get; }
-		public ulong Size { get; }
+		public uint Count { get; }
+		public uint Size { get; }
 
 		[SetsRequiredMembers]
-		public PerChunkDataBuffer(ulong count) {
-			Data = new ChunkData[count];
-			Count = count;
-			Size = MatrixSize * Count;
+		public PerChunkDataBuffer(PerChunkData[] data) {
+			Data = data;
+			Count = (uint)data.Length;
+			Size = DataSize * Count;
 		}
 
-		public readonly record struct ChunkData {
-			public ChunkPos ChunkPos { get; }
-
-			public ChunkData(ChunkPos chunkPos) => ChunkPos = chunkPos;
+		[SetsRequiredMembers]
+		public PerChunkDataBuffer(uint count) {
+			Data = new PerChunkData[count];
+			Count = count;
+			Size = DataSize * Count;
 		}
 	}
 }

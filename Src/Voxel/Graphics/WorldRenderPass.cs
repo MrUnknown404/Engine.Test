@@ -1,10 +1,13 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
+using Engine3.Test.Voxel.Graphics.DataStructs;
 using Engine3.Test.Voxel.Graphics.Vertex;
+using Engine3.Test.Voxel.World;
 using Engine3.Utility;
 using NLog;
 using OpenTK.Graphics.Vulkan;
@@ -22,14 +25,20 @@ namespace Engine3.Test.Voxel.Graphics {
 
 		private readonly TransferCommandPool transferCommandPool;
 		private readonly DescriptorSets descriptorSets;
+		private VulkanBuffer indirectCmdBuffer;
 
-		private uint indexCount;
+		private DescriptorBuffers perChunkDataDescriptorBuffer;
+		private PerChunkDataBuffer perChunkDataBuffer = new(0);
 
-		private bool shouldRegenerateChunk;
+		private bool shouldRegenerateChunks;
+		private uint drawCount;
+
+		private readonly byte maxFramesInFlight;
 
 		public WorldRenderPass(SurfaceCapablePhysicalGpu physicalGpu, LogicalGpu logicalGpu, SwapChain swapChain, TransferCommandPool transferCommandPool, Assembly assembly, byte maxFramesInFlight,
 			DescriptorBuffers cameraUniformBuffer) : base(logicalGpu, CreatePipeline(logicalGpu, swapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			this.transferCommandPool = transferCommandPool;
+			this.maxFramesInFlight = maxFramesInFlight;
 
 			ChunkVertex[] vertices = ChunkMeshBuilder.GetChunkVertices();
 
@@ -37,9 +46,14 @@ namespace Engine3.Test.Voxel.Graphics {
 				(ulong)(sizeof(ChunkVertex) * vertices.Length));
 
 			IndexBuffer = logicalGpu.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit,
-				1);
+				sizeof(uint));
+
+			indirectCmdBuffer = logicalGpu.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, 1);
 
 			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
+
+			perChunkDataDescriptorBuffer = logicalGpu.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
 			TextureSampler textureSampler = LogicalGpu.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, physicalGpu.PhysicalDeviceProperties2.properties.limits));
@@ -58,7 +72,8 @@ namespace Engine3.Test.Voxel.Graphics {
 			Logger.Debug("Created world descriptor sets");
 
 			descriptorSets.UpdateDescriptorSet(0, cameraUniformBuffer);
-			descriptorSets.UpdateDescriptorSet(1, image.ImageView, textureSampler.Sampler);
+			descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
+			descriptorSets.UpdateDescriptorSet(2, image.ImageView, textureSampler.Sampler);
 		}
 
 		private static GraphicsPipeline CreatePipeline(LogicalGpu logicalGpu, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
@@ -67,7 +82,8 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			descriptorSetLayout = logicalGpu.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
-					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 1), //
+					new(VkDescriptorType.DescriptorTypeStorageBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 1), //
+					new(VkDescriptorType.DescriptorTypeCombinedImageSampler, VkShaderStageFlagBits.ShaderStageFragmentBit, 2), //
 			]);
 
 			GraphicsPipeline pipeline = logicalGpu.CreateGraphicsPipeline(
@@ -82,35 +98,94 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		protected override void CopyBuffers(float delta, byte frameIndex) {
-			if (shouldRegenerateChunk && World is not null) {
+			if (shouldRegenerateChunks && World is not null) {
 				RegenerateChunk(World);
-				shouldRegenerateChunk = false;
+				shouldRegenerateChunks = false;
 			}
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
-			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
-			commandBuffer.CmdDrawIndexed(indexCount);
+			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
+			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
 		}
 
 		private void RegenerateChunk(World.World world) {
-			uint[] indices = ChunkMeshBuilder.CreateChunkIndices(world.Chunk);
-			indexCount = (uint)indices.Length;
+			// buffers
+			ChunkPos[] positions = world.CleanRendererDirtyChunks();
 
-			if (indexCount != 0) {
-				ulong bufferSize = indexCount * sizeof(uint);
+			List<uint> indices = new();
+			List<VkDrawIndexedIndirectCommand> cmds = new();
 
-				if (IndexBuffer!.BufferSize < bufferSize) { // index buffer should never be null. just smol
+			uint indexOffset = 0;
+
+			foreach (ChunkPos position in positions) {
+				if (!world.TryGetChunk(position, out Chunk? chunk)) {
+					Logger.Error("Failed to get chunk");
+					continue;
+				}
+
+				uint[] chunkIndices = ChunkMeshBuilder.CreateChunkIndices(chunk);
+				indices.AddRange(chunkIndices);
+
+				cmds.Add(new() {
+						indexCount = (uint)chunkIndices.Length, //
+						instanceCount = 1, //
+						firstIndex = indexOffset, //
+						vertexOffset = 0, //
+						firstInstance = 0, //
+				});
+
+				indexOffset += (uint)chunkIndices.Length;
+
+				drawCount++;
+			}
+
+			drawCount = (uint)positions.Length;
+
+			if (drawCount != 0) {
+				ulong indexBufferSize = (ulong)(indices.Count * sizeof(uint));
+
+				if (IndexBuffer!.BufferSize < indexBufferSize) { // index buffer should never be null. just smol
 					LogicalGpu.EnqueueDestroy(IndexBuffer);
 
 					IndexBuffer = LogicalGpu.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, bufferSize);
+						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
 				}
 
-				transferCommandPool.CopyToBuffer(IndexBuffer, indices);
+				transferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(indices));
+			}
+
+			// chunk data
+			if (positions.Length > (int)perChunkDataBuffer.Count) {
+				perChunkDataBuffer = new((uint)positions.Length);
+
+				LogicalGpu.EnqueueDestroy(perChunkDataDescriptorBuffer);
+
+				perChunkDataDescriptorBuffer = LogicalGpu.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count, maxFramesInFlight,
+					VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
+
+				descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
+			}
+
+			for (int i = 0; i < positions.Length; i++) { perChunkDataBuffer.Data[i] = new(positions[i]); }
+			for (byte i = 0; i < maxFramesInFlight; i++) { perChunkDataDescriptorBuffer.Copy(perChunkDataBuffer.Data, i); } // TODO what should i be doing? should i pass FrameIndex or copy all?
+
+			// cmds
+			if (cmds.Count != 0) {
+				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * cmds.Count);
+
+				if (indirectCmdBuffer.BufferSize < cmdBufferSize) {
+					LogicalGpu.EnqueueDestroy(indirectCmdBuffer);
+
+					indirectCmdBuffer = LogicalGpu.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, cmdBufferSize);
+				}
+
+				indirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));
 			}
 		}
 
-		public void MarkChunkDirty() => shouldRegenerateChunk = true;
+		public void CheckIfWorldIsDirty() {
+			if (World?.HasDirtyChunksForRenderer ?? false) { shouldRegenerateChunks = true; }
+		}
 	}
 }

@@ -1,7 +1,6 @@
 using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Exceptions;
-using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics;
 using Engine3.Utility.Versions;
 using NLog;
@@ -20,7 +19,7 @@ namespace Engine3.Test.Voxel {
 
 		internal VoxelTest(bool useVulkan) : base("Voxel Test", new BuildVersion(),
 			useVulkan ?
-					new VulkanGraphicsBackend(new()) {
+					new VoxelGraphicsBackend(new()) {
 							Settings = new() {
 									EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 							},
@@ -40,7 +39,7 @@ namespace Engine3.Test.Voxel {
 
 			AddWindow(Window);
 
-			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
+			Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 1000f);
 			Camera.Position = new(0, 0, 2.5f);
 
 			CameraController = new(Window, Camera);
@@ -56,7 +55,7 @@ namespace Engine3.Test.Voxel {
 			AddRenderer(renderer);
 
 			Logger.Debug("Creating World");
-			World = new(renderer) { Chunk = { [0, 0, 0] = Block.Air, }, };
+			World = new();
 
 			Logger.Info("Setup done");
 		}

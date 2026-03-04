@@ -106,21 +106,21 @@ namespace Engine3.Test.Voxel.Graphics {
 		}
 
 		private void RegenerateChunk(World.World world) {
-			uint[] indices = ChunkMeshBuilder.CreateChunkIndices(world.Chunk);
-			chunkIndicesCount = (ulong)indices.Length;
-
-			if (chunkIndicesCount != 0) {
-				ulong bufferSize = chunkIndicesCount * sizeof(uint);
-
-				if (chunkIndexBuffer.BufferSize < bufferSize) {
-					logicalGpu.EnqueueDestroy(chunkIndexBuffer);
-
-					chunkIndexBuffer = logicalGpu.CreateBuffer(chunkIndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, bufferSize);
-				}
-
-				transferCommandPool.CopyToBuffer(chunkIndexBuffer, indices);
-			}
+			// uint[] indices = ChunkMeshBuilder.CreateChunkIndices(world.Chunk);
+			// chunkIndicesCount = (ulong)indices.Length;
+			//
+			// if (chunkIndicesCount != 0) {
+			// 	ulong bufferSize = chunkIndicesCount * sizeof(uint);
+			//
+			// 	if (chunkIndexBuffer.BufferSize < bufferSize) {
+			// 		logicalGpu.EnqueueDestroy(chunkIndexBuffer);
+			//
+			// 		chunkIndexBuffer = logicalGpu.CreateBuffer(chunkIndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+			// 			VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, bufferSize);
+			// 	}
+			//
+			// 	transferCommandPool.CopyToBuffer(chunkIndexBuffer, indices);
+			// }
 		}
 
 		public void MarkChunkDirty() => shouldRegenerateChunk = true;

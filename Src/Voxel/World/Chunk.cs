@@ -8,13 +8,13 @@ namespace Engine3.Test.Voxel.World {
 
 		private readonly World world;
 
-		public ChunkPos ChunkPos { get; }
+		public ChunkPos Position { get; }
 
 		private readonly Block[] blocks = new Block[ArraySize];
 
-		public Chunk(World world, ChunkPos chunkPos) {
+		internal Chunk(World world, ChunkPos position) {
 			this.world = world;
-			ChunkPos = chunkPos;
+			Position = position;
 
 			Array.Fill(blocks, Block.Stone);
 		}
@@ -23,7 +23,7 @@ namespace Engine3.Test.Voxel.World {
 			get => blocks[index];
 			private set {
 				blocks[index] = value;
-				world.MarkChunkDirty(this);
+				world.MarkChunkDirty(Position);
 			}
 		}
 

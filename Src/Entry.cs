@@ -10,6 +10,7 @@ using NLog;
 #if DEBUG
 using Engine3.Debug;
 using Engine3.Test.Voxel.Graphics.DataStructs;
+using Engine3.Test.Voxel.World;
 #endif
 
 namespace Engine3.Test {
@@ -24,7 +25,13 @@ namespace Engine3.Test {
 #if DEBUG
 			LoggerH.ConsoleLogLevel = LogLevel.Trace;
 
-			StructLayoutDumper.AddStructs += static () => StructLayoutDumper.AddStruct<MaterialPushConstants>();
+			StructLayoutDumper.AddStructs += static () => {
+				StructLayoutDumper.AddStruct<MaterialPushConstants>();
+				StructLayoutDumper.AddStruct<PerChunkData>();
+				StructLayoutDumper.AddStruct<ChunkPos>();
+				StructLayoutDumper.AddStruct<LocalBlockPos>();
+				StructLayoutDumper.AddStruct<GlobalBlockPos>();
+			};
 #endif
 
 			GameClient gameClient = TestType switch {

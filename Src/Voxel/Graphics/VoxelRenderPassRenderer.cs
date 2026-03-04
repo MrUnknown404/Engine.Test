@@ -50,10 +50,11 @@ namespace Engine3.Test.Voxel.Graphics {
 		protected override void CopyBuffers(float delta) {
 			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex); // TODO lerp camera position & rotation
 
+			worldRenderPass.CheckIfWorldIsDirty();
+
 			base.CopyBuffers(delta);
 		}
 
-		public void MarkChunkDirty() => worldRenderPass.MarkChunkDirty();
 		public void SetWorld(World.World world) => worldRenderPass.World = world;
 	}
 }

@@ -1,7 +1,7 @@
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Vertex;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
@@ -19,9 +19,11 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private const string Name = "Chunk";
 
-		public uint ChunkCount => (uint)chunkIndices.Count;
+		public WorldFragmentPushConstants WorldFragmentPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.UnitY);
 
 		public override bool ShouldRender { get => field && World != null; set; } = true;
+
+		public uint ChunkCount => (uint)chunkIndices.Count;
 
 		internal World.World? World { get; set; } // TODO get should be private
 
@@ -98,8 +100,11 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			]);
 
 			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
-				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzUv.GetAttributeDescriptions(), VertexXyzUv.GetBindingDescriptions()) {
-						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ], EnableDepthTest = true, EnableDepthWrite = true,
+				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
+						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
+						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageFragmentBit, offset = 0, size = (uint)sizeof(WorldFragmentPushConstants), }, ],
+						EnableDepthTest = true,
+						EnableDepthWrite = true,
 				});
 
 			graphicsResourceProvider.EnqueueDestroy(vertexShader);
@@ -114,6 +119,8 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
 			if (drawCount == 0) { return; }
+
+			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageFragmentBit, WorldFragmentPushConstants, 0);
 
 			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
 			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
@@ -134,7 +141,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			uint indexOffset = 0;
 
 			// add to all indices & add cmd
-			foreach ((_, uint[] indices) in chunkPositionIndicesPair) {
+			foreach ((_, uint[] indices) in chunkPositionIndicesPair) { // TODO remove empty draw calls
 				allIndices.AddRange(indices);
 
 				cmds.Add(new() { indexCount = (uint)indices.Length, instanceCount = 1, firstIndex = indexOffset, vertexOffset = 0, firstInstance = 0, });

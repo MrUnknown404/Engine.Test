@@ -16,6 +16,7 @@
 	<!-- Includes -->
 	<ItemGroup>
 		<PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all"/>
+		<PackageReference Include="Udun.FastNoiseLite" Version="1.0.1" />
 		<PackageReference Include="ZLinq.DropInGenerator" Version="1.5.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

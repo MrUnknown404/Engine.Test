@@ -85,15 +85,14 @@ namespace Engine3.Test.Voxel.Graphics {
 		[MustUseReturnValue]
 		public static ChunkVertex[] GetChunkVertices() {
 			ChunkVertex[] chunkVertices = new ChunkVertex[Chunk.ArraySize * FaceCount * VerticesPerFace];
-			VertexXyzUv[] cubeVertices = new VertexXyzUv[FaceCount * VerticesPerFace];
+			VertexXyzUvNormal[] cubeVertices = new VertexXyzUvNormal[FaceCount * VerticesPerFace];
 
-			uint size = (uint)(FaceCount * VerticesPerFace * sizeof(VertexXyzUv));
+			uint size = (uint)(FaceCount * VerticesPerFace * sizeof(VertexXyzUvNormal));
 
 			fixed (ChunkVertex* chunkVerticesPtr = chunkVertices) {
-				fixed (VertexXyzUv* cubeVerticesPtr = cubeVertices) {
+				fixed (VertexXyzUvNormal* cubeVerticesPtr = cubeVertices) {
 					for (ushort i = 0; i < Chunk.ArraySize; i++) {
 						Chunk.FromIndex(i, out byte x, out byte y, out byte z);
-
 						BuildCube(ref cubeVertices, x, y, z);
 						Buffer.MemoryCopy(cubeVerticesPtr, chunkVerticesPtr + i * FaceCount * VerticesPerFace, size, size);
 					}
@@ -102,28 +101,84 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			return chunkVertices;
 
-			static void BuildCube(ref VertexXyzUv[] vertices, byte x, byte y, byte z) {
+			static void BuildCube(ref VertexXyzUvNormal[] vertices, byte x, byte y, byte z) {
 				const byte VerticesPerFace = 4;
 				const float Size = 1;
 
 				uint vertexOffset = 0;
 
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.North, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.North, Size, x, y, z);
 				vertexOffset += VerticesPerFace;
 
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.East, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.East, Size, x, y, z);
 				vertexOffset += VerticesPerFace;
 
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.South, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.South, Size, x, y, z);
 				vertexOffset += VerticesPerFace;
 
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.West, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.West, Size, x, y, z);
 				vertexOffset += VerticesPerFace;
 
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.Up, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.Up, Size, x, y, z);
 
 				vertexOffset += VerticesPerFace;
-				CubeBuilder.BuildFace(ref vertices, vertexOffset, BlockFace.Down, Size, x, y, z);
+				BuildFace(ref vertices, vertexOffset, BlockFace.Down, Size, x, y, z);
+			}
+
+			static void BuildFace(ref VertexXyzUvNormal[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
+				VertexXyzUvNormal[] vertices = BuildFace2(face, size, x, y, z); // TODO calc normals. can i hardcode them?
+				for (int i = 0; i < vertices.Length; i++) { array[index + i] = vertices[i]; }
+			}
+
+			[MustUseReturnValue]
+			static VertexXyzUvNormal[] BuildFace2(BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
+				float h = size / 2f;
+				float x0 = x - h, x1 = x + h;
+				float y0 = y - h, y1 = y + h;
+				float z0 = z - h, z1 = z + h;
+
+				const float U0 = 0, U1 = 1;
+				const float V0 = 0, V1 = 1;
+
+				return face switch { // (U shape)
+						BlockFace.North => [
+								new(x1, y1, z0, U0, V1, 0, 0, -1), // Z-
+								new(x1, y0, z0, U0, V0, 0, 0, -1), //
+								new(x0, y0, z0, U1, V0, 0, 0, -1), //
+								new(x0, y1, z0, U1, V1, 0, 0, -1), //
+						],
+						BlockFace.East => [
+								new(x1, y1, z1, U0, V1, 1, 0, 0), // X+
+								new(x1, y0, z1, U0, V0, 1, 0, 0), //
+								new(x1, y0, z0, U1, V0, 1, 0, 0), //
+								new(x1, y1, z0, U1, V1, 1, 0, 0), //
+						],
+						BlockFace.South => [
+								new(x0, y1, z1, U0, V1, 0, 0, 1), // Z+
+								new(x0, y0, z1, U0, V0, 0, 0, 1), //
+								new(x1, y0, z1, U1, V0, 0, 0, 1), //
+								new(x1, y1, z1, U1, V1, 0, 0, 1), //
+						],
+						BlockFace.West => [
+								new(x0, y1, z0, U0, V1, -1, 0, 0), // X-
+								new(x0, y0, z0, U0, V0, -1, 0, 0), //
+								new(x0, y0, z1, U1, V0, -1, 0, 0), //
+								new(x0, y1, z1, U1, V1, -1, 0, 0), //
+						],
+						BlockFace.Up => [
+								new(x0, y1, z0, U0, V1, 0, 1, 0), // Y+
+								new(x0, y1, z1, U0, V0, 0, 1, 0), //
+								new(x1, y1, z1, U1, V0, 0, 1, 0), //
+								new(x1, y1, z0, U1, V1, 0, 1, 0), //
+						],
+						BlockFace.Down => [
+								new(x1, y0, z0, U0, V1, 0, -1, 0), // Y-
+								new(x1, y0, z1, U0, V0, 0, -1, 0), //
+								new(x0, y0, z1, U1, V0, 0, -1, 0), //
+								new(x0, y0, z0, U1, V1, 0, -1, 0), //
+						],
+						_ => throw new ArgumentOutOfRangeException(nameof(face), face, null),
+				};
 			}
 		}
 	}

@@ -6,8 +6,10 @@ struct PerChunkData {
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inUVs;
+layout (location = 2) in vec3 inNormal;
 
-layout (location = 0) out vec2 fragUVs;
+layout (location = 0) out vec2 outUVs;
+layout (location = 1) out vec3 outNormal;
 
 layout (binding = 0) uniform CameraBuffer {
 	mat4 projection;
@@ -27,6 +29,6 @@ void main() {
 	const int BlocksInChunk = 16;
 
 	gl_Position = cameraBuffer.projection * cameraBuffer.view * vec4(inPosition + getChunkPosition() * BlocksInChunk, 1);
-
-	fragUVs = inUVs;
+	outUVs = inUVs;
+	outNormal = inNormal;
 }

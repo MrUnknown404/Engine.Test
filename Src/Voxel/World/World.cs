@@ -11,7 +11,7 @@ namespace Engine3.Test.Voxel.World {
 		private const byte CameraViewDistance = 3; // in chunks
 
 		public WorldProperties WorldProperties { get; }
-		public HeightMap HeightMap { get; } = new();
+		public HeightMap HeightMap { get; }
 
 		public uint ChunkCount => (uint)chunks.Count;
 		public uint DirtyChunkCount => (uint)dirtyChunks.Count;
@@ -31,6 +31,7 @@ namespace Engine3.Test.Voxel.World {
 
 		public World(WorldProperties worldProperties, Camera camera, WorldRenderPass worldRenderPass) {
 			WorldProperties = worldProperties;
+			HeightMap = new(worldProperties);
 			this.camera = camera;
 			this.worldRenderPass = worldRenderPass;
 			chunkGenerationQueue = new(this);

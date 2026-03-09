@@ -47,7 +47,7 @@ namespace Engine3.Test.Voxel {
 
 			VoxelRenderPassRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
 			renderer.OnSetupDoneEvent += () => {
-				renderer.SetWorld(World !); // shouldn't be null here
+				renderer.SetWorld(World!); // shouldn't be null here
 
 				Window?.Show();
 				Logger.Info("Showing window");
@@ -56,12 +56,15 @@ namespace Engine3.Test.Voxel {
 			AddRenderer(renderer);
 
 			Logger.Debug("Creating World");
-			World = new();
+			World = new(new() { Seed = 1, }, Camera, renderer.WorldRenderPass);
 
 			Logger.Info("Setup done");
 		}
 
-		protected override void Update() => CameraController?.Update();
+		protected override void Update() {
+			CameraController?.Update();
+			World?.Update();
+		}
 
 		protected override void Cleanup() { }
 	}

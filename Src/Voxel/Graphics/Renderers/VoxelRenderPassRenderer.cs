@@ -7,12 +7,13 @@ using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Test.Graphics.Vulkan;
+using Engine3.Test.Voxel.Graphics.ImGui;
 using ImGuiNET;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
-		private readonly WorldRenderPass worldRenderPass;
+		internal WorldRenderPass WorldRenderPass { get; }
 
 		private readonly DescriptorBuffers cameraUniformBuffer;
 
@@ -26,31 +27,32 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			this.camera = camera;
 
-			worldRenderPass = new(this, assembly, cameraUniformBuffer);
+			WorldRenderPass = new(this, assembly, cameraUniformBuffer);
 
-			AddRenderPass(worldRenderPass);
+			AddRenderPass(WorldRenderPass);
 			AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
 			AddRenderPass(new XyzGizmoRenderPass(this, assembly, camera));
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {
-			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawFunc);
+			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
 
-			ImGui.Text("test");
+			if (WorldRenderPass.World != null) { ImGuiH.IndentedCollapsingHeader("World", indentAmount, DrawWorld, ImGuiTreeNodeFlags.DefaultOpen); }
+
+			ImGuiNet.Text("test");
 
 			return;
 
-			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
+			void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
+			void DrawWorld() => WorldImGuiMaker.ShowImGui(WorldRenderPass.World);
 		}
 
 		protected override void CopyBuffers(float delta) {
 			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex); // TODO lerp camera position & rotation
 
-			worldRenderPass.CheckIfWorldIsDirty();
-
 			base.CopyBuffers(delta);
 		}
 
-		public void SetWorld(World.World world) => worldRenderPass.World = world;
+		public void SetWorld(World.World world) => WorldRenderPass.World = world;
 	}
 }

@@ -11,9 +11,9 @@ using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
 using Engine3.Test.Core.Graphics;
+using Engine3.Test.Test.Graphics.Vulkan;
 using Engine3.Test.Voxel.World;
 using Engine3.Utility;
-using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
 using StbiSharp;
@@ -66,10 +66,10 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			if (xyzGizmoRecorderNode != null) {
 				bool showXyzGizmo = xyzGizmoRecorderNode.ShouldDraw;
-				if (ImGui.Checkbox("Show XYZ Gizmo", ref showXyzGizmo)) { xyzGizmoRecorderNode.ShouldDraw = showXyzGizmo; }
+				if (ImGuiNet.Checkbox("Show XYZ Gizmo", ref showXyzGizmo)) { xyzGizmoRecorderNode.ShouldDraw = showXyzGizmo; }
 			}
 
-			ImGui.Text("test");
+			ImGuiNet.Text("test");
 
 			return;
 

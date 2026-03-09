@@ -1,25 +1,14 @@
-using System.Diagnostics.CodeAnalysis;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Voxel.Graphics.Vertex {
 	public readonly unsafe record struct ChunkVertex {
-		public required float X { get; init; }
-		public required float Y { get; init; }
-		public required float Z { get; init; }
+		public float X { get; init; }
+		public float Y { get; init; }
+		public float Z { get; init; }
 
-		public required float U { get; init; }
-		public required float V { get; init; }
+		public float U { get; init; }
+		public float V { get; init; }
 
-		[SetsRequiredMembers]
-		public ChunkVertex() {
-			X = 0;
-			Y = 0;
-			Z = 0;
-			U = 0;
-			V = 0;
-		}
-
-		[SetsRequiredMembers]
 		public ChunkVertex(float x, float y, float z, float u, float v) {
 			X = x;
 			Y = y;

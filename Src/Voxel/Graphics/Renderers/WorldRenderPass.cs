@@ -19,9 +19,14 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private const string Name = "Chunk";
 
+		public uint ChunkCount => (uint)chunkIndices.Count;
+
 		public override bool ShouldRender { get => field && World != null; set; } = true;
 
-		internal World.World? World { private get; set; }
+		internal World.World? World { get; set; } // TODO get should be private
+
+		private readonly ChunkRenderQueue chunkRenderQueue = new();
+		private readonly Dictionary<ChunkPos, uint[]> chunkIndices = new();
 
 		private readonly TransferCommandPool transferCommandPool;
 		private readonly DescriptorSets descriptorSets;
@@ -30,7 +35,6 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		private DescriptorBuffers perChunkDataDescriptorBuffer;
 		private PerChunkDataBuffer perChunkDataBuffer = new(0);
 
-		private bool shouldRegenerateChunks;
 		private uint drawCount;
 
 		private readonly byte maxFramesInFlight;
@@ -40,20 +44,26 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			transferCommandPool = TransferCommandPool;
 			maxFramesInFlight = MaxFramesInFlight;
 
+			const ushort InitialChunkBufferCount = 5000;
+			const uint SizeOfBiggestChunk = Chunk.ArraySize * 24; // facesPerCube * indicesPerFace
+			const ulong InitialIndexBufferSize = sizeof(uint) * InitialChunkBufferCount * SizeOfBiggestChunk;
+
 			ChunkVertex[] vertices = ChunkMeshBuilder.GetChunkVertices();
 
 			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkVertex) * vertices.Length));
 
 			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, sizeof(uint));
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, InitialIndexBufferSize);
 
-			indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, 1);
+			indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
+				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
+				(ulong)(sizeof(VkDrawIndexedIndirectCommand) * InitialChunkBufferCount)); // TODO for some reason things break if i change the initial size
 
 			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
 
-			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData), maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
-				VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
+			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData) * InitialChunkBufferCount, maxFramesInFlight,
+				VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
 			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
@@ -99,87 +109,116 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		}
 
 		protected override void CopyBuffers(float delta, byte frameIndex) {
-			if (shouldRegenerateChunks && World is not null) {
-				RegenerateChunk(World);
-				shouldRegenerateChunks = false;
-			}
+			if (chunkRenderQueue.ShouldRenderChunks && World is not null) { RegenerateWorld(World); }
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
+			if (drawCount == 0) { return; }
+
 			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
 			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
 		}
 
-		private void RegenerateChunk(World.World world) {
-			// buffers
-			ChunkPos[] positions = world.CleanRendererDirtyChunks();
+		private void RegenerateWorld(World.World world) {
+			// get dirty chunks
+			ChunkPos[] chunksToAdd = chunkRenderQueue.DequeueAll();
+			Logger.Trace($"Rendering {chunksToAdd.Length} new chunks");
 
-			List<uint> indices = new();
+			// create indices
+			foreach (ChunkPos position in chunksToAdd) { chunkIndices[position] = ChunkMeshBuilder.CreateChunkIndices(world, position, true); } // TODO multithread
+
+			KeyValuePair<ChunkPos, uint[]>[] chunkPositionIndicesPair = chunkIndices.ToArray();
 			List<VkDrawIndexedIndirectCommand> cmds = new();
+			List<uint> allIndices = new();
 
 			uint indexOffset = 0;
 
-			foreach (ChunkPos position in positions) {
-				uint[] chunkIndices = ChunkMeshBuilder.CreateChunkIndices(world, position, true);
-				indices.AddRange(chunkIndices);
+			// add to all indices & add cmd
+			foreach ((_, uint[] indices) in chunkPositionIndicesPair) {
+				allIndices.AddRange(indices);
 
-				cmds.Add(new() {
-						indexCount = (uint)chunkIndices.Length, //
-						instanceCount = 1, //
-						firstIndex = indexOffset, //
-						vertexOffset = 0, //
-						firstInstance = 0, //
-				});
+				cmds.Add(new() { indexCount = (uint)indices.Length, instanceCount = 1, firstIndex = indexOffset, vertexOffset = 0, firstInstance = 0, });
 
-				indexOffset += (uint)chunkIndices.Length;
+				indexOffset += (uint)indices.Length;
 			}
 
-			drawCount = (uint)positions.Length;
+			drawCount = (uint)cmds.Count;
 
-			if (indices.Count != 0) {
-				ulong indexBufferSize = (ulong)(indices.Count * sizeof(uint));
+			// copy index buffer
+			if (allIndices.Count != 0) {
+				ulong indexBufferSize = (ulong)(allIndices.Count * sizeof(uint));
 
-				if (IndexBuffer!.BufferSize < indexBufferSize) { // index buffer should never be null. just smol
+				if (indexBufferSize > IndexBuffer!.BufferSize) { // index buffer should never be null. just smol
 					GraphicsResourceProvider.EnqueueDestroy(IndexBuffer);
 
 					IndexBuffer = GraphicsResourceProvider.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
 						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
 				}
 
-				transferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(indices));
+				transferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(allIndices));
 			}
 
-			// chunk data
-			if (positions.Length > (int)perChunkDataBuffer.Count) {
-				perChunkDataBuffer = new((uint)positions.Length);
+			// set chunk data
+			if (chunkPositionIndicesPair.Length > (int)perChunkDataBuffer.Count) {
+				perChunkDataBuffer = new((uint)chunkPositionIndicesPair.Length);
 
-				GraphicsResourceProvider.EnqueueDestroy(perChunkDataDescriptorBuffer);
+				ulong bufferSize = (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count;
+				if (bufferSize > perChunkDataDescriptorBuffer.BufferSize) {
+					GraphicsResourceProvider.EnqueueDestroy(perChunkDataDescriptorBuffer);
 
-				perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count, maxFramesInFlight,
-					VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
+					perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, bufferSize, maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+						VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
-				descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
+					descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
+				}
 			}
 
-			for (int i = 0; i < positions.Length; i++) { perChunkDataBuffer.Data[i] = new(positions[i]); }
+			// copy chunk data
+			for (int i = 0; i < chunkPositionIndicesPair.Length; i++) { perChunkDataBuffer.Data[i] = new(chunkPositionIndicesPair[i].Key); }
 			for (byte i = 0; i < maxFramesInFlight; i++) { perChunkDataDescriptorBuffer.Copy(perChunkDataBuffer.Data, i); } // TODO what should i be doing? should i pass FrameIndex or copy all?
 
-			// cmds
-			if (cmds.Count != 0) {
-				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * cmds.Count);
+			// copy cmds
+			if (drawCount != 0) {
+				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * drawCount);
 
-				if (indirectCmdBuffer.BufferSize < cmdBufferSize) {
+				if (cmdBufferSize > indirectCmdBuffer.BufferSize) {
 					GraphicsResourceProvider.EnqueueDestroy(indirectCmdBuffer);
 
-					indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit, cmdBufferSize);
+					indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
+						VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, cmdBufferSize);
 				}
 
 				indirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));
 			}
 		}
 
-		public void CheckIfWorldIsDirty() {
-			if (World?.HasDirtyChunksForRenderer ?? false) { shouldRegenerateChunks = true; }
+		internal void MarkAllChunksDirty() {
+			foreach (ChunkPos position in chunkIndices.Keys) { EnqueueChunk(position); }
+		}
+
+		internal void EnqueueChunk(ChunkPos position) => chunkRenderQueue.Enqueue(position);
+
+		internal bool EnqueueChunkIfCached(ChunkPos position) {
+			if (chunkIndices.ContainsKey(position)) {
+				EnqueueChunk(position);
+				return true;
+			}
+
+			return false;
+		}
+
+		internal bool EnqueueChunkIfNotCached(ChunkPos position) {
+			if (!chunkIndices.ContainsKey(position)) {
+				EnqueueChunk(position);
+				return true;
+			}
+
+			return false;
+		}
+
+		internal void ClearCache() {
+			chunkIndices.Clear();
+			drawCount = 0;
 		}
 	}
 }

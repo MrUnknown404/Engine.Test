@@ -3,7 +3,7 @@ using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Client.Graphics.OpenGL.Renderers;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 

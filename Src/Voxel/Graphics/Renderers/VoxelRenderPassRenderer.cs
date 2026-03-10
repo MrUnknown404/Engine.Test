@@ -14,6 +14,7 @@ using OpenTK.Graphics.Vulkan;
 namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
 		internal WorldRenderPass WorldRenderPass { get; }
+		internal ChunkOutlineRenderPass ChunkOutlineRenderPass { get; }
 
 		private readonly DescriptorBuffers cameraUniformBuffer;
 
@@ -28,9 +29,12 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			this.camera = camera;
 
 			WorldRenderPass = new(this, assembly, cameraUniformBuffer);
+			ChunkOutlineRenderPass = new(this, assembly, cameraUniformBuffer);
 
 			AddRenderPass(WorldRenderPass);
 			AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
+
+			AddRenderPass(ChunkOutlineRenderPass);
 			AddRenderPass(new XyzGizmoRenderPass(this, assembly, camera));
 		}
 

@@ -6,7 +6,7 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;

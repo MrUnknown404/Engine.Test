@@ -2,7 +2,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
@@ -52,7 +52,6 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			// copy
 			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, cubeIndices), ]);
-
 			for (byte i = 0; i < MaxFramesInFlight; i++) { instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Models), i); }
 
 			// textures

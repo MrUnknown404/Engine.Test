@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
@@ -120,7 +120,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			foreach (Model.RenderData data in xyzGizmoModel.RenderDataList) {
 				if (data.Material is not null) {
-					commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */), 0);
+					commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
 				}
 
 				commandBuffer.CmdDrawIndexed(data.IndexCount, 1, 0, data.VertexOffset, 0);

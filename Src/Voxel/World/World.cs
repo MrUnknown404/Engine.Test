@@ -24,15 +24,17 @@ namespace Engine3.Test.Voxel.World {
 		private readonly ChunkGenerationQueue chunkGenerationQueue;
 
 		private readonly WorldRenderPass worldRenderPass;
+		private readonly ChunkOutlineRenderPass chunkOutlineRenderPass;
 		private readonly Camera camera;
 
 		private ChunkPos prevCameraPos = new(int.MinValue, int.MinValue, int.MinValue);
 
-		public World(WorldProperties worldProperties, Camera camera, WorldRenderPass worldRenderPass) {
+		public World(WorldProperties worldProperties, Camera camera, WorldRenderPass worldRenderPass, ChunkOutlineRenderPass chunkOutlineRenderPass) {
 			WorldProperties = worldProperties;
 			HeightMap = new(worldProperties);
 			this.camera = camera;
 			this.worldRenderPass = worldRenderPass;
+			this.chunkOutlineRenderPass = chunkOutlineRenderPass;
 			chunkGenerationQueue = new(this);
 
 			InitialChunkGeneration();
@@ -82,6 +84,7 @@ namespace Engine3.Test.Voxel.World {
 
 				Logger.Trace("Camera is in a new chunk. Requesting new chunks...");
 
+				chunkOutlineRenderPass.CameraChunkPos = cameraChunkPos;
 				prevCameraPos = cameraChunkPos;
 
 				for (int x = -radius; x <= radius; x++) {

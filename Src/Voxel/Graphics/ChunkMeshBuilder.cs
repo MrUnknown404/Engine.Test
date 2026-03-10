@@ -127,22 +127,21 @@ namespace Engine3.Test.Voxel.Graphics {
 			}
 
 			[MustUseReturnValue]
-			static void BuildFace(ref ChunkVertex[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
-				float h = size / 2f;
-				float x0 = x - h, x1 = x + h;
-				float y0 = y - h, y1 = y + h;
-				float z0 = z - h, z1 = z + h;
+			static void BuildFace(ref ChunkVertex[] array, uint index, BlockFace face, float size, float x, float y, float z) {
+				float x1 = x + size;
+				float y1 = y + size;
+				float z1 = z + size;
 
 				const float U0 = 0, U1 = 1;
 				const float V0 = 0, V1 = 1;
 
 				switch (face) {
-					case BlockFace.North: SetFace(ref array, index, new(x1, y1, z0, U0, V1, 0, 0, -1), new(x1, y0, z0, U0, V0, 0, 0, -1), new(x0, y0, z0, U1, V0, 0, 0, -1), new(x0, y1, z0, U1, V1, 0, 0, -1)); break; // Z-
-					case BlockFace.East: SetFace(ref array, index, new(x1, y1, z1, U0, V1, 1, 0, 0), new(x1, y0, z1, U0, V0, 1, 0, 0), new(x1, y0, z0, U1, V0, 1, 0, 0), new(x1, y1, z0, U1, V1, 1, 0, 0)); break; // X+
-					case BlockFace.South: SetFace(ref array, index, new(x0, y1, z1, U0, V1, 0, 0, 1), new(x0, y0, z1, U0, V0, 0, 0, 1), new(x1, y0, z1, U1, V0, 0, 0, 1), new(x1, y1, z1, U1, V1, 0, 0, 1)); break; // Z+
-					case BlockFace.West: SetFace(ref array, index, new(x0, y1, z0, U0, V1, -1, 0, 0), new(x0, y0, z0, U0, V0, -1, 0, 0), new(x0, y0, z1, U1, V0, -1, 0, 0), new(x0, y1, z1, U1, V1, -1, 0, 0)); break; // X-
-					case BlockFace.Up: SetFace(ref array, index, new(x0, y1, z0, U0, V1, 0, 1, 0), new(x0, y1, z1, U0, V0, 0, 1, 0), new(x1, y1, z1, U1, V0, 0, 1, 0), new(x1, y1, z0, U1, V1, 0, 1, 0)); break; // Y+
-					case BlockFace.Down: SetFace(ref array, index, new(x1, y0, z0, U0, V1, 0, -1, 0), new(x1, y0, z1, U0, V0, 0, -1, 0), new(x0, y0, z1, U1, V0, 0, -1, 0), new(x0, y0, z0, U1, V1, 0, -1, 0)); break; // Y-
+					case BlockFace.North: SetFace(ref array, index, new(x1, y1, z, U0, V1, 0, 0, -1), new(x1, y, z, U0, V0, 0, 0, -1), new(x, y, z, U1, V0, 0, 0, -1), new(x, y1, z, U1, V1, 0, 0, -1)); break; // Z-
+					case BlockFace.East: SetFace(ref array, index, new(x1, y1, z1, U0, V1, 1, 0, 0), new(x1, y, z1, U0, V0, 1, 0, 0), new(x1, y, z, U1, V0, 1, 0, 0), new(x1, y1, z, U1, V1, 1, 0, 0)); break; // X+
+					case BlockFace.South: SetFace(ref array, index, new(x, y1, z1, U0, V1, 0, 0, 1), new(x, y, z1, U0, V0, 0, 0, 1), new(x1, y, z1, U1, V0, 0, 0, 1), new(x1, y1, z1, U1, V1, 0, 0, 1)); break; // Z+
+					case BlockFace.West: SetFace(ref array, index, new(x, y1, z, U0, V1, -1, 0, 0), new(x, y, z, U0, V0, -1, 0, 0), new(x, y, z1, U1, V0, -1, 0, 0), new(x, y1, z1, U1, V1, -1, 0, 0)); break; // X-
+					case BlockFace.Up: SetFace(ref array, index, new(x, y1, z, U0, V1, 0, 1, 0), new(x, y1, z1, U0, V0, 0, 1, 0), new(x1, y1, z1, U1, V0, 0, 1, 0), new(x1, y1, z, U1, V1, 0, 1, 0)); break; // Y+
+					case BlockFace.Down: SetFace(ref array, index, new(x1, y, z, U0, V1, 0, -1, 0), new(x1, y, z1, U0, V0, 0, -1, 0), new(x, y, z1, U1, V0, 0, -1, 0), new(x, y, z, U1, V1, 0, -1, 0)); break; // Y-
 					default: throw new ArgumentOutOfRangeException(nameof(face), face, null);
 				}
 

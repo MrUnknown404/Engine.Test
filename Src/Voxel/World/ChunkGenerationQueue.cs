@@ -37,7 +37,7 @@ namespace Engine3.Test.Voxel.World {
 
 				for (byte z = 0; z < Chunk.Size; z++) {
 					int newZ = chunkZOffset + z;
-					int height = world.HeightMap.GetAt(newX, newZ);
+					int height = world.HeightMap.GetBlockHeightAt(newX, newZ);
 
 					for (byte y = 0; y < Chunk.Size; y++) {
 						int newY = chunkYOffset + y;

@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;

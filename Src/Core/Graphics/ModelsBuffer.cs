@@ -7,11 +7,11 @@ namespace Engine3.Test.Core.Graphics {
 
 		public required Matrix4x4[] Models { get; init; }
 
-		public ulong Count { get; }
+		public uint Count { get; }
 		public ulong Size { get; }
 
 		[SetsRequiredMembers]
-		public ModelsBuffer(ulong count) {
+		public ModelsBuffer(uint count) {
 			Models = new Matrix4x4[count];
 			Count = count;
 			Size = MatrixSize * Count;

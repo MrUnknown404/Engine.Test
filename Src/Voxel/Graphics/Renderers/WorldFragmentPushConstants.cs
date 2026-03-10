@@ -1,4 +1,4 @@
-using System.Numerics;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public readonly record struct WorldFragmentPushConstants {

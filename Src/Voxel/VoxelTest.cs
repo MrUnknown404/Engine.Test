@@ -56,7 +56,7 @@ namespace Engine3.Test.Voxel {
 			AddRenderer(renderer);
 
 			Logger.Debug("Creating World");
-			World = new(new() { Seed = 1, }, Camera, renderer.WorldRenderPass);
+			World = new(new() { Seed = 1, }, Camera, renderer.WorldRenderPass, renderer.ChunkOutlineRenderPass);
 
 			Logger.Info("Setup done");
 		}

@@ -30,7 +30,6 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		private readonly ChunkRenderQueue chunkRenderQueue = new();
 		private readonly Dictionary<ChunkPos, uint[]> chunkIndices = new();
 
-		private readonly TransferCommandPool transferCommandPool;
 		private readonly DescriptorSets descriptorSets;
 		private VulkanBuffer indirectCmdBuffer;
 
@@ -39,13 +38,8 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private uint drawCount;
 
-		private readonly byte maxFramesInFlight;
-
 		public WorldRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
-			transferCommandPool = TransferCommandPool;
-			maxFramesInFlight = MaxFramesInFlight;
-
 			const ushort InitialChunkBufferCount = 10000;
 			const uint SizeOfBiggestChunk = Chunk.ArraySize * 24; // facesPerCube * indicesPerFace
 			const ulong InitialIndexBufferSize = sizeof(uint) * InitialChunkBufferCount * SizeOfBiggestChunk;
@@ -62,9 +56,9 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
 				(ulong)(sizeof(VkDrawIndexedIndirectCommand) * InitialChunkBufferCount)); // TODO for some reason things break if i change the initial size
 
-			transferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
 
-			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData) * InitialChunkBufferCount, maxFramesInFlight,
+			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData) * InitialChunkBufferCount, MaxFramesInFlight,
 				VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
@@ -73,13 +67,13 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, assembly)) {
 				image = GraphicsResourceProvider.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
-				transferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
+				TransferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
 			}
 
 			// descriptors
 			DescriptorPool descriptorPool =
 					GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, VkDescriptorType.DescriptorTypeStorageBuffer, VkDescriptorType.DescriptorTypeCombinedImageSampler, ], 1,
-						maxFramesInFlight);
+						MaxFramesInFlight);
 
 			descriptorSets = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
 			Logger.Debug("Created world descriptor sets");
@@ -120,7 +114,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
 			if (drawCount == 0) { return; }
 
-			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageFragmentBit, WorldFragmentPushConstants, 0);
+			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageFragmentBit, WorldFragmentPushConstants);
 
 			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
 			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
@@ -166,7 +160,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
 				}
 
-				transferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(allIndices));
+				TransferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(allIndices));
 			}
 
 			// set chunk data
@@ -177,7 +171,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 				if (bufferSize > perChunkDataDescriptorBuffer.BufferSize) {
 					GraphicsResourceProvider.EnqueueDestroy(perChunkDataDescriptorBuffer);
 
-					perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, bufferSize, maxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+					perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 						VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 					descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
@@ -186,7 +180,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			// copy chunk data
 			for (int i = 0; i < chunkPositionIndicesPair.Length; i++) { perChunkDataBuffer.Data[i] = new(chunkPositionIndicesPair[i].Key); }
-			for (byte i = 0; i < maxFramesInFlight; i++) { perChunkDataDescriptorBuffer.Copy(perChunkDataBuffer.Data, i); } // TODO what should i be doing? should i pass FrameIndex or copy all?
+			for (byte i = 0; i < MaxFramesInFlight; i++) { perChunkDataDescriptorBuffer.Copy(perChunkDataBuffer.Data, i); } // TODO what should i be doing? should i pass FrameIndex or copy all?
 
 			// copy cmds
 			if (drawCount != 0) {

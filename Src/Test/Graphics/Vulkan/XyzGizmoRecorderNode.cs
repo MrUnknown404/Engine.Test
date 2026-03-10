@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
-using Engine3.Client.Graphics.Vertex;
+using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
@@ -131,7 +131,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			foreach (Model.RenderData data in xyzGizmoModel.RenderDataList) {
 				if (data.Material is not null) {
 					graphicsCommandBuffer.CmdPushConstants(gizmoGraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit,
-						new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */), 0);
+						new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
 				}
 
 				graphicsCommandBuffer.CmdDrawIndexed(data.IndexCount, 1, 0, data.VertexOffset, 0);
@@ -157,7 +157,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, VkFormat swapChainImageFormat, Assembly gameAssembly, out DescriptorSetLayout sceneDescriptorSetLayout,
 			out DescriptorSetLayout materialDescriptorSetLayout) {
-			const string Name = "Gizmo";
+			const string Name = "XYZGizmo";
 
 			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, gameAssembly);
 			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, gameAssembly);

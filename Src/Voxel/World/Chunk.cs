@@ -2,42 +2,42 @@ using Engine3.Test.Voxel.Blocks;
 using JetBrains.Annotations;
 
 namespace Engine3.Test.Voxel.World {
-	public class Chunk {
+	public class Chunk : IChunkAccessor, IChunkWriter {
 		public const byte Size = 16;
 		public const ushort ArraySize = Size * Size * Size;
 
 		private readonly World world;
 
 		public ChunkPos Position { get; }
+		public bool IsEmpty { get; private set; }
 
-		private readonly Block[] blocks = new Block[ArraySize];
+		private readonly Block[] blocks;
 
-		internal Chunk(World world, ChunkPos position, Block[]? blocks) {
+		internal Chunk(World world, ChunkPos position, Block[] blocks, bool isEmpty) {
 			this.world = world;
 			Position = position;
 
-			if (blocks == null) { Array.Fill(this.blocks, Block.Air); } else { this.blocks = blocks; }
+			this.blocks = blocks;
+			IsEmpty = isEmpty;
 		}
 
-		internal Block this[ushort index] {
-			[MustUseReturnValue] get => blocks[index];
-			private set {
-				blocks[index] = value;
-				world.MarkChunkDirty(Position);
-			}
+		internal Chunk(World world, ChunkPos position) {
+			this.world = world;
+			Position = position;
+			blocks = new Block[ArraySize];
+
+			Array.Fill(blocks, Block.Air);
+			IsEmpty = true;
 		}
 
-		[Obsolete] // TODO make system for editing large amounts of blocks at once & force that (maybe?)
-		public Block this[byte x, byte y, byte z] {
-			[MustUseReturnValue] get => this[ToIndex(x, y, z)];
-			set => this[ToIndex(x, y, z)] = value;
-		}
+		public Block GetBlock(byte x, byte y, byte z) => blocks[ToIndex(x, y, z)];
+		public Block GetBlock(LocalBlockPos position) => blocks[ToIndex(position)];
+		public Block GetBlock(uint index) => blocks[index];
 
-		[Obsolete] // TODO make system for editing large amounts of blocks at once & force that (maybe?)
-		public Block this[LocalBlockPos blockPos] {
-			[MustUseReturnValue] get => this[ToIndex(blockPos)];
-			set => this[ToIndex(blockPos)] = value;
-		}
+		public void SetBlock(Block block, byte x, byte y, byte z) => blocks[ToIndex(x, y, z)] = block;
+		public void SetBlock(Block block, LocalBlockPos position) => blocks[ToIndex(position)] = block;
+
+		internal void UpdateIsEmpty() => IsEmpty = !blocks.Any(static block => block.Properties.SolidFaceMask != BlockFaceMask.None);
 
 		[MustUseReturnValue] internal static ushort ToIndex(byte x, byte y, byte z) => (ushort)(x + y * Size * Size + z * Size);
 		[MustUseReturnValue] internal static ushort ToIndex(LocalBlockPos blockPos) => (ushort)(blockPos.X + blockPos.Y * Size * Size + blockPos.Z * Size);

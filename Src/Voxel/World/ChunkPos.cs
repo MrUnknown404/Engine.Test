@@ -18,5 +18,7 @@ namespace Engine3.Test.Voxel.World {
 		[MustUseReturnValue] public static ChunkPos operator -(ChunkPos left, ChunkPos right) => new(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
 		[MustUseReturnValue] public static ChunkPos operator *(ChunkPos left, ChunkPos right) => new(left.X * right.X, left.Y * right.Y, left.Z * right.Z);
 		[MustUseReturnValue] public static ChunkPos operator /(ChunkPos left, ChunkPos right) => new(left.X / right.X, left.Y / right.Y, left.Z / right.Z);
+
+		public override string ToString() => $"({X}, {Y}, {Z})";
 	}
 }

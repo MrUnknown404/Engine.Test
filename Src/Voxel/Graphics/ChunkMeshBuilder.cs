@@ -1,4 +1,3 @@
-using Engine3.Client.Graphics.Vertex;
 using Engine3.Exceptions;
 using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics.Vertex;
@@ -11,22 +10,24 @@ namespace Engine3.Test.Voxel.Graphics {
 		private const byte VerticesPerFace = 4;
 
 		[MustUseReturnValue]
-		public static uint[] CreateChunkIndices(World.World world, ChunkPos position, bool showBorder) { // TODO optimize. eventually use a compute shader?
+		public static uint[] CreateChunkIndices(IWorldAccessor world, ChunkPos position, bool showBorder) { // TODO optimize. eventually use a compute shader?
 			const byte ChunkSize = Chunk.Size - 1;
 
 			List<uint> indices = new();
-			if (!world.TryGetChunk(position, out Chunk? chunk)) { throw new Engine3Exception($"Failed to get chunk at {position}"); }
+			if (!world.TryGetChunk(position, out IChunkAccessor? chunkAccessor)) { throw new Engine3Exception($"Failed to get chunk at {position}"); }
 
-			world.TryGetChunk(position.Offset(0, 0, -1), out Chunk? northChunk);
-			world.TryGetChunk(position.Offset(1, 0, 0), out Chunk? eastChunk);
-			world.TryGetChunk(position.Offset(0, 0, 1), out Chunk? southChunk);
-			world.TryGetChunk(position.Offset(-1, 0, 0), out Chunk? westChunk);
-			world.TryGetChunk(position.Offset(0, 1, 0), out Chunk? upChunk);
-			world.TryGetChunk(position.Offset(0, -1, 0), out Chunk? downChunk);
+			if (chunkAccessor.IsEmpty) { return Array.Empty<uint>(); }
+
+			world.TryGetChunk(position.Offset(0, 0, -1), out IChunkAccessor? northChunkAccessor);
+			world.TryGetChunk(position.Offset(1, 0, 0), out IChunkAccessor? eastChunkAccessor);
+			world.TryGetChunk(position.Offset(0, 0, 1), out IChunkAccessor? southChunkAccessor);
+			world.TryGetChunk(position.Offset(-1, 0, 0), out IChunkAccessor? westChunkAccessor);
+			world.TryGetChunk(position.Offset(0, 1, 0), out IChunkAccessor? upChunkAccessor);
+			world.TryGetChunk(position.Offset(0, -1, 0), out IChunkAccessor? downChunkAccessor);
 
 			uint offset = 0;
 			for (ushort i = 0; i < Chunk.ArraySize; i++) {
-				Block block = chunk[i];
+				Block block = chunkAccessor.GetBlock(i);
 
 				BlockFaceMask blockFaceMask = block.Properties.SolidFaceMask;
 				if (blockFaceMask == BlockFaceMask.None) {
@@ -37,28 +38,28 @@ namespace Engine3.Test.Voxel.Graphics {
 				Chunk.FromIndex(i, out byte x, out byte y, out byte z);
 
 				bool isNorthVisible = z == 0 ?
-						northChunk != null ? !northChunk[x, y, ChunkSize].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South) : showBorder :
-						!chunk[x, y, (byte)(z - 1)].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South);
+						northChunkAccessor != null ? !northChunkAccessor.GetBlock(x, y, ChunkSize).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South) : showBorder :
+						!chunkAccessor.GetBlock(x, y, (byte)(z - 1)).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South);
 
 				bool isEastVisible = x == ChunkSize ?
-						eastChunk != null ? !eastChunk[0, y, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West) : showBorder :
-						!chunk[(byte)(x + 1), y, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West);
+						eastChunkAccessor != null ? !eastChunkAccessor.GetBlock(0, y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West) : showBorder :
+						!chunkAccessor.GetBlock((byte)(x + 1), y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West);
 
 				bool isSouthVisible = z == ChunkSize ?
-						southChunk != null ? !southChunk[x, y, 0].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North) : showBorder :
-						!chunk[x, y, (byte)(z + 1)].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North);
+						southChunkAccessor != null ? !southChunkAccessor.GetBlock(x, y, 0).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North) : showBorder :
+						!chunkAccessor.GetBlock(x, y, (byte)(z + 1)).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North);
 
 				bool isWestVisible = x == 0 ?
-						westChunk != null ? !westChunk[ChunkSize, y, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East) : showBorder :
-						!chunk[(byte)(x - 1), y, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East);
+						westChunkAccessor != null ? !westChunkAccessor.GetBlock(ChunkSize, y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East) : showBorder :
+						!chunkAccessor.GetBlock((byte)(x - 1), y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East);
 
 				bool isUpVisible = y == ChunkSize ?
-						upChunk != null ? !upChunk[x, 0, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down) : showBorder :
-						!chunk[x, (byte)(y + 1), z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down);
+						upChunkAccessor != null ? !upChunkAccessor.GetBlock(x, 0, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down) : showBorder :
+						!chunkAccessor.GetBlock(x, (byte)(y + 1), z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down);
 
 				bool isDownVisible = y == 0 ?
-						downChunk != null ? !downChunk[x, ChunkSize, z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up) : showBorder :
-						!chunk[x, (byte)(y - 1), z].Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up); //
+						downChunkAccessor != null ? !downChunkAccessor.GetBlock(x, ChunkSize, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up) : showBorder :
+						!chunkAccessor.GetBlock(x, (byte)(y - 1), z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up); //
 
 				if (blockFaceMask.HasFlagFast(BlockFaceMask.North) && isNorthVisible) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;
@@ -85,12 +86,12 @@ namespace Engine3.Test.Voxel.Graphics {
 		[MustUseReturnValue]
 		public static ChunkVertex[] GetChunkVertices() {
 			ChunkVertex[] chunkVertices = new ChunkVertex[Chunk.ArraySize * FaceCount * VerticesPerFace];
-			VertexXyzUvNormal[] cubeVertices = new VertexXyzUvNormal[FaceCount * VerticesPerFace];
+			ChunkVertex[] cubeVertices = new ChunkVertex[FaceCount * VerticesPerFace];
 
-			uint size = (uint)(FaceCount * VerticesPerFace * sizeof(VertexXyzUvNormal));
+			uint size = (uint)(FaceCount * VerticesPerFace * sizeof(ChunkVertex));
 
 			fixed (ChunkVertex* chunkVerticesPtr = chunkVertices) {
-				fixed (VertexXyzUvNormal* cubeVerticesPtr = cubeVertices) {
+				fixed (ChunkVertex* cubeVerticesPtr = cubeVertices) {
 					for (ushort i = 0; i < Chunk.ArraySize; i++) {
 						Chunk.FromIndex(i, out byte x, out byte y, out byte z);
 						BuildCube(ref cubeVertices, x, y, z);
@@ -101,7 +102,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			return chunkVertices;
 
-			static void BuildCube(ref VertexXyzUvNormal[] vertices, byte x, byte y, byte z) {
+			static void BuildCube(ref ChunkVertex[] vertices, byte x, byte y, byte z) {
 				const byte VerticesPerFace = 4;
 				const float Size = 1;
 
@@ -120,18 +121,13 @@ namespace Engine3.Test.Voxel.Graphics {
 				vertexOffset += VerticesPerFace;
 
 				BuildFace(ref vertices, vertexOffset, BlockFace.Up, Size, x, y, z);
-
 				vertexOffset += VerticesPerFace;
+
 				BuildFace(ref vertices, vertexOffset, BlockFace.Down, Size, x, y, z);
 			}
 
-			static void BuildFace(ref VertexXyzUvNormal[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
-				VertexXyzUvNormal[] vertices = BuildFace2(face, size, x, y, z); // TODO calc normals. can i hardcode them?
-				for (int i = 0; i < vertices.Length; i++) { array[index + i] = vertices[i]; }
-			}
-
 			[MustUseReturnValue]
-			static VertexXyzUvNormal[] BuildFace2(BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
+			static void BuildFace(ref ChunkVertex[] array, uint index, BlockFace face, float size, float x = 0, float y = 0, float z = 0) {
 				float h = size / 2f;
 				float x0 = x - h, x1 = x + h;
 				float y0 = y - h, y1 = y + h;
@@ -140,45 +136,24 @@ namespace Engine3.Test.Voxel.Graphics {
 				const float U0 = 0, U1 = 1;
 				const float V0 = 0, V1 = 1;
 
-				return face switch { // (U shape)
-						BlockFace.North => [
-								new(x1, y1, z0, U0, V1, 0, 0, -1), // Z-
-								new(x1, y0, z0, U0, V0, 0, 0, -1), //
-								new(x0, y0, z0, U1, V0, 0, 0, -1), //
-								new(x0, y1, z0, U1, V1, 0, 0, -1), //
-						],
-						BlockFace.East => [
-								new(x1, y1, z1, U0, V1, 1, 0, 0), // X+
-								new(x1, y0, z1, U0, V0, 1, 0, 0), //
-								new(x1, y0, z0, U1, V0, 1, 0, 0), //
-								new(x1, y1, z0, U1, V1, 1, 0, 0), //
-						],
-						BlockFace.South => [
-								new(x0, y1, z1, U0, V1, 0, 0, 1), // Z+
-								new(x0, y0, z1, U0, V0, 0, 0, 1), //
-								new(x1, y0, z1, U1, V0, 0, 0, 1), //
-								new(x1, y1, z1, U1, V1, 0, 0, 1), //
-						],
-						BlockFace.West => [
-								new(x0, y1, z0, U0, V1, -1, 0, 0), // X-
-								new(x0, y0, z0, U0, V0, -1, 0, 0), //
-								new(x0, y0, z1, U1, V0, -1, 0, 0), //
-								new(x0, y1, z1, U1, V1, -1, 0, 0), //
-						],
-						BlockFace.Up => [
-								new(x0, y1, z0, U0, V1, 0, 1, 0), // Y+
-								new(x0, y1, z1, U0, V0, 0, 1, 0), //
-								new(x1, y1, z1, U1, V0, 0, 1, 0), //
-								new(x1, y1, z0, U1, V1, 0, 1, 0), //
-						],
-						BlockFace.Down => [
-								new(x1, y0, z0, U0, V1, 0, -1, 0), // Y-
-								new(x1, y0, z1, U0, V0, 0, -1, 0), //
-								new(x0, y0, z1, U1, V0, 0, -1, 0), //
-								new(x0, y0, z0, U1, V1, 0, -1, 0), //
-						],
-						_ => throw new ArgumentOutOfRangeException(nameof(face), face, null),
-				};
+				switch (face) {
+					case BlockFace.North: SetFace(ref array, index, new(x1, y1, z0, U0, V1, 0, 0, -1), new(x1, y0, z0, U0, V0, 0, 0, -1), new(x0, y0, z0, U1, V0, 0, 0, -1), new(x0, y1, z0, U1, V1, 0, 0, -1)); break; // Z-
+					case BlockFace.East: SetFace(ref array, index, new(x1, y1, z1, U0, V1, 1, 0, 0), new(x1, y0, z1, U0, V0, 1, 0, 0), new(x1, y0, z0, U1, V0, 1, 0, 0), new(x1, y1, z0, U1, V1, 1, 0, 0)); break; // X+
+					case BlockFace.South: SetFace(ref array, index, new(x0, y1, z1, U0, V1, 0, 0, 1), new(x0, y0, z1, U0, V0, 0, 0, 1), new(x1, y0, z1, U1, V0, 0, 0, 1), new(x1, y1, z1, U1, V1, 0, 0, 1)); break; // Z+
+					case BlockFace.West: SetFace(ref array, index, new(x0, y1, z0, U0, V1, -1, 0, 0), new(x0, y0, z0, U0, V0, -1, 0, 0), new(x0, y0, z1, U1, V0, -1, 0, 0), new(x0, y1, z1, U1, V1, -1, 0, 0)); break; // X-
+					case BlockFace.Up: SetFace(ref array, index, new(x0, y1, z0, U0, V1, 0, 1, 0), new(x0, y1, z1, U0, V0, 0, 1, 0), new(x1, y1, z1, U1, V0, 0, 1, 0), new(x1, y1, z0, U1, V1, 0, 1, 0)); break; // Y+
+					case BlockFace.Down: SetFace(ref array, index, new(x1, y0, z0, U0, V1, 0, -1, 0), new(x1, y0, z1, U0, V0, 0, -1, 0), new(x0, y0, z1, U1, V0, 0, -1, 0), new(x0, y0, z0, U1, V1, 0, -1, 0)); break; // Y-
+					default: throw new ArgumentOutOfRangeException(nameof(face), face, null);
+				}
+
+				return;
+
+				void SetFace(ref ChunkVertex[] array, uint index, ChunkVertex v0, ChunkVertex v1, ChunkVertex v2, ChunkVertex v3) {
+					array[index + 0] = v0; // U
+					array[index + 1] = v1; //
+					array[index + 2] = v2; //
+					array[index + 3] = v3; //
+				}
 			}
 		}
 	}

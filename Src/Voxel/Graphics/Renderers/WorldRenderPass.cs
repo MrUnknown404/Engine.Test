@@ -19,7 +19,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private const string Name = "Chunk";
 
-		public WorldFragmentPushConstants WorldFragmentPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.UnitY);
+		public WorldFragmentPushConstants WorldFragmentPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.Normalize(Vector3.UnitY + Vector3.UnitX / 2 + Vector3.UnitZ / 2));
 
 		public override bool ShouldRender { get => field && World != null; set; } = true;
 
@@ -46,7 +46,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			transferCommandPool = TransferCommandPool;
 			maxFramesInFlight = MaxFramesInFlight;
 
-			const ushort InitialChunkBufferCount = 5000;
+			const ushort InitialChunkBufferCount = 10000;
 			const uint SizeOfBiggestChunk = Chunk.ArraySize * 24; // facesPerCube * indicesPerFace
 			const ulong InitialIndexBufferSize = sizeof(uint) * InitialChunkBufferCount * SizeOfBiggestChunk;
 
@@ -114,7 +114,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		}
 
 		protected override void CopyBuffers(float delta, byte frameIndex) {
-			if (chunkRenderQueue.ShouldRenderChunks && World is not null) { RegenerateWorld(World); }
+			if (chunkRenderQueue.ShouldRenderChunks && World is not null) { TryRegenerateWorld(World); }
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
@@ -126,22 +126,26 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
 		}
 
-		private void RegenerateWorld(World.World world) {
+		private void TryRegenerateWorld(IWorldAccessor world) {
 			// get dirty chunks
 			ChunkPos[] chunksToAdd = chunkRenderQueue.DequeueAll();
-			Logger.Trace($"Rendering {chunksToAdd.Length} new chunks");
+			Logger.Trace($"Attempting to rendering {chunksToAdd.Length} new chunks");
 
 			// create indices
-			foreach (ChunkPos position in chunksToAdd) { chunkIndices[position] = ChunkMeshBuilder.CreateChunkIndices(world, position, true); } // TODO multithread
+			foreach (ChunkPos position in chunksToAdd) { // TODO do on gpu
+				chunkIndices[position] = ChunkMeshBuilder.CreateChunkIndices(world, position, true);
+			}
 
-			KeyValuePair<ChunkPos, uint[]>[] chunkPositionIndicesPair = chunkIndices.ToArray();
+			KeyValuePair<ChunkPos, uint[]>[] chunkPositionIndicesPair = chunkIndices.AsValueEnumerable().Where(static p => p.Value.Length != 0).ToArray();
+			Logger.Trace($"Rendering {chunkPositionIndicesPair.Length}/{chunkIndices.Count} chunks");
+
 			List<VkDrawIndexedIndirectCommand> cmds = new();
 			List<uint> allIndices = new();
 
 			uint indexOffset = 0;
 
 			// add to all indices & add cmd
-			foreach ((_, uint[] indices) in chunkPositionIndicesPair) { // TODO remove empty draw calls
+			foreach ((_, uint[] indices) in chunkPositionIndicesPair) {
 				allIndices.AddRange(indices);
 
 				cmds.Add(new() { indexCount = (uint)indices.Length, instanceCount = 1, firstIndex = indexOffset, vertexOffset = 0, firstInstance = 0, });

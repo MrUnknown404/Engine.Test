@@ -22,7 +22,11 @@ namespace Engine3.Test.Voxel.World {
 
 		[MustUseReturnValue]
 		private static Chunk GenerateChunk(World world, ChunkPos chunkPos) {
+			if (chunkPos.Y > 1) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
+
 			Block[] blocks = new Block[Chunk.ArraySize];
+
+			bool isEmpty = true;
 
 			int chunkXOffset = chunkPos.X * Chunk.Size;
 			int chunkYOffset = chunkPos.Y * Chunk.Size;
@@ -33,17 +37,23 @@ namespace Engine3.Test.Voxel.World {
 
 				for (byte z = 0; z < Chunk.Size; z++) {
 					int newZ = chunkZOffset + z;
-					int height = world.WorldProperties.SeaLevel + world.HeightMap.GetAt(newX, newZ);
+					int height = world.HeightMap.GetAt(newX, newZ);
 
 					for (byte y = 0; y < Chunk.Size; y++) {
 						int newY = chunkYOffset + y;
 
-						blocks[Chunk.ToIndex(x, y, z)] = newY < height ? Block.Stone : Block.Air;
+						Block block = Block.Air;
+						if (newY < height) {
+							block = Block.Stone;
+							isEmpty = false;
+						}
+
+						blocks[Chunk.ToIndex(x, y, z)] = block;
 					}
 				}
 			}
 
-			return new(world, chunkPos, blocks);
+			return new(world, chunkPos, blocks, isEmpty);
 		}
 	}
 }

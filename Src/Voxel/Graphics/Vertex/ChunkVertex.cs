@@ -1,7 +1,7 @@
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Voxel.Graphics.Vertex {
-	public readonly unsafe record struct ChunkVertex {
+	public readonly unsafe record struct ChunkVertex { // TODO pack this later
 		public float X { get; init; }
 		public float Y { get; init; }
 		public float Z { get; init; }

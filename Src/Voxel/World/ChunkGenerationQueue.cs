@@ -22,7 +22,7 @@ namespace Engine3.Test.Voxel.World {
 
 		[MustUseReturnValue]
 		private static Chunk GenerateChunk(World world, ChunkPos chunkPos) {
-			if (chunkPos.Y > 1) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
+			if (chunkPos.Y > 10) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
 
 			Block[] blocks = new Block[Chunk.ArraySize];
 

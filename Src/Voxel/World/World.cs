@@ -27,7 +27,16 @@ namespace Engine3.Test.Voxel.World {
 		private readonly ChunkOutlineRenderPass chunkOutlineRenderPass;
 		private readonly Camera camera;
 
+		// TODO move camera stuff out of here
+
 		private ChunkPos prevCameraPos = new(int.MinValue, int.MinValue, int.MinValue);
+		public ChunkPos CameraChunkPos { get; private set; }
+		public GlobalBlockPos CameraGlobalBlockPos { get; private set; }
+		public LocalBlockPos CameraLocalBlockPos { get; private set; }
+
+		public ChunkPos? LookAtChunkPos { get; private set; }
+		public GlobalBlockPos? LookAtGlobalBlockPos { get; private set; }
+		public LocalBlockPos? LookAtLocalBlockPos { get; private set; }
 
 		public World(WorldProperties worldProperties, Camera camera, WorldRenderPass worldRenderPass, ChunkOutlineRenderPass chunkOutlineRenderPass) {
 			WorldProperties = worldProperties;
@@ -67,10 +76,12 @@ namespace Engine3.Test.Voxel.World {
 
 			// get camera chunk position
 			Vector3 cameraPos = camera.Position;
-			ChunkPos cameraChunkPos = new((int)(cameraPos.X / Chunk.Size), (int)(cameraPos.Y / Chunk.Size), (int)(cameraPos.Z / Chunk.Size));
-			cameraChunkPos = cameraChunkPos.Offset(cameraPos.X < 0 ? -1 : 0, cameraPos.Y < 0 ? -1 : 0, cameraPos.Z < 0 ? -1 : 0); // TODO not sure how to handle this atm
+			CameraGlobalBlockPos = new(cameraPos);
+			CameraLocalBlockPos = new(CameraGlobalBlockPos);
+			CameraChunkPos = new(CameraGlobalBlockPos);
 
-			TryAddChunksAroundCamera(cameraChunkPos, 3);
+			TryAddChunksAroundCamera(CameraChunkPos, 3);
+			TryGetBlockCameraLookingAt(10, 0.01f);
 
 			TryGenerateChunks();
 
@@ -80,17 +91,49 @@ namespace Engine3.Test.Voxel.World {
 			return;
 
 			void TryAddChunksAroundCamera(ChunkPos centerChunkPos, byte radius) {
-				if (prevCameraPos == cameraChunkPos) { return; }
+				if (prevCameraPos == CameraChunkPos) { return; }
 
 				Logger.Trace("Camera is in a new chunk. Requesting new chunks...");
 
-				chunkOutlineRenderPass.CameraChunkPos = cameraChunkPos;
-				prevCameraPos = cameraChunkPos;
+				chunkOutlineRenderPass.CameraChunkPos = CameraChunkPos;
+				prevCameraPos = CameraChunkPos;
 
 				for (int x = -radius; x <= radius; x++) {
 					for (int y = -radius; y <= radius; y++) {
 						for (int z = -radius; z <= radius; z++) {
 							chunksToGiveToRenderer.Add(centerChunkPos.Offset(x, y, z)); //
+						}
+					}
+				}
+			}
+
+			// FIXME this is really slow. .3-4~ ms
+			void TryGetBlockCameraLookingAt(uint distance, float stepSize) { // TODO make public version
+				Vector3 position = cameraPos;
+				Vector3 forwardAmount = camera.Forward * stepSize;
+
+				LookAtChunkPos = null;
+				LookAtLocalBlockPos = null;
+				LookAtGlobalBlockPos = null;
+
+				float checkedDistance = 0;
+
+				while (checkedDistance < distance) {
+					position += forwardAmount;
+					checkedDistance += stepSize;
+
+					GlobalBlockPos lookAtGlobalBlockPos = new(position);
+					ChunkPos lookAtChunkPos = new(lookAtGlobalBlockPos);
+
+					if (TryGetChunk(lookAtChunkPos, out IChunkAccessor? accessor)) {
+						LocalBlockPos lookAtLocalBlocKPos = new(lookAtGlobalBlockPos);
+						Block block = accessor.GetBlock(lookAtLocalBlocKPos);
+
+						if (block.Properties.SolidFaceMask != BlockFaceMask.None) { // TODO check face
+							LookAtChunkPos = lookAtChunkPos;
+							LookAtGlobalBlockPos = lookAtGlobalBlockPos;
+							LookAtLocalBlockPos = lookAtLocalBlocKPos;
+							break;
 						}
 					}
 				}

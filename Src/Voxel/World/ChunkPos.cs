@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using USharpLibs.Common.Math;
 
 namespace Engine3.Test.Voxel.World {
 	public readonly record struct ChunkPos {
@@ -10,6 +11,12 @@ namespace Engine3.Test.Voxel.World {
 			X = x;
 			Y = y;
 			Z = z;
+		}
+
+		public ChunkPos(GlobalBlockPos globalBlockPos) {
+			X = MathH.Round((float)globalBlockPos.X / Chunk.Size, MidpointRounding.ToNegativeInfinity);
+			Y = MathH.Round((float)globalBlockPos.Y / Chunk.Size, MidpointRounding.ToNegativeInfinity);
+			Z = MathH.Round((float)globalBlockPos.Z / Chunk.Size, MidpointRounding.ToNegativeInfinity);
 		}
 
 		[MustUseReturnValue] public ChunkPos Offset(int x, int y, int z) => new(X + x, Y + y, Z + z);

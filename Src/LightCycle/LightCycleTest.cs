@@ -29,7 +29,7 @@ namespace Engine3.Test.LightCycle {
 									EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 							},
 					} :
-					new OpenGLGraphicsBackend(new())) {
+					throw new NotImplementedException()) {
 			this.useVulkan = useVulkan;
 
 			OnSetupFinishedEvent += OnSetupFinished;

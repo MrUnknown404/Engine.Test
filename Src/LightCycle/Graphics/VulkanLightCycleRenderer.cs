@@ -69,10 +69,6 @@ namespace Engine3.Test.LightCycle.Graphics {
 					new(X0, Y1, Z1, R, G, B), // 6
 					new(X0, Y1, Z0, R, G, B), // 7
 			];
-		}
-
-		protected override void Setup() {
-			base.Setup();
 
 			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
 

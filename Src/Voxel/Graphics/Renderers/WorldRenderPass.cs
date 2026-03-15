@@ -25,8 +25,6 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		public uint ChunkCount => (uint)chunkIndices.Count;
 
-		internal World.World? World { get; set; } // TODO get should be private
-
 		private readonly ChunkRenderQueue chunkRenderQueue = new();
 		private readonly Dictionary<ChunkPos, uint[]> chunkIndices = new();
 
@@ -36,10 +34,15 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		private DescriptorBuffers perChunkDataDescriptorBuffer;
 		private PerChunkDataBuffer perChunkDataBuffer = new(0);
 
+		private readonly VoxelTest game;
+		private World.World? World => game.World;
+
 		private uint drawCount;
 
-		public WorldRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+		public WorldRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
+			this.game = game;
+
 			const ushort InitialChunkBufferCount = 10000;
 			const uint SizeOfBiggestChunk = Chunk.ArraySize * 24; // facesPerCube * indicesPerFace
 			const ulong InitialIndexBufferSize = sizeof(uint) * InitialChunkBufferCount * SizeOfBiggestChunk;

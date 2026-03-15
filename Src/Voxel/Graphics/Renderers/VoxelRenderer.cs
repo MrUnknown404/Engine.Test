@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
+using Engine3.Client.Graphics.ImGui;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.VertexLayouts;
@@ -55,29 +56,16 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
-			ImGuiBackend = new(window, graphicsBackend.Settings.MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
+			CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
+			ImGuiBackend = backend;
+			ImGuiRenderer = renderer;
+			UseImGui = true;
+
+			ImGuiBackend.ShowDebugUI = true;
+			ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, };
 
 			CubeBuilder.BuildCube(BlockFaceMask.All, 1, 0, 0, 0, out VertexXyzUv[] cubeVertices, out cubeIndices);
 			this.cubeVertices = cubeVertices.Select(static v => new VertexXyzUvRgb(v.X, v.Y, v.Z, v.U, v.V, 1, 1, 1)).ToArray();
-		}
-
-		private void AddExtraDebugUI(float indentAmount) {
-			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
-
-			if (xyzGizmoRecorderNode != null) {
-				bool showXyzGizmo = xyzGizmoRecorderNode.ShouldDraw;
-				if (ImGuiNet.Checkbox("Show XYZ Gizmo", ref showXyzGizmo)) { xyzGizmoRecorderNode.ShouldDraw = showXyzGizmo; }
-			}
-
-			ImGuiNet.Text("test");
-
-			return;
-
-			void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
-		}
-
-		protected override void Setup() {
-			base.Setup();
 
 			CreateCubeGraphicsPipeline(out DescriptorSetLayout cubeDescriptorSetLayout);
 
@@ -93,6 +81,21 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			AddNode(worldRecorderNode);
 			AddNode(xyzGizmoRecorderNode);
+		}
+
+		private void AddExtraDebugUI(float indentAmount) {
+			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
+
+			if (xyzGizmoRecorderNode != null) {
+				bool showXyzGizmo = xyzGizmoRecorderNode.ShouldDraw;
+				if (ImGuiNet.Checkbox("Show XYZ Gizmo", ref showXyzGizmo)) { xyzGizmoRecorderNode.ShouldDraw = showXyzGizmo; }
+			}
+
+			ImGuiNet.Text("test");
+
+			return;
+
+			void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
 		}
 
 		private void CreateCubeGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {

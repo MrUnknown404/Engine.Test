@@ -1,11 +1,13 @@
 using System.Numerics;
 using System.Reflection;
 using Engine3.Client;
+using Engine3.Client.Graphics.ImGui;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Objects;
 using Engine3.Client.Graphics.OpenGL.Renderers;
 using Engine3.Client.Graphics.VertexLayouts;
+using Engine3.Client.Graphics.Vulkan;
 using Engine3.Utility;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -16,33 +18,32 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 	public unsafe class OpenGLRenderer1 : OpenGLRendererBase {
 		private const string TestShaderName = "Test";
 
-		private OpenGLShader? vertexShader;
-		private OpenGLShader? fragmentShader;
-		private ProgramPipeline? programPipeline;
+		private readonly OpenGLShader vertexShader;
+		private readonly OpenGLShader fragmentShader;
+		private readonly ProgramPipeline programPipeline;
 
-		private OpenGLBuffer? vertexBuffer;
-		private OpenGLBuffer? indexBuffer;
+		private readonly OpenGLBuffer vertexBuffer;
+		private readonly OpenGLBuffer indexBuffer;
 
-		private OpenGLImage? image;
+		private readonly OpenGLImage image;
 
 		private readonly Camera camera;
 
 		private readonly VertexXyzUvRgb[] vertices = [ new(0, 0.5f, 0, 0.5f, 1, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 1, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, ];
-		private readonly Assembly gameAssembly;
 
 		public OpenGLRenderer1(GameClient game, OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
-			this.gameAssembly = gameAssembly;
+			CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
+			ImGuiBackend = backend;
+			ImGuiRenderer = renderer;
+			UseImGui = true;
 
-			ImGuiBackend = new(window, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window), };
+			ImGuiBackend.ShowDebugUI = true;
+			ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window);
 
 			Vector2i frameBufferSize = window.GetFrameBufferSize();
 			camera = Camera.CreatePerspective((float)frameBufferSize.X / frameBufferSize.Y, 90, 0.1f, 10);
 			camera.Position = new(0, 0, 5f);
-		}
-
-		protected override void Setup() {
-			base.Setup();
 
 			vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", $"{TestShaderName}UVs", ShaderType.Vertex, gameAssembly);
 			fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", $"{TestShaderName}UVs", ShaderType.Fragment, gameAssembly);
@@ -67,8 +68,6 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		}
 
 		protected override void DrawFrame() {
-			if (vertexBuffer == null || indexBuffer == null || programPipeline == null || image == null) { throw new NullReferenceException(); }
-
 			// TODO gl graphics pipeline class? bind program pipeline -> grants access to shaders -> bind buffers -> draw ?
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
@@ -83,8 +82,6 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		}
 
 		protected override void CopyBuffers(float delta) {
-			if (vertexShader == null) { throw new NullReferenceException(); }
-
 			vertexShader.SetUniform("projection", camera.Projection);
 			vertexShader.SetUniform("view", camera.View);
 			vertexShader.SetUniform("model", Matrix4x4.CreateRotationY(float.Lerp(OpenGLTest.PrevCubeRotation, OpenGLTest.CubeRotation, delta) * float.DegreesToRadians(90f)));

@@ -11,12 +11,13 @@ namespace Engine3.Test.Voxel {
 	public class VoxelTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public VulkanWindow? Window { get; set; }
+		public VulkanWindow? Window { get; private set; }
+		public VoxelRenderPassRenderer? Renderer { get; private set; }
 
-		public Camera? Camera { get; set; }
-		public FloatingCameraController? CameraController { get; set; }
+		public Camera? Camera { get; private set; }
+		public FloatingCameraController? CameraController { get; private set; }
 
-		public World.World? World { get; set; }
+		public World.World? World { get; private set; }
 
 		internal VoxelTest(bool useVulkan) : base("Voxel Test", new BuildVersion(),
 			useVulkan ?
@@ -45,20 +46,16 @@ namespace Engine3.Test.Voxel {
 
 			CameraController = new(Window, Camera);
 
-			VoxelRenderPassRenderer renderer = new(this, graphicsBackend, Window, Camera, Assembly);
-			renderer.OnSetupDoneEvent += () => {
-				renderer.SetWorld(World!); // shouldn't be null here
-
-				Window?.Show();
-				Logger.Info("Showing window");
-			};
-
-			AddRenderer(renderer);
+			Renderer = new(this, graphicsBackend, Window, Camera, Assembly);
+			AddRenderer(Renderer);
 
 			Logger.Debug("Creating World");
-			World = new(new() { Seed = 1, }, Camera, renderer.WorldRenderPass, renderer.ChunkOutlineRenderPass);
+			World = new(new() { Seed = 1, }, Camera, Renderer.WorldRenderPass, Renderer.ChunkOutlineRenderPass);
 
 			Logger.Info("Setup done");
+
+			Window?.Show();
+			Logger.Info("Showing window");
 		}
 
 		protected override void Update() {

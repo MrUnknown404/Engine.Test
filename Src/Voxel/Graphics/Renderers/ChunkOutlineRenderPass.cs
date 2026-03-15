@@ -15,10 +15,17 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private readonly DescriptorSets descriptorSet;
 
+		private readonly VoxelTest game;
+		private World.World? World => game.World;
+
+		public override bool ShouldRender { get => field && World != null; set; } = true;
+
 		private readonly uint indexCount;
 
-		public ChunkOutlineRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+		public ChunkOutlineRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
+			this.game = game;
+
 			const byte Radius = 1;
 
 			ChunkOutlineVertex[] vertices = MakeVertices(Radius);

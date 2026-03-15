@@ -14,7 +14,7 @@ namespace Engine3.Test.Voxel.World {
 			return (int)(noise * Scale) - Chunk.Size;
 		}
 
-		public int GetChunkHeightAt(int chunkX, int chunkZ) { // TODO cache. also probably do something better. not sure yet. do avg? highest? lowest? all? something else?
+		public int GetChunkHeightAt(int chunkX, int chunkZ) { // TODO cache. also probably do something different. not sure yet. do avg? highest? lowest? all? something else?
 			int highest = 0;
 
 			for (int x = 0; x < Chunk.Size; x++) {

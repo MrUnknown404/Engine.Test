@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Engine3.Client;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.DataStructs;
+using Engine3.Client.Graphics.ImGui;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.VertexLayouts;
@@ -69,7 +70,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			this.camera = camera;
 			this.gameAssembly = gameAssembly;
 
-			ImGuiBackend = new(window, graphicsBackend.Settings.MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
+			CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
+			ImGuiBackend = backend;
+			ImGuiRenderer = renderer;
+			UseImGui = true;
+
+			ImGuiBackend.ShowDebugUI = true;
+			ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, };
 
 			const float Size = 1;
 			const float H = Size / 2;
@@ -95,6 +102,15 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			Random random = new();
 
 			for (int i = 0; i < CubeCount; i++) { cubePositions[i] = new((random.NextSingle() * 10 - 5) * aspectRatio, random.NextSingle() * 10 - 5, -10.5f + random.NextSingle()); }
+
+			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
+
+			CreateBuffers();
+
+			CreateSamplerAndTextures();
+
+			CreateDescriptorSets(descriptorSetLayout);
+			UpdateDescriptorSets();
 		}
 
 		private void AddExtraDebugUI(float indentAmount) {
@@ -105,19 +121,6 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			return;
 
 			void DrawFunc() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
-		}
-
-		protected override void Setup() {
-			base.Setup();
-
-			CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout);
-
-			CreateBuffers();
-
-			CreateSamplerAndTextures();
-
-			CreateDescriptorSets(descriptorSetLayout);
-			UpdateDescriptorSets();
 		}
 
 		private void CreateGraphicsPipeline(out DescriptorSetLayout descriptorSetLayout) {

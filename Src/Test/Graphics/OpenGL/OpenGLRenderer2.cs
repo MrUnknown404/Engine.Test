@@ -11,21 +11,19 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 	public unsafe class OpenGLRenderer2 : OpenGLRendererBase {
 		private const string TestShaderName = "Test";
 
-		private OpenGLShader? vertexShader;
-		private OpenGLShader? fragmentShader;
-		private ProgramPipeline? programPipeline;
+		private readonly OpenGLShader vertexShader;
+		private readonly OpenGLShader fragmentShader;
+		private readonly ProgramPipeline programPipeline;
 
-		private OpenGLBuffer? vertexBuffer;
-		private OpenGLBuffer? indexBuffer;
+		private readonly OpenGLBuffer vertexBuffer;
+		private readonly OpenGLBuffer indexBuffer;
 
 		private readonly VertexXyzRgb[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
 		private readonly uint[] indices = [ 0, 1, 2, ];
 		private readonly Assembly gameAssembly;
 
-		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) => this.gameAssembly = gameAssembly;
-
-		protected override void Setup() {
-			base.Setup();
+		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
+			this.gameAssembly = gameAssembly;
 
 			vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
 			fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
@@ -42,8 +40,6 @@ namespace Engine3.Test.Test.Graphics.OpenGL {
 		}
 
 		protected override void DrawFrame() {
-			if (vertexBuffer == null || indexBuffer == null || programPipeline == null) { throw new NullReferenceException(); }
-
 			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
 			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);

@@ -1,6 +1,7 @@
 using System.Reflection;
 using Engine3.Client;
 using Engine3.Client.Graphics.DataStructs;
+using Engine3.Client.Graphics.ImGui;
 using Engine3.Client.Graphics.ImGui.Makers;
 using Engine3.Client.Graphics.ImGui.Providers;
 using Engine3.Client.Graphics.Vulkan;
@@ -19,7 +20,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
-			ImGuiBackend = new(window, MaxFramesInFlight, new DemoWindowImGui()) { ShowDebugUI = true, DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, }, };
+			CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
+			ImGuiBackend = backend;
+			ImGuiRenderer = renderer;
+			UseImGui = true;
+
+			ImGuiBackend.ShowDebugUI = true;
+			ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, };
 
 			this.camera = camera;
 

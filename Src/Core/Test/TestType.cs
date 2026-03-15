@@ -1,6 +1,8 @@
 namespace Engine3.Test.Core.Test {
 	public enum TestType {
-		GraphicsTest,
+		VulkanGraphicsTest,
+		OpenGLGraphicsTest,
+		ConsoleGraphicsTest,
 		LightCycle,
 		Voxel,
 	}

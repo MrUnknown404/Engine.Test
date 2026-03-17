@@ -19,7 +19,7 @@ using Vector3 = System.Numerics.Vector3;
 
 namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class XyzGizmoRenderPass : VulkanRenderPass { // TODO once this is done merge into engine
-		private const string DebugName = "Xyz Gizmo";
+		private new const string DebugName = "Xyz Gizmo";
 		private const string FileName = "XyzGizmo";
 
 		private static Matrix4x4 GizmoTransform { get; } = Matrix4x4.CreateScale(0.1f) * Matrix4x4.CreateTranslation(-Vector3.UnitZ); // TODO scale based on viewport size. edit: just gonna do lines
@@ -40,7 +40,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private static int tempMaterialCounter;
 
-		public XyzGizmoRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, Camera camera) : base(renderer,
+		public XyzGizmoRenderPass(VoxelRenderPassRenderer renderer, Assembly assembly, Camera camera) : base($"{DebugName} Render Pass", renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout sceneLayout, out DescriptorSetLayout materialLayout)) {
 			this.camera = camera;
 			swapChainExtent = renderer.SwapChain.Extent;
@@ -120,7 +120,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			foreach (Model.RenderData data in xyzGizmoModel.RenderDataList) {
 				if (data.Material is not null) {
-					commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
+					commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new XyzGizmoPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
 				}
 
 				commandBuffer.CmdDrawIndexed(data.IndexCount, 1, 0, data.VertexOffset, 0);
@@ -148,7 +148,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{DebugName} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyz.GetAttributeDescriptions(), VertexXyz.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ sceneDescriptorSetLayout.VkDescriptorSetLayout, materialDescriptorSetLayout.VkDescriptorSetLayout, ],
-						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(MaterialPushConstants), }, ],
+						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(XyzGizmoPushConstants), }, ],
 						EnableDepthTest = true,
 						EnableDepthWrite = true,
 				});

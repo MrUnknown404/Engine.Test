@@ -24,13 +24,15 @@ namespace Engine3.Test.Voxel.World {
 		private static Chunk GenerateChunk(World world, ChunkPos chunkPos) {
 			if (chunkPos.Y > 10) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
 
-			Block[] blocks = new Block[Chunk.ArraySize];
+			BlockState[] blocks = new BlockState[Chunk.ArraySize];
 
 			bool isEmpty = true;
 
 			int chunkXOffset = chunkPos.X * Chunk.Size;
 			int chunkYOffset = chunkPos.Y * Chunk.Size;
 			int chunkZOffset = chunkPos.Z * Chunk.Size;
+
+			Random random = new(); // TODO remove
 
 			for (byte x = 0; x < Chunk.Size; x++) {
 				int newX = chunkXOffset + x;
@@ -42,13 +44,19 @@ namespace Engine3.Test.Voxel.World {
 					for (byte y = 0; y < Chunk.Size; y++) {
 						int newY = chunkYOffset + y;
 
-						Block block = Block.Air;
+						Block block = Blocks.Blocks.Air;
 						if (newY < height) {
-							block = Block.Stone;
+							block = random.Next(3) switch {
+									0 => Blocks.Blocks.Stone,
+									1 => Blocks.Blocks.Dirt,
+									2 => Blocks.Blocks.Grass,
+									_ => throw new ArgumentOutOfRangeException(),
+							};
+
 							isEmpty = false;
 						}
 
-						blocks[Chunk.ToIndex(x, y, z)] = block;
+						blocks[Chunk.ToIndex(x, y, z)] = new(block, BlockStateFlags.WasGenerated);
 					}
 				}
 			}

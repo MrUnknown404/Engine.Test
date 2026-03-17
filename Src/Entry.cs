@@ -24,7 +24,7 @@ namespace Engine3.Test {
 			LoggerH.ConsoleLogLevel = LogLevel.Trace;
 
 			StructLayoutDumper.AddStructs += static () => {
-				StructLayoutDumper.AddStruct<MaterialPushConstants>();
+				StructLayoutDumper.AddStruct<XyzGizmoPushConstants>();
 				StructLayoutDumper.AddStruct<PerChunkData>();
 				StructLayoutDumper.AddStruct<ChunkPos>();
 				StructLayoutDumper.AddStruct<LocalBlockPos>();

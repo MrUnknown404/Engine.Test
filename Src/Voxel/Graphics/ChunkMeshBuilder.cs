@@ -27,7 +27,7 @@ namespace Engine3.Test.Voxel.Graphics {
 
 			uint offset = 0;
 			for (ushort i = 0; i < Chunk.ArraySize; i++) {
-				Block block = chunkAccessor.GetBlock(i);
+				Block block = chunkAccessor.GetBlockState(i).Block;
 
 				BlockFaceMask blockFaceMask = block.Properties.SolidFaceMask;
 				if (blockFaceMask == BlockFaceMask.None) {
@@ -38,28 +38,28 @@ namespace Engine3.Test.Voxel.Graphics {
 				Chunk.FromIndex(i, out byte x, out byte y, out byte z);
 
 				bool isNorthVisible = z == 0 ?
-						northChunkAccessor != null ? !northChunkAccessor.GetBlock(x, y, ChunkSize).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South) : showBorder :
-						!chunkAccessor.GetBlock(x, y, (byte)(z - 1)).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South);
+						northChunkAccessor != null ? !northChunkAccessor.GetBlockState(x, y, ChunkSize).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South) : showBorder :
+						!chunkAccessor.GetBlockState(x, y, (byte)(z - 1)).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.South);
 
 				bool isEastVisible = x == ChunkSize ?
-						eastChunkAccessor != null ? !eastChunkAccessor.GetBlock(0, y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West) : showBorder :
-						!chunkAccessor.GetBlock((byte)(x + 1), y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West);
+						eastChunkAccessor != null ? !eastChunkAccessor.GetBlockState(0, y, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West) : showBorder :
+						!chunkAccessor.GetBlockState((byte)(x + 1), y, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.West);
 
 				bool isSouthVisible = z == ChunkSize ?
-						southChunkAccessor != null ? !southChunkAccessor.GetBlock(x, y, 0).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North) : showBorder :
-						!chunkAccessor.GetBlock(x, y, (byte)(z + 1)).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North);
+						southChunkAccessor != null ? !southChunkAccessor.GetBlockState(x, y, 0).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North) : showBorder :
+						!chunkAccessor.GetBlockState(x, y, (byte)(z + 1)).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.North);
 
 				bool isWestVisible = x == 0 ?
-						westChunkAccessor != null ? !westChunkAccessor.GetBlock(ChunkSize, y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East) : showBorder :
-						!chunkAccessor.GetBlock((byte)(x - 1), y, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East);
+						westChunkAccessor != null ? !westChunkAccessor.GetBlockState(ChunkSize, y, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East) : showBorder :
+						!chunkAccessor.GetBlockState((byte)(x - 1), y, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.East);
 
 				bool isUpVisible = y == ChunkSize ?
-						upChunkAccessor != null ? !upChunkAccessor.GetBlock(x, 0, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down) : showBorder :
-						!chunkAccessor.GetBlock(x, (byte)(y + 1), z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down);
+						upChunkAccessor != null ? !upChunkAccessor.GetBlockState(x, 0, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down) : showBorder :
+						!chunkAccessor.GetBlockState(x, (byte)(y + 1), z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Down);
 
 				bool isDownVisible = y == 0 ?
-						downChunkAccessor != null ? !downChunkAccessor.GetBlock(x, ChunkSize, z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up) : showBorder :
-						!chunkAccessor.GetBlock(x, (byte)(y - 1), z).Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up); //
+						downChunkAccessor != null ? !downChunkAccessor.GetBlockState(x, ChunkSize, z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up) : showBorder :
+						!chunkAccessor.GetBlockState(x, (byte)(y - 1), z).Block.Properties.SolidFaceMask.HasFlagFast(BlockFaceMask.Up);
 
 				if (blockFaceMask.HasFlagFast(BlockFaceMask.North) && isNorthVisible) { indices.AddRange([ offset + 0u, offset + 1u, offset + 2u, offset + 2u, offset + 3u, offset + 0u, ]); }
 				offset += VerticesPerFace;

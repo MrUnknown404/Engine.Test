@@ -3,6 +3,7 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
+using Engine3.Test.Voxel.Graphics.DataStructs;
 using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
 using OpenTK.Graphics.Vulkan;
@@ -22,7 +23,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private readonly uint indexCount;
 
-		public ChunkOutlineRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+		public ChunkOutlineRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base("Chunk Outline Render Pass", renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			this.game = game;
 
@@ -111,7 +112,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		protected override void CopyBuffers(float delta, byte frameIndex) { }
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
-			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new ChunkPositionPushConstants(CameraChunkPos));
+			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new ChunkOutlinePushConstants(CameraChunkPos));
 
 			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSet.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
 			commandBuffer.CmdDrawIndexed(indexCount);
@@ -127,7 +128,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkOutlineVertex.GetAttributeDescriptions(), ChunkOutlineVertex.GetBindingDescriptions()) {
 						Topology = VkPrimitiveTopology.PrimitiveTopologyLineList,
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, offset = 0, size = (uint)sizeof(ChunkPositionPushConstants), }, ],
+						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, offset = 0, size = (uint)sizeof(ChunkOutlinePushConstants), }, ],
 						CullMode = VkCullModeFlagBits.CullModeNone,
 						EnableDepthTest = true,
 						EnableDepthWrite = true,

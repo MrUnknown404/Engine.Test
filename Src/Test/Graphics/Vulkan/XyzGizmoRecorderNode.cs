@@ -131,7 +131,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			foreach (Model.RenderData data in xyzGizmoModel.RenderDataList) {
 				if (data.Material is not null) {
 					graphicsCommandBuffer.CmdPushConstants(gizmoGraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit,
-						new MaterialPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
+						new XyzGizmoPushConstants(MaterialToIndex(data.Material.Value) + 1 /* 0 is reserved for no texture */));
 				}
 
 				graphicsCommandBuffer.CmdDrawIndexed(data.IndexCount, 1, 0, data.VertexOffset, 0);
@@ -168,7 +168,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
 				new($"{Name} Graphics Pipeline", swapChainImageFormat, [ vertexShader, fragmentShader, ], VertexXyz.GetAttributeDescriptions(), VertexXyz.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ sceneDescriptorSetLayout.VkDescriptorSetLayout, materialDescriptorSetLayout.VkDescriptorSetLayout, ],
-						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(MaterialPushConstants), }, ],
+						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, size = (byte)sizeof(XyzGizmoPushConstants), }, ],
 						EnableDepthTest = true,
 						EnableDepthWrite = true,
 				});

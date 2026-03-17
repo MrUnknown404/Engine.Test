@@ -12,7 +12,6 @@ using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
-using Engine3.Test.Core.Graphics;
 using Engine3.Utility;
 using ImGuiNET;
 using NLog;
@@ -61,8 +60,8 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		private readonly Vector3[] cubePositions = new Vector3[CubeCount];
 		private readonly Vector3 quadPosition = new(-2, 0, -2);
 
-		private readonly ModelsBuffer cubeUniformBufferValue = new(CubeCount);
-		private readonly ModelsBuffer quadUniformBufferValue = new(1);
+		private readonly StructBuffer<Matrix4x4> cubeUniformBufferValue = new(CubeCount);
+		private readonly StructBuffer<Matrix4x4> quadUniformBufferValue = new(1);
 
 		private readonly Assembly gameAssembly;
 
@@ -248,13 +247,13 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			float cubeRotation = float.Lerp(VulkanTest.PrevCubeRotation, VulkanTest.CubeRotation, delta);
 			Matrix4x4 rotationMatrix = Matrix4x4.CreateRotationY(cubeRotation * float.DegreesToRadians(90f));
 
-			for (int i = 0; i < CubeCount; i++) { cubeUniformBufferValue.Models[i] = rotationMatrix * Matrix4x4.CreateTranslation(cubePositions[i]); }
+			for (int i = 0; i < CubeCount; i++) { cubeUniformBufferValue.Data[i] = rotationMatrix * Matrix4x4.CreateTranslation(cubePositions[i]); }
 
-			quadUniformBufferValue.Models[0] = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(cubeRotation), quadPosition.Z);
+			quadUniformBufferValue.Data[0] = Matrix4x4.CreateTranslation(quadPosition.X, quadPosition.Y + MathF.Sin(cubeRotation), quadPosition.Z);
 
 			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex);
-			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Models), FrameIndex);
-			quadInstanceBuffers.Copy(MemoryMarshal.AsBytes(quadUniformBufferValue.Models), FrameIndex);
+			cubeInstanceBuffers.Copy(MemoryMarshal.AsBytes(cubeUniformBufferValue.Data), FrameIndex);
+			quadInstanceBuffers.Copy(MemoryMarshal.AsBytes(quadUniformBufferValue.Data), FrameIndex);
 		}
 
 		protected override void Cleanup() {

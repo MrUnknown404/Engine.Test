@@ -6,7 +6,6 @@ using Engine3.Client.Graphics.VertexLayouts;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
-using Engine3.Test.Core.Graphics;
 using Engine3.Test.Voxel;
 using Engine3.Test.Voxel.World;
 using Engine3.Utility;
@@ -26,14 +25,14 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		// private readonly VulkanImage image;
 		// private readonly TextureSampler textureSampler;
 
-		private readonly ModelsBuffer instanceBufferValue = new(1);
+		private readonly StructBuffer<Matrix4x4> instanceBufferValue = new(1);
 
 		private readonly uint indexCount;
 
 		private float prevCubeRotation;
 		private float cubeRotation;
 
-		public CubeRenderPass(VulkanRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+		public CubeRenderPass(VulkanRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base($"{Name} Render Pass", renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			ShouldUpdate = true;
 
@@ -52,7 +51,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 
 			// copy
 			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, cubeIndices), ]);
-			for (byte i = 0; i < MaxFramesInFlight; i++) { instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Models), i); }
+			for (byte i = 0; i < MaxFramesInFlight; i++) { instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Data), i); }
 
 			// textures
 			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
@@ -74,7 +73,7 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 			descriptorSet.UpdateDescriptorSet(1, instanceBuffer);
 			descriptorSet.UpdateDescriptorSet(2, image.ImageView, textureSampler.Sampler);
 
-			instanceBufferValue.Models[0] = Matrix4x4.CreateTranslation(0, 0, -5f);
+			instanceBufferValue.Data[0] = Matrix4x4.CreateTranslation(0, 0, -5f);
 		}
 
 		protected override void Update() {
@@ -91,9 +90,9 @@ namespace Engine3.Test.Test.Graphics.Vulkan {
 		}
 
 		protected override void CopyBuffers(float delta, byte frameIndex) {
-			instanceBufferValue.Models[0] = Matrix4x4.CreateRotationY(float.DegreesToRadians(float.Lerp(prevCubeRotation, cubeRotation, delta)));
+			instanceBufferValue.Data[0] = Matrix4x4.CreateRotationY(float.DegreesToRadians(float.Lerp(prevCubeRotation, cubeRotation, delta)));
 
-			instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Models), frameIndex);
+			instanceBuffer.Copy(MemoryMarshal.AsBytes(instanceBufferValue.Data), frameIndex);
 		}
 
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {

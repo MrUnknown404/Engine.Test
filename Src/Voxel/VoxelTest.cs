@@ -1,15 +1,20 @@
 using Engine3.Client;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Exceptions;
+using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics;
 using Engine3.Test.Voxel.Graphics.Renderers;
+using Engine3.Test.Voxel.Registries;
 using Engine3.Utility.Versions;
 using NLog;
 using OpenTK.Graphics.Vulkan;
+using ModSource = Engine3.Test.Voxel.Modding.ModSource;
 
 namespace Engine3.Test.Voxel {
 	public class VoxelTest : GameClient {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+		public static ModSource ModSource { get; } = new("voxel_test", typeof(VoxelTest).Assembly);
 
 		public VulkanWindow? Window { get; private set; }
 		public VoxelRenderPassRenderer? Renderer { get; private set; }
@@ -18,6 +23,10 @@ namespace Engine3.Test.Voxel {
 		public FloatingCameraController? CameraController { get; private set; }
 
 		public World.World? World { get; private set; }
+
+		public BakedMasterRegistry<Block> MasterBlockRegistry { get; }
+
+		public BakedRegistry<Block> BlockRegistry { get; }
 
 		internal VoxelTest(bool useVulkan) : base("Voxel Test", new BuildVersion(),
 			useVulkan ?
@@ -28,7 +37,17 @@ namespace Engine3.Test.Voxel {
 					} :
 					throw new NotImplementedException()) {
 			OnSetupFinishedEvent += OnSetupFinished;
+
 			PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
+
+			Logger.Info("Baking registries");
+
+			using MasterRegistry<Block> masterBlockRegistry = new();
+			BlockRegistry = new(ModSource, Blocks.Blocks.AllBlocks);
+			masterBlockRegistry.AddRegistry(BlockRegistry);
+
+			MasterBlockRegistry = masterBlockRegistry.Bake();
+			Logger.Debug($"Baked {MasterBlockRegistry.AllObjectCount} blocks");
 		}
 
 		private void OnSetupFinished() {

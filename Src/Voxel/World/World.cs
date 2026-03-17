@@ -68,7 +68,7 @@ namespace Engine3.Test.Voxel.World {
 
 			TryGenerateChunks();
 
-			if (TryEditChunk(new() { Y = 2, }, out IChunkWriter? chunkWriter)) { chunkWriter.SetBlock(Block.Stone, new()); }
+			if (TryEditChunk(new() { Y = 2, }, out IChunkWriter? chunkWriter)) { chunkWriter.SetBlockState(new(Blocks.Blocks.Stone, BlockStateFlags.None), new()); }
 		}
 
 		internal void Update() {
@@ -127,7 +127,7 @@ namespace Engine3.Test.Voxel.World {
 
 					if (TryGetChunk(lookAtChunkPos, out IChunkAccessor? accessor)) {
 						LocalBlockPos lookAtLocalBlocKPos = new(lookAtGlobalBlockPos);
-						Block block = accessor.GetBlock(lookAtLocalBlocKPos);
+						Block block = accessor.GetBlockState(lookAtLocalBlocKPos).Block;
 
 						if (block.Properties.SolidFaceMask != BlockFaceMask.None) { // TODO check face
 							LookAtChunkPos = lookAtChunkPos;

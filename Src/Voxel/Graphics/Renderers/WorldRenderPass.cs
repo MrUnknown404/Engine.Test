@@ -5,6 +5,7 @@ using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
+using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics.DataStructs;
 using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
@@ -14,12 +15,12 @@ using OpenTK.Graphics.Vulkan;
 using StbiSharp;
 
 namespace Engine3.Test.Voxel.Graphics.Renderers {
-	public unsafe class WorldRenderPass : VulkanRenderPass {
+	public unsafe class WorldRenderPass : VulkanIndirectRenderPass {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private const string Name = "Chunk";
+		private const string AssetName = "Chunk";
 
-		public WorldFragmentPushConstants WorldFragmentPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.Normalize(Vector3.UnitY + Vector3.UnitX / 2 + Vector3.UnitZ / 2));
+		public WorldLightingPushConstants WorldLightingPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.Normalize(Vector3.UnitY + Vector3.UnitX / 2 + Vector3.UnitZ / 2));
 
 		public override bool ShouldRender { get => field && World != null; set; } = true;
 
@@ -29,17 +30,16 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		private readonly Dictionary<ChunkPos, uint[]> chunkIndices = new();
 
 		private readonly DescriptorSets descriptorSets;
-		private VulkanBuffer indirectCmdBuffer;
 
 		private DescriptorBuffers perChunkDataDescriptorBuffer;
-		private PerChunkDataBuffer perChunkDataBuffer = new(0);
+		private StructBuffer<PerChunkData> perChunkDataBuffer = new(0);
 
 		private readonly VoxelTest game;
 		private World.World? World => game.World;
 
 		private uint drawCount;
 
-		public WorldRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base(renderer,
+		public WorldRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base("World Render Pass", renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			this.game = game;
 
@@ -49,13 +49,13 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			ChunkVertex[] vertices = ChunkMeshBuilder.GetChunkVertices();
 
-			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkVertex) * vertices.Length));
 
-			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, InitialIndexBufferSize);
 
-			indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
+			IndirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
 				(ulong)(sizeof(VkDrawIndexedIndirectCommand) * InitialChunkBufferCount)); // TODO for some reason things break if i change the initial size
 
@@ -65,13 +65,10 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 				VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
-			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterLinear, VkFilter.FilterLinear, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
-			VulkanImage image;
+			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterNearest, VkFilter.FilterNearest, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
 
-			using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, assembly)) {
-				image = GraphicsResourceProvider.CreateImage($"{Name} Test 64x64 Image", (uint)stbiImage.Width, (uint)stbiImage.Height, VkFormat.FormatR8g8b8a8Srgb);
-				TransferCommandPool.CopyToImage(image, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, stbiImage);
-			}
+			Block[] validBlocks = game.MasterBlockRegistry.AllObjects.Where(static b => b.Properties.SolidFaceMask != BlockFaceMask.None).ToArray();
+			VulkanImage image = CreateBlockAtlas(validBlocks, (uint)validBlocks.Length, 16);
 
 			// descriptors
 			DescriptorPool descriptorPool =
@@ -86,9 +83,60 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			descriptorSets.UpdateDescriptorSet(2, image.ImageView, textureSampler.Sampler);
 		}
 
+		// TODO texture atlas class
+		private VulkanImage CreateBlockAtlas(IEnumerable<Block> blocks, uint count, ushort textureSizeInPixels) {
+			const byte ColorChannels = 4;
+
+			ushort atlasSize = (ushort)(count == 1 ? 1 : (uint)MathF.Sqrt(count) + 1);
+			uint atlasSizeInPixels = (uint)(atlasSize * textureSizeInPixels);
+
+			Logger.Debug($"Creating atlas of size {atlasSize}");
+
+			byte[] data = new byte[atlasSizeInPixels * atlasSizeInPixels * ColorChannels];
+
+			ushort x = 0;
+			ushort y = (ushort)(atlasSize - 1);
+
+			foreach (Block block in blocks) {
+				if (block.Properties.SolidFaceMask == BlockFaceMask.None) { continue; }
+
+				using (StbiImage stbiImage = AssetH.LoadImage($"Voxel.Blocks.{block.RegistryKey.Key}", "png", ColorChannels, block.RegistryKey.Source.Assembly)) {
+					Blit(ref data, stbiImage.Data, x, y); // TODO do on gpu
+
+					x++;
+
+					if (x == atlasSize) {
+						x = 0;
+						y--;
+					}
+				}
+			}
+
+			VulkanImage textureAtlas = GraphicsResourceProvider.CreateImage("Block Texture Atlas", atlasSizeInPixels, atlasSizeInPixels, VkFormat.FormatR8g8b8a8Srgb);
+			TransferCommandPool.CopyToImage(textureAtlas, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, atlasSizeInPixels, atlasSizeInPixels, 4, data);
+			return textureAtlas;
+
+			void Blit(ref byte[] destination, ReadOnlySpan<byte> source, ushort x, ushort y) {
+				uint textureSizeWithColorChannels = (uint)(textureSizeInPixels * ColorChannels);
+				uint atlasSizeWithColorChannels = atlasSizeInPixels * ColorChannels;
+				uint yOffset = (uint)(y * textureSizeInPixels);
+
+				fixed (byte* sourcePtr = source) {
+					fixed (byte* destinationPtr = destination) {
+						for (int yi = 0; yi < textureSizeInPixels; yi++) {
+							long dstIndex = (yOffset + yi) * atlasSizeWithColorChannels + x * textureSizeWithColorChannels;
+							long yiOffset = yi * textureSizeWithColorChannels;
+
+							Buffer.MemoryCopy(sourcePtr + yiOffset, destinationPtr + dstIndex, textureSizeWithColorChannels, textureSizeWithColorChannels);
+						}
+					}
+				}
+			}
+		}
+
 		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{AssetName} Vertex Shader", AssetName, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{AssetName} Fragment Shader", AssetName, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
 			descriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([
 					new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), //
@@ -97,9 +145,9 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			]);
 
 			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
-				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
+				new($"{AssetName} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkVertex.GetAttributeDescriptions(), ChunkVertex.GetBindingDescriptions()) {
 						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageFragmentBit, offset = 0, size = (uint)sizeof(WorldFragmentPushConstants), }, ],
+						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageFragmentBit, offset = 0, size = (uint)sizeof(WorldLightingPushConstants), }, ],
 						EnableDepthTest = true,
 						EnableDepthWrite = true,
 				});
@@ -117,10 +165,10 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
 			if (drawCount == 0) { return; }
 
-			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageFragmentBit, WorldFragmentPushConstants);
+			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageFragmentBit, WorldLightingPushConstants);
 
 			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSets.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit | VkShaderStageFlagBits.ShaderStageFragmentBit);
-			commandBuffer.CmdDrawIndexedIndirect(indirectCmdBuffer.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
+			commandBuffer.CmdDrawIndexedIndirect(IndirectCmdBuffer!.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
 		}
 
 		private void TryRegenerateWorld(IWorldAccessor world) {
@@ -189,14 +237,14 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			if (drawCount != 0) {
 				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * drawCount);
 
-				if (cmdBufferSize > indirectCmdBuffer.BufferSize) {
-					GraphicsResourceProvider.EnqueueDestroy(indirectCmdBuffer);
+				if (cmdBufferSize > IndirectCmdBuffer!.BufferSize) { // indirect buffer won't be null
+					GraphicsResourceProvider.EnqueueDestroy(IndirectCmdBuffer);
 
-					indirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(indirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
+					IndirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(IndirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
 						VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, cmdBufferSize);
 				}
 
-				indirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));
+				IndirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));
 			}
 		}
 

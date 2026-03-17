@@ -1,21 +1,14 @@
-using Engine3.Test.Voxel.World;
+using Engine3.Test.Voxel.Registries;
 
 namespace Engine3.Test.Voxel.Blocks {
-	public class Block {
-		public static Block Air { get; } = new("air", new() { SolidFaceMask = BlockFaceMask.None, }); // TODO registry?
-		public static Block Stone { get; } = new("stone");
-
-		public string Name { get; }
+	public class Block : IRegistryObject {
+		public RegistryKey RegistryKey { get; }
 
 		public BlockProperties Properties { get; }
 
-		public Block(string name, BlockProperties? properties = null) {
-			Name = name;
+		public Block(RegistryKey registryKey, BlockProperties? properties = null) {
+			RegistryKey = registryKey;
 			Properties = properties ?? new();
 		}
-	}
-
-	public class BlockProperties {
-		public BlockFaceMask SolidFaceMask { get; init; } = BlockFaceMask.All;
 	}
 }

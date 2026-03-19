@@ -1,6 +1,7 @@
 using System.Numerics;
 using Engine3.Client;
 using Engine3.Client.Graphics.ImGui;
+using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.World;
 using ImGuiNET;
 
@@ -9,8 +10,6 @@ namespace Engine3.Test.Voxel.Graphics.ImGui {
 		private WorldImGuiMaker() { }
 
 		public static void ShowImGui(World.World world) {
-			ImGuiNet.SeparatorText("World");
-
 			if (ImGuiNet.BeginTable("Values", 2)) {
 				DrawProperty("Chunk Count", world.ChunkCount.ToString());
 				DrawProperty("Dirty Chunk Count", world.DirtyChunkCount.ToString());
@@ -35,6 +34,7 @@ namespace Engine3.Test.Voxel.Graphics.ImGui {
 			ChunkPos? lookAtChunkPos = world.LookAtChunkPos;
 			GlobalBlockPos? lookAtGlobalBlockPos = world.LookAtGlobalBlockPos;
 			LocalBlockPos? lookAtLocalBlockPos = world.LookAtLocalBlockPos;
+			Block? lookAtBlock = world.LookAtBlock;
 
 			int* cameraChunkPosPtr = stackalloc int[] { cameraChunkPos.X, cameraChunkPos.Y, cameraChunkPos.Z, };
 			int* cameraGlobalBlockPosPtr = stackalloc int[] { cameraGlobalBlockPos.X, cameraGlobalBlockPos.Y, cameraGlobalBlockPos.Z, };
@@ -67,6 +67,8 @@ namespace Engine3.Test.Voxel.Graphics.ImGui {
 			} else {
 				ImGuiNet.DragFloat3("@ L. BlockPos", ref nan, 0, 0, 0, null, ImGuiSliderFlags.NoInput); //
 			}
+
+			ImGuiNet.Text($"Block: {(lookAtBlock != null ? lookAtBlock.RegistryKey : "null")}");
 
 			return;
 

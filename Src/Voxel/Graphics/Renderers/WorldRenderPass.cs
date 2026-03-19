@@ -1,33 +1,30 @@
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Engine3.Client.Graphics;
 using Engine3.Client.Graphics.Vulkan;
 using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
-using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics.DataStructs;
 using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
-using Engine3.Utility;
 using NLog;
 using OpenTK.Graphics.Vulkan;
-using StbiSharp;
 
 namespace Engine3.Test.Voxel.Graphics.Renderers {
 	public unsafe class WorldRenderPass : VulkanIndirectRenderPass {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		private const string AssetName = "Chunk";
+		private const byte BlockTextureSize = 16;
 
 		public WorldLightingPushConstants WorldLightingPushConstants { get; init; } = new(0xFFFFFF00u, Vector3.Normalize(Vector3.UnitY + Vector3.UnitX / 2 + Vector3.UnitZ / 2));
 
 		public override bool ShouldRender { get => field && World != null; set; } = true;
 
-		public uint ChunkCount => (uint)chunkIndices.Count;
+		public uint ChunkCount => chunkMeshBuffer.ChunkCount;
 
 		private readonly ChunkRenderQueue chunkRenderQueue = new();
-		private readonly Dictionary<ChunkPos, uint[]> chunkIndices = new();
+		private readonly ChunkMeshBuffer chunkMeshBuffer = new();
 
 		private readonly DescriptorSets descriptorSets;
 
@@ -39,36 +36,38 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 		private uint drawCount;
 
+		private readonly BlockTextureAtlas blockTextureAtlas;
+
+		// TODO move
+
 		public WorldRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base("World Render Pass", renderer,
 			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
 			this.game = game;
 
-			const ushort InitialChunkBufferCount = 10000;
-			const uint SizeOfBiggestChunk = Chunk.ArraySize * 24; // facesPerCube * indicesPerFace
-			const ulong InitialIndexBufferSize = sizeof(uint) * InitialChunkBufferCount * SizeOfBiggestChunk;
+			const ulong InitialChunkCount = 100;
+			const byte VerticesPerBlock = 4 * 6; // vertices per face * faces
+			const byte IndicesPerBlock = 6 * 6; // indices per face * faces
+			const byte SmallObjectMultiplier = 10;
 
-			ChunkVertex[] vertices = ChunkMeshBuilder.GetChunkVertices();
+			const ulong MaxChunkVertexSize = Chunk.ArraySize * VerticesPerBlock;
+			const ulong MaxChunkIndexSize = Chunk.ArraySize * IndicesPerBlock;
 
 			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkVertex) * vertices.Length));
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)sizeof(ChunkVertex) * MaxChunkVertexSize * InitialChunkCount);
 
 			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, InitialIndexBufferSize);
+				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, sizeof(uint) * MaxChunkIndexSize * InitialChunkCount);
 
 			IndirectCmdBuffer = GraphicsResourceProvider.CreateBuffer($"{AssetName} Indirect Command Buffer", VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
 				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit,
-				(ulong)(sizeof(VkDrawIndexedIndirectCommand) * InitialChunkBufferCount)); // TODO for some reason things break if i change the initial size
+				(ulong)sizeof(VkDrawIndexedIndirectCommand) * InitialChunkCount * SmallObjectMultiplier); // TODO for some reason things break if i change the initial size
 
-			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), ]);
-
-			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData) * InitialChunkBufferCount, MaxFramesInFlight,
+			perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("PerChunkData Storage Buffer", (ulong)sizeof(PerChunkData) * InitialChunkCount * SmallObjectMultiplier, MaxFramesInFlight,
 				VkDescriptorType.DescriptorTypeStorageBuffer, VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 			// textures
-			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterNearest, VkFilter.FilterNearest, PhysicalGpu.PhysicalDeviceProperties2.properties.limits));
-
-			Block[] validBlocks = game.MasterBlockRegistry.AllObjects.Where(static b => b.Properties.SolidFaceMask != BlockFaceMask.None).ToArray();
-			VulkanImage image = CreateBlockAtlas(validBlocks, (uint)validBlocks.Length, 16);
+			TextureSampler textureSampler = GraphicsResourceProvider.CreateSampler(new(VkFilter.FilterNearest, VkFilter.FilterNearest, PhysicalGpu.PhysicalDeviceProperties2.properties.limits) { EnableAnisotropy = false, });
+			blockTextureAtlas = new(GraphicsResourceProvider, PhysicalGpu, LogicalGpu, TransferCommandPool, game.MasterBlockRegistry, BlockTextureSize);
 
 			// descriptors
 			DescriptorPool descriptorPool =
@@ -80,58 +79,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 
 			descriptorSets.UpdateDescriptorSet(0, cameraUniformBuffer);
 			descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
-			descriptorSets.UpdateDescriptorSet(2, image.ImageView, textureSampler.Sampler);
-		}
-
-		// TODO texture atlas class
-		private VulkanImage CreateBlockAtlas(IEnumerable<Block> blocks, uint count, ushort textureSizeInPixels) {
-			const byte ColorChannels = 4;
-
-			ushort atlasSize = (ushort)(count == 1 ? 1 : (uint)MathF.Sqrt(count) + 1);
-			uint atlasSizeInPixels = (uint)(atlasSize * textureSizeInPixels);
-
-			Logger.Debug($"Creating atlas of size {atlasSize}");
-
-			byte[] data = new byte[atlasSizeInPixels * atlasSizeInPixels * ColorChannels];
-
-			ushort x = 0;
-			ushort y = (ushort)(atlasSize - 1);
-
-			foreach (Block block in blocks) {
-				if (block.Properties.SolidFaceMask == BlockFaceMask.None) { continue; }
-
-				using (StbiImage stbiImage = AssetH.LoadImage($"Voxel.Blocks.{block.RegistryKey.Key}", "png", ColorChannels, block.RegistryKey.Source.Assembly)) {
-					Blit(ref data, stbiImage.Data, x, y); // TODO do on gpu
-
-					x++;
-
-					if (x == atlasSize) {
-						x = 0;
-						y--;
-					}
-				}
-			}
-
-			VulkanImage textureAtlas = GraphicsResourceProvider.CreateImage("Block Texture Atlas", atlasSizeInPixels, atlasSizeInPixels, VkFormat.FormatR8g8b8a8Srgb);
-			TransferCommandPool.CopyToImage(textureAtlas, PhysicalGpu.QueueFamilyIndices, LogicalGpu.TransferQueue, atlasSizeInPixels, atlasSizeInPixels, 4, data);
-			return textureAtlas;
-
-			void Blit(ref byte[] destination, ReadOnlySpan<byte> source, ushort x, ushort y) {
-				uint textureSizeWithColorChannels = (uint)(textureSizeInPixels * ColorChannels);
-				uint atlasSizeWithColorChannels = atlasSizeInPixels * ColorChannels;
-				uint yOffset = (uint)(y * textureSizeInPixels);
-
-				fixed (byte* sourcePtr = source) {
-					fixed (byte* destinationPtr = destination) {
-						for (int yi = 0; yi < textureSizeInPixels; yi++) {
-							long dstIndex = (yOffset + yi) * atlasSizeWithColorChannels + x * textureSizeWithColorChannels;
-							long yiOffset = yi * textureSizeWithColorChannels;
-
-							Buffer.MemoryCopy(sourcePtr + yiOffset, destinationPtr + dstIndex, textureSizeWithColorChannels, textureSizeWithColorChannels);
-						}
-					}
-				}
-			}
+			descriptorSets.UpdateDescriptorSet(2, blockTextureAtlas.Image.ImageView, textureSampler.Sampler);
 		}
 
 		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
@@ -171,91 +119,79 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 			commandBuffer.CmdDrawIndexedIndirect(IndirectCmdBuffer!.Buffer, 0, drawCount, (uint)sizeof(VkDrawIndexedIndirectCommand)); // should stride ever be anything else?
 		}
 
-		private void TryRegenerateWorld(IWorldAccessor world) {
-			// get dirty chunks
-			ChunkPos[] chunksToAdd = chunkRenderQueue.DequeueAll();
-			Logger.Trace($"Attempting to rendering {chunksToAdd.Length} new chunks");
+		private void TryRegenerateWorld(IWorldReader world) {
+			ChunkPos[] chunksToBuild = chunkRenderQueue.DequeueAll();
 
-			// create indices
-			foreach (ChunkPos position in chunksToAdd) { // TODO do on gpu
-				chunkIndices[position] = ChunkMeshBuilder.CreateChunkIndices(world, position, true);
+			chunkMeshBuffer.BuildDrawData(world, chunksToBuild, blockTextureAtlas);
+			chunkMeshBuffer.GetDrawData(out ChunkVertex[] vertices, out uint[] indices, out VkDrawIndexedIndirectCommand[] commands, out StructBuffer<PerChunkData> perChunkBuffer);
+
+			Logger.Trace($"Found {chunksToBuild.Length} queued chunks. Rendering {perChunkBuffer.Count}/{ChunkCount} chunks");
+
+			if (vertices.Length == 0 || indices.Length == 0) {
+				drawCount = 0;
+				return;
 			}
 
-			KeyValuePair<ChunkPos, uint[]>[] chunkPositionIndicesPair = chunkIndices.AsValueEnumerable().Where(static p => p.Value.Length != 0).ToArray();
-			Logger.Trace($"Rendering {chunkPositionIndicesPair.Length}/{chunkIndices.Count} chunks");
+			drawCount = (uint)commands.Length;
 
-			List<VkDrawIndexedIndirectCommand> cmds = new();
-			List<uint> allIndices = new();
+			if (drawCount == 0) { return; }
 
-			uint indexOffset = 0;
+			// vertex buffer
+			ulong vertexBufferSize = (ulong)(vertices.Length * sizeof(ChunkVertex));
+			if (vertexBufferSize > VertexBuffer!.BufferSize) { // vertex buffer should never be null. just smol
+				GraphicsResourceProvider.EnqueueDestroy(VertexBuffer);
 
-			// add to all indices & add cmd
-			foreach ((_, uint[] indices) in chunkPositionIndicesPair) {
-				allIndices.AddRange(indices);
-
-				cmds.Add(new() { indexCount = (uint)indices.Length, instanceCount = 1, firstIndex = indexOffset, vertexOffset = 0, firstInstance = 0, });
-
-				indexOffset += (uint)indices.Length;
+				VertexBuffer = GraphicsResourceProvider.CreateBuffer(VertexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+					VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, vertexBufferSize);
 			}
 
-			drawCount = (uint)cmds.Count;
+			// index buffer
+			ulong indexBufferSize = (ulong)(indices.Length * sizeof(uint));
+			if (indexBufferSize > IndexBuffer!.BufferSize) { // index buffer should never be null. just smol
+				GraphicsResourceProvider.EnqueueDestroy(IndexBuffer);
 
-			// copy index buffer
-			if (allIndices.Count != 0) {
-				ulong indexBufferSize = (ulong)(allIndices.Count * sizeof(uint));
-
-				if (indexBufferSize > IndexBuffer!.BufferSize) { // index buffer should never be null. just smol
-					GraphicsResourceProvider.EnqueueDestroy(IndexBuffer);
-
-					IndexBuffer = GraphicsResourceProvider.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-						VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
-				}
-
-				TransferCommandPool.CopyToBuffer(IndexBuffer, CollectionsMarshal.AsSpan(allIndices));
+				IndexBuffer = GraphicsResourceProvider.CreateBuffer(IndexBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+					VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, indexBufferSize);
 			}
 
-			// set chunk data
-			if (chunkPositionIndicesPair.Length > (int)perChunkDataBuffer.Count) {
-				perChunkDataBuffer = new((uint)chunkPositionIndicesPair.Length);
+			// cmd buffer
+			ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * drawCount);
+			if (cmdBufferSize > IndirectCmdBuffer!.BufferSize) { // indirect buffer should never be null. just smol
+				GraphicsResourceProvider.EnqueueDestroy(IndirectCmdBuffer);
 
-				ulong bufferSize = (ulong)sizeof(PerChunkData) * perChunkDataBuffer.Count;
-				if (bufferSize > perChunkDataDescriptorBuffer.BufferSize) {
+				IndirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(IndirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
+					VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, cmdBufferSize);
+			}
+
+			// per chunk buffer
+			if (perChunkBuffer.Count > (int)perChunkDataBuffer.Count) {
+				perChunkDataBuffer = new(perChunkBuffer.Data);
+
+				ulong perChunkBufferSize = perChunkDataBuffer.Size;
+				if (perChunkBufferSize > perChunkDataDescriptorBuffer.BufferSize) {
 					GraphicsResourceProvider.EnqueueDestroy(perChunkDataDescriptorBuffer);
 
-					perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
+					perChunkDataDescriptorBuffer = GraphicsResourceProvider.CreateDescriptorBuffers(perChunkDataDescriptorBuffer.DebugName, perChunkBufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeStorageBuffer,
 						VkBufferUsageFlagBits.BufferUsageStorageBufferBit);
 
 					descriptorSets.UpdateDescriptorSet(1, perChunkDataDescriptorBuffer);
 				}
 			}
 
-			// copy chunk data
-			for (int i = 0; i < chunkPositionIndicesPair.Length; i++) { perChunkDataBuffer.Data[i] = new(chunkPositionIndicesPair[i].Key); }
+			// copy
+			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, indices), ]);
+			IndirectCmdBuffer.Copy(commands);
 			for (byte i = 0; i < MaxFramesInFlight; i++) { perChunkDataDescriptorBuffer.Copy(perChunkDataBuffer.Data, i); } // TODO what should i be doing? should i pass FrameIndex or copy all?
-
-			// copy cmds
-			if (drawCount != 0) {
-				ulong cmdBufferSize = (ulong)(sizeof(VkDrawIndexedIndirectCommand) * drawCount);
-
-				if (cmdBufferSize > IndirectCmdBuffer!.BufferSize) { // indirect buffer won't be null
-					GraphicsResourceProvider.EnqueueDestroy(IndirectCmdBuffer);
-
-					IndirectCmdBuffer = GraphicsResourceProvider.CreateBuffer(IndirectCmdBuffer.DebugName, VkBufferUsageFlagBits.BufferUsageIndirectBufferBit,
-						VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, cmdBufferSize);
-				}
-
-				IndirectCmdBuffer.Copy(CollectionsMarshal.AsSpan(cmds));
-			}
 		}
 
 		internal void MarkAllChunksDirty() {
-			foreach (ChunkPos position in chunkIndices.Keys) { EnqueueChunk(position); }
+			foreach (ChunkPos position in chunkMeshBuffer.CachedPositions) { EnqueueChunk(position); }
 		}
 
 		internal void EnqueueChunk(ChunkPos position) => chunkRenderQueue.Enqueue(position);
 
 		internal bool EnqueueChunkIfCached(ChunkPos position) {
-			if (chunkIndices.ContainsKey(position)) {
+			if (chunkMeshBuffer.Contains(position)) {
 				EnqueueChunk(position);
 				return true;
 			}
@@ -264,7 +200,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		}
 
 		internal bool EnqueueChunkIfNotCached(ChunkPos position) {
-			if (!chunkIndices.ContainsKey(position)) {
+			if (!chunkMeshBuffer.Contains(position)) {
 				EnqueueChunk(position);
 				return true;
 			}
@@ -273,7 +209,7 @@ namespace Engine3.Test.Voxel.Graphics.Renderers {
 		}
 
 		internal void ClearCache() {
-			chunkIndices.Clear();
+			chunkMeshBuffer.Clear();
 			drawCount = 0;
 		}
 	}

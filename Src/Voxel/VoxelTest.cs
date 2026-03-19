@@ -47,7 +47,7 @@ namespace Engine3.Test.Voxel {
 			masterBlockRegistry.AddRegistry(BlockRegistry);
 
 			MasterBlockRegistry = masterBlockRegistry.Bake();
-			Logger.Debug($"Baked {MasterBlockRegistry.AllObjectCount} blocks");
+			Logger.Debug($"Baked {MasterBlockRegistry.AllObjects.Count} blocks");
 		}
 
 		private void OnSetupFinished() {

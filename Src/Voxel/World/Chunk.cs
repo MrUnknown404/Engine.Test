@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
 
 namespace Engine3.Test.Voxel.World {
-	public class Chunk : IChunkAccessor, IChunkWriter {
+	public class Chunk : IChunkReader, IChunkWriter {
 		public const byte Size = 16;
 		public const ushort ArraySize = Size * Size * Size;
 

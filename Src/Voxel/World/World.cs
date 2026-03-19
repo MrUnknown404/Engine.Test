@@ -6,7 +6,7 @@ using Engine3.Test.Voxel.Graphics.Renderers;
 using NLog;
 
 namespace Engine3.Test.Voxel.World {
-	public class World : IWorldAccessor, IWorldWriter {
+	public class World : IWorldReader, IWorldWriter {
 		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 		public WorldProperties WorldProperties { get; }
@@ -37,6 +37,7 @@ namespace Engine3.Test.Voxel.World {
 		public ChunkPos? LookAtChunkPos { get; private set; }
 		public GlobalBlockPos? LookAtGlobalBlockPos { get; private set; }
 		public LocalBlockPos? LookAtLocalBlockPos { get; private set; }
+		public Block? LookAtBlock { get; private set; }
 
 		public World(WorldProperties worldProperties, Camera camera, WorldRenderPass worldRenderPass, ChunkOutlineRenderPass chunkOutlineRenderPass) {
 			WorldProperties = worldProperties;
@@ -107,14 +108,15 @@ namespace Engine3.Test.Voxel.World {
 				}
 			}
 
-			// FIXME this is really slow. .3-4~ ms
-			void TryGetBlockCameraLookingAt(uint distance, float stepSize) { // TODO make public version
+			// TODO this is kinda slow. .3-4~ ms (in debug mode) worth fixing?
+			void TryGetBlockCameraLookingAt(uint distance, float stepSize) {
 				Vector3 position = cameraPos;
 				Vector3 forwardAmount = camera.Forward * stepSize;
 
 				LookAtChunkPos = null;
 				LookAtLocalBlockPos = null;
 				LookAtGlobalBlockPos = null;
+				LookAtBlock = null;
 
 				float checkedDistance = 0;
 
@@ -125,14 +127,15 @@ namespace Engine3.Test.Voxel.World {
 					GlobalBlockPos lookAtGlobalBlockPos = new(position);
 					ChunkPos lookAtChunkPos = new(lookAtGlobalBlockPos);
 
-					if (TryGetChunk(lookAtChunkPos, out IChunkAccessor? accessor)) {
-						LocalBlockPos lookAtLocalBlocKPos = new(lookAtGlobalBlockPos);
-						Block block = accessor.GetBlockState(lookAtLocalBlocKPos).Block;
+					if (TryGetChunk(lookAtChunkPos, out IChunkReader? chunk)) {
+						LocalBlockPos lookAtLocalBlockPos = new(lookAtGlobalBlockPos);
+						Block block = chunk.GetBlockState(lookAtLocalBlockPos).Block;
 
-						if (block.Properties.SolidFaceMask != BlockFaceMask.None) { // TODO check face
+						if (block.Properties.SolidFaceMask != BlockFaceMask.None) { // TODO check chunk face
 							LookAtChunkPos = lookAtChunkPos;
 							LookAtGlobalBlockPos = lookAtGlobalBlockPos;
-							LookAtLocalBlockPos = lookAtLocalBlocKPos;
+							LookAtLocalBlockPos = lookAtLocalBlockPos;
+							LookAtBlock = block;
 							break;
 						}
 					}
@@ -160,7 +163,7 @@ namespace Engine3.Test.Voxel.World {
 			}
 		}
 
-		public bool TryGetChunk(ChunkPos position, [NotNullWhen(true)] out IChunkAccessor? chunkAccessor) {
+		public bool TryGetChunk(ChunkPos position, [NotNullWhen(true)] out IChunkReader? chunkAccessor) {
 			bool flag = chunks.TryGetValue(position, out Chunk? chunk);
 			chunkAccessor = chunk;
 			return flag;

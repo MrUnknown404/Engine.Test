@@ -1,19 +1,19 @@
 using Engine3.Test.Voxel.World;
 using JetBrains.Annotations;
 
-namespace Engine3.Test.Voxel.Graphics {
-	public class ChunkRenderQueue {
-		public bool ShouldRenderChunks => chunksToRender.Count != 0;
+namespace Engine3.Test.Voxel.Graphics;
 
-		private readonly HashSet<ChunkPos> chunksToRender = new();
+public class ChunkRenderQueue {
+	public bool ShouldRenderChunks => chunksToRender.Count != 0;
 
-		public void Enqueue(ChunkPos position) => chunksToRender.Add(position);
+	private readonly HashSet<ChunkPos> chunksToRender = new();
 
-		[MustUseReturnValue]
-		internal ChunkPos[] DequeueAll() {
-			ChunkPos[] positions = chunksToRender.ToArray();
-			chunksToRender.Clear();
-			return positions;
-		}
+	public void Enqueue(ChunkPos position) => chunksToRender.Add(position);
+
+	[MustUseReturnValue]
+	internal ChunkPos[] DequeueAll() {
+		ChunkPos[] positions = chunksToRender.ToArray();
+		chunksToRender.Clear();
+		return positions;
 	}
 }

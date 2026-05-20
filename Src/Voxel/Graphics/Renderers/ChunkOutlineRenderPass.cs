@@ -8,136 +8,136 @@ using Engine3.Test.Voxel.Graphics.Vertex;
 using Engine3.Test.Voxel.World;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Voxel.Graphics.Renderers {
-	public unsafe class ChunkOutlineRenderPass : VulkanRenderPass { // TODO add toggle
-		private const string Name = "ChunkOutline";
+namespace Engine3.Test.Voxel.Graphics.Renderers;
 
-		internal ChunkPos CameraChunkPos { set; private get; }
+public unsafe class ChunkOutlineRenderPass : VulkanRenderPass { // TODO add toggle
+	private const string Name = "ChunkOutline";
 
-		private readonly DescriptorSets descriptorSet;
+	internal ChunkPos CameraChunkPos { set; private get; }
 
-		private readonly VoxelTest game;
-		private World.World? World => game.World;
+	private readonly DescriptorSets descriptorSet;
 
-		public override bool ShouldRender { get => field && World != null; set; } = true;
+	private readonly VoxelTest game;
+	private World.World? World => game.World;
 
-		private readonly uint indexCount;
+	public override bool ShouldRender { get => field && World != null; set; } = true;
 
-		public ChunkOutlineRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base("Chunk Outline Render Pass", renderer,
-			CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
-			this.game = game;
+	private readonly uint indexCount;
 
-			const byte Radius = 1;
+	public ChunkOutlineRenderPass(VoxelTest game, VoxelRenderPassRenderer renderer, Assembly assembly, DescriptorBuffers cameraUniformBuffer) : base("Chunk Outline Render Pass", renderer,
+		CreatePipeline(renderer.GraphicsResourceProvider, renderer.SwapChain, assembly, out DescriptorSetLayout descriptorSetLayout)) {
+		this.game = game;
 
-			ChunkOutlineVertex[] vertices = MakeVertices(Radius);
-			uint[] indices = MakeIndices(Radius);
-			indexCount = (uint)indices.Length;
+		const byte Radius = 1;
 
-			// buffers
-			VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkOutlineVertex) * vertices.Length));
+		ChunkOutlineVertex[] vertices = MakeVertices(Radius);
+		uint[] indices = MakeIndices(Radius);
+		indexCount = (uint)indices.Length;
 
-			IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * indices.Length));
+		// buffers
+		VertexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Vertex Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(ChunkOutlineVertex) * vertices.Length));
 
-			// copy
-			TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, indices), ]);
+		IndexBuffer = GraphicsResourceProvider.CreateBuffer($"{Name} Index Buffer", VkBufferUsageFlagBits.BufferUsageTransferDstBit | VkBufferUsageFlagBits.BufferUsageIndexBufferBit,
+			VkMemoryPropertyFlagBits.MemoryPropertyDeviceLocalBit, (ulong)(sizeof(uint) * indices.Length));
 
-			// descriptors
-			DescriptorPool descriptorPool = GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
-			descriptorSet = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
-			descriptorSet.UpdateDescriptorSet(0, cameraUniformBuffer);
+		// copy
+		TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(VertexBuffer, vertices), TransferCommandPool.CopyDataToBufferInfo.Copy(IndexBuffer, indices), ]);
 
-			return;
+		// descriptors
+		DescriptorPool descriptorPool = GraphicsResourceProvider.CreateDescriptorPool([ VkDescriptorType.DescriptorTypeUniformBuffer, ], 1, MaxFramesInFlight);
+		descriptorSet = descriptorPool.AllocateDescriptorSets(descriptorSetLayout);
+		descriptorSet.UpdateDescriptorSet(0, cameraUniformBuffer);
 
-			ChunkOutlineVertex[] MakeVertices(byte radius) {
-				const uint XColor = 0xFF000000; // can't get color blending working?
-				const uint YColor = 0x00FF0000;
-				const uint ZColor = 0x0000FF00;
+		return;
 
-				uint size = 1 + radius * 2u;
-				uint halfLength = size * Chunk.Size / 2;
-				int halfLength0 = (int)(-halfLength + Chunk.Size / 2);
-				int halfLength1 = (int)(halfLength + Chunk.Size / 2);
+		ChunkOutlineVertex[] MakeVertices(byte radius) {
+			const uint XColor = 0xFF000000; // can't get color blending working?
+			const uint YColor = 0x00FF0000;
+			const uint ZColor = 0x0000FF00;
 
-				List<ChunkOutlineVertex> vertices = new();
+			uint size = 1 + radius * 2u;
+			uint halfLength = size * Chunk.Size / 2;
+			int halfLength0 = (int)(-halfLength + Chunk.Size / 2);
+			int halfLength1 = (int)(halfLength + Chunk.Size / 2);
 
-				for (int z = 0; z <= size; z++) { // y
-					int zo = (z - radius) * Chunk.Size;
+			List<ChunkOutlineVertex> vertices = new();
 
-					for (int x = 0; x <= size; x++) {
-						int xo = (x - radius) * Chunk.Size;
+			for (int z = 0; z <= size; z++) { // y
+				int zo = (z - radius) * Chunk.Size;
 
-						vertices.Add(new(xo, halfLength0, zo, YColor));
-						vertices.Add(new(xo, halfLength1, zo, YColor));
-					}
-				}
-
-				for (int z = 0; z <= size; z++) { // x
-					int zo = (z - radius) * Chunk.Size;
-
-					for (int y = 0; y <= size; y++) {
-						int yo = (y - radius) * Chunk.Size;
-
-						vertices.Add(new(halfLength0, yo, zo, XColor));
-						vertices.Add(new(halfLength1, yo, zo, XColor));
-					}
-				}
-
-				for (int x = 0; x <= size; x++) { // z
+				for (int x = 0; x <= size; x++) {
 					int xo = (x - radius) * Chunk.Size;
 
-					for (int y = 0; y <= size; y++) {
-						int yo = (y - radius) * Chunk.Size;
-
-						vertices.Add(new(xo, yo, halfLength0, ZColor));
-						vertices.Add(new(xo, yo, halfLength1, ZColor));
-					}
+					vertices.Add(new(xo, halfLength0, zo, YColor));
+					vertices.Add(new(xo, halfLength1, zo, YColor));
 				}
-
-				return vertices.ToArray();
 			}
 
-			uint[] MakeIndices(byte radius) {
-				uint size = 1 + radius * 2u;
-				uint count = 3 * (size + 1) * (size + 1) * 2;
+			for (int z = 0; z <= size; z++) { // x
+				int zo = (z - radius) * Chunk.Size;
 
-				uint[] indices = new uint[count];
-				for (uint i = 0; i < count; i++) { indices[i] = i; }
+				for (int y = 0; y <= size; y++) {
+					int yo = (y - radius) * Chunk.Size;
 
-				return indices;
+					vertices.Add(new(halfLength0, yo, zo, XColor));
+					vertices.Add(new(halfLength1, yo, zo, XColor));
+				}
 			}
+
+			for (int x = 0; x <= size; x++) { // z
+				int xo = (x - radius) * Chunk.Size;
+
+				for (int y = 0; y <= size; y++) {
+					int yo = (y - radius) * Chunk.Size;
+
+					vertices.Add(new(xo, yo, halfLength0, ZColor));
+					vertices.Add(new(xo, yo, halfLength1, ZColor));
+				}
+			}
+
+			return vertices.ToArray();
 		}
 
-		protected override void CopyBuffers(float delta, byte frameIndex) { }
+		uint[] MakeIndices(byte radius) {
+			uint size = 1 + radius * 2u;
+			uint count = 3 * (size + 1) * (size + 1) * 2;
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
-			commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new ChunkOutlinePushConstants(CameraChunkPos));
+			uint[] indices = new uint[count];
+			for (uint i = 0; i < count; i++) { indices[i] = i; }
 
-			commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSet.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
-			commandBuffer.CmdDrawIndexed(indexCount);
+			return indices;
 		}
+	}
 
-		private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
-			VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
-			VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
+	protected override void CopyBuffers(float delta, byte frameIndex) { }
 
-			descriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+	protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer, byte frameIndex) {
+		commandBuffer.CmdPushConstants(GraphicsPipeline.Layout, VkShaderStageFlagBits.ShaderStageVertexBit, new ChunkOutlinePushConstants(CameraChunkPos));
 
-			GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
-				new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkOutlineVertex.GetAttributeDescriptions(), ChunkOutlineVertex.GetBindingDescriptions()) {
-						Topology = VkPrimitiveTopology.PrimitiveTopologyLineList,
-						DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
-						PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, offset = 0, size = (uint)sizeof(ChunkOutlinePushConstants), }, ],
-						CullMode = VkCullModeFlagBits.CullModeNone,
-						EnableDepthTest = true,
-						EnableDepthWrite = true,
-				});
+		commandBuffer.CmdBindDescriptorSet(GraphicsPipeline.Layout, descriptorSet.GetCurrent(frameIndex), VkShaderStageFlagBits.ShaderStageVertexBit);
+		commandBuffer.CmdDrawIndexed(indexCount);
+	}
 
-			graphicsResourceProvider.EnqueueDestroy(vertexShader);
-			graphicsResourceProvider.EnqueueDestroy(fragmentShader);
+	private static GraphicsPipeline CreatePipeline(VulkanResourceProvider graphicsResourceProvider, SwapChain swapChain, Assembly assembly, out DescriptorSetLayout descriptorSetLayout) {
+		VulkanShader vertexShader = graphicsResourceProvider.CreateShader($"{Name} Vertex Shader", Name, ShaderLanguage.Glsl, ShaderType.Vertex, assembly);
+		VulkanShader fragmentShader = graphicsResourceProvider.CreateShader($"{Name} Fragment Shader", Name, ShaderLanguage.Glsl, ShaderType.Fragment, assembly);
 
-			return pipeline;
-		}
+		descriptorSetLayout = graphicsResourceProvider.CreateDescriptorSetLayout([ new(VkDescriptorType.DescriptorTypeUniformBuffer, VkShaderStageFlagBits.ShaderStageVertexBit, 0), ]);
+
+		GraphicsPipeline pipeline = graphicsResourceProvider.CreateGraphicsPipeline(
+			new($"{Name} Graphics Pipeline", swapChain.ImageFormat, [ vertexShader, fragmentShader, ], ChunkOutlineVertex.GetAttributeDescriptions(), ChunkOutlineVertex.GetBindingDescriptions()) {
+					Topology = VkPrimitiveTopology.PrimitiveTopologyLineList,
+					DescriptorSetLayouts = [ descriptorSetLayout.VkDescriptorSetLayout, ],
+					PushConstantRanges = [ new() { stageFlags = VkShaderStageFlagBits.ShaderStageVertexBit, offset = 0, size = (uint)sizeof(ChunkOutlinePushConstants), }, ],
+					CullMode = VkCullModeFlagBits.CullModeNone,
+					EnableDepthTest = true,
+					EnableDepthWrite = true,
+			});
+
+		graphicsResourceProvider.EnqueueDestroy(vertexShader);
+		graphicsResourceProvider.EnqueueDestroy(fragmentShader);
+
+		return pipeline;
 	}
 }

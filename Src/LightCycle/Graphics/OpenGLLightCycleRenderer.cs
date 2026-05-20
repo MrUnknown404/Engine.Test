@@ -3,13 +3,13 @@ using Engine3.Client;
 using Engine3.Client.Graphics.OpenGL;
 using Engine3.Client.Graphics.OpenGL.Renderers;
 
-namespace Engine3.Test.LightCycle.Graphics {
-	public class OpenGLLightCycleRenderer : OpenGLRendererBase {
-		private readonly Assembly assembly = typeof(OpenGLLightCycleRenderer).Assembly;
+namespace Engine3.Test.LightCycle.Graphics;
 
-		public OpenGLLightCycleRenderer(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window) : base(graphicsBackend, window) { }
+public class OpenGLLightCycleRenderer : OpenGLRendererBase {
+	private readonly Assembly assembly = typeof(OpenGLLightCycleRenderer).Assembly;
 
-		protected override void DrawFrame() { }
-		protected override void CopyBuffers(float delta) { }
-	}
+	public OpenGLLightCycleRenderer(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window) : base(graphicsBackend, window) { }
+
+	protected override void DrawFrame() { }
+	protected override void CopyBuffers(float delta) { }
 }

@@ -1,17 +1,17 @@
 using Engine3.Test.Voxel.Graphics.Vertex;
 
-namespace Engine3.Test.Voxel.Graphics.Renderers {
-	public class ChunkMesh {
-		public static ChunkMesh EmptyMesh { get; } = new(Array.Empty<ChunkVertex>(), Array.Empty<uint>()) { IsEmpty = true, };
+namespace Engine3.Test.Voxel.Graphics.Renderers;
 
-		public ChunkVertex[] Vertices { get; }
-		public uint[] Indices { get; }
+public class ChunkMesh {
+	public static ChunkMesh EmptyMesh { get; } = new(Array.Empty<ChunkVertex>(), Array.Empty<uint>()) { IsEmpty = true, };
 
-		public bool IsEmpty { get; private init; }
+	public ChunkVertex[] Vertices { get; }
+	public uint[] Indices { get; }
 
-		public ChunkMesh(ChunkVertex[] vertices, uint[] indices) {
-			Vertices = vertices;
-			Indices = indices;
-		}
+	public bool IsEmpty { get; private init; }
+
+	public ChunkMesh(ChunkVertex[] vertices, uint[] indices) {
+		Vertices = vertices;
+		Indices = indices;
 	}
 }

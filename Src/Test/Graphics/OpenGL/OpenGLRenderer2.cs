@@ -7,53 +7,53 @@ using Engine3.Client.Graphics.VertexLayouts;
 using OpenTK.Graphics.OpenGL;
 using ShaderType = Engine3.Client.Graphics.ShaderType;
 
-namespace Engine3.Test.Test.Graphics.OpenGL {
-	public unsafe class OpenGLRenderer2 : OpenGLRendererBase {
-		private const string TestShaderName = "Test";
+namespace Engine3.Test.Test.Graphics.OpenGL;
 
-		private readonly OpenGLShader vertexShader;
-		private readonly OpenGLShader fragmentShader;
-		private readonly ProgramPipeline programPipeline;
+public unsafe class OpenGLRenderer2 : OpenGLRendererBase {
+	private const string TestShaderName = "Test";
 
-		private readonly OpenGLBuffer vertexBuffer;
-		private readonly OpenGLBuffer indexBuffer;
+	private readonly OpenGLShader vertexShader;
+	private readonly OpenGLShader fragmentShader;
+	private readonly ProgramPipeline programPipeline;
 
-		private readonly VertexXyzRgb[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
-		private readonly uint[] indices = [ 0, 1, 2, ];
-		private readonly Assembly gameAssembly;
+	private readonly OpenGLBuffer vertexBuffer;
+	private readonly OpenGLBuffer indexBuffer;
 
-		public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
-			this.gameAssembly = gameAssembly;
+	private readonly VertexXyzRgb[] vertices = [ new(0f, -0.5f, 0, 1, 0, 0), new(0.5f, 0.5f, 0, 0, 1, 0), new(-0.5f, 0.5f, 0, 0, 0, 1), ];
+	private readonly uint[] indices = [ 0, 1, 2, ];
+	private readonly Assembly gameAssembly;
 
-			vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
-			fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
-			programPipeline = GraphicsResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
+	public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
+		this.gameAssembly = gameAssembly;
 
-			// GraphicsResourceProvider.EnqueueDestroy(vertexShader);
-			// GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
+		vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);
+		fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderType.Fragment, gameAssembly);
+		programPipeline = GraphicsResourceProvider.CreateProgramPipeline("Test Program Pipeline", vertexShader, fragmentShader);
 
-			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
-			vertexBuffer.Copy(vertices);
+		// GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+		// GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
-			indexBuffer = GraphicsResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
-			indexBuffer.Copy(indices);
-		}
+		vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
+		vertexBuffer.Copy(vertices);
 
-		protected override void DrawFrame() {
-			GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
+		indexBuffer = GraphicsResourceProvider.CreateBuffer("Test Index Buffer", BufferStorageMask.DynamicStorageBit, (ulong)(sizeof(uint) * indices.Length));
+		indexBuffer.Copy(indices);
+	}
 
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
-			GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
+	protected override void DrawFrame() {
+		GL.BindProgramPipeline(programPipeline.ProgramPipelineHandle.Handle);
 
-			GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
-		}
+		GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 0, (int)vertexBuffer.BufferHandle);
+		GL.BindBufferBase(BufferTarget.ShaderStorageBuffer, 1, (int)indexBuffer.BufferHandle);
 
-		protected override void CopyBuffers(float delta) { }
+		GL.DrawArrays(PrimitiveType.Triangles, 0, indices.Length);
+	}
 
-		protected override void Cleanup() {
-			//
+	protected override void CopyBuffers(float delta) { }
 
-			base.Cleanup();
-		}
+	protected override void Cleanup() {
+		//
+
+		base.Cleanup();
 	}
 }

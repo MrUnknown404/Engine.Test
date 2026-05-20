@@ -7,48 +7,48 @@ using Engine3.Client.Graphics.Vulkan.Objects;
 using Engine3.Client.Graphics.Vulkan.Renderers;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Test.Graphics.Vulkan {
-	public unsafe class VulkanRenderer2 : VulkanRendererBase {
-		private const string TestShaderName = "Test";
+namespace Engine3.Test.Test.Graphics.Vulkan;
 
-		private GraphicsPipeline? graphicsPipeline;
+public unsafe class VulkanRenderer2 : VulkanRendererBase {
+	private const string TestShaderName = "Test";
 
-		private VulkanBuffer? vertexBuffer;
+	private GraphicsPipeline? graphicsPipeline;
 
-		private readonly VertexXyzRgb[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
-		private readonly Assembly gameAssembly;
+	private VulkanBuffer? vertexBuffer;
 
-		public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, false) {
-			this.gameAssembly = gameAssembly;
+	private readonly VertexXyzRgb[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
+	private readonly Assembly gameAssembly;
 
-			VulkanShader vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
-			VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
+	public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, false) {
+		this.gameAssembly = gameAssembly;
 
-			graphicsPipeline = GraphicsResourceProvider.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
-				VertexXyzRgb.GetBindingDescriptions()) { FrontFace = VkFrontFace.FrontFaceClockwise, });
+		VulkanShader vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);
+		VulkanShader fragmentShader = GraphicsResourceProvider.CreateShader("Test Fragment Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Fragment, gameAssembly);
 
-			GraphicsResourceProvider.EnqueueDestroy(vertexShader);
-			GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
+		graphicsPipeline = GraphicsResourceProvider.CreateGraphicsPipeline(new("Test Graphics Pipeline", SwapChain.ImageFormat, [ vertexShader, fragmentShader, ], VertexXyzRgb.GetAttributeDescriptions(),
+			VertexXyzRgb.GetBindingDescriptions()) { FrontFace = VkFrontFace.FrontFaceClockwise, });
 
-			vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
-				VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
+		GraphicsResourceProvider.EnqueueDestroy(vertexShader);
+		GraphicsResourceProvider.EnqueueDestroy(fragmentShader);
 
-			vertexBuffer.Copy(vertices);
-		}
+		vertexBuffer = GraphicsResourceProvider.CreateBuffer("Test Vertex Buffer", VkBufferUsageFlagBits.BufferUsageVertexBufferBit,
+			VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit | VkMemoryPropertyFlagBits.MemoryPropertyHostCoherentBit, (ulong)(sizeof(VertexXyzRgb) * vertices.Length));
 
-		protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
-			if (vertexBuffer == null || graphicsPipeline == null) { return; }
-
-			commandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
-
-			commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
-			commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
-
-			commandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
-
-			commandBuffer.CmdDraw((uint)vertices.Length);
-		}
-
-		protected override void CopyBuffers(float delta) { }
+		vertexBuffer.Copy(vertices);
 	}
+
+	protected override void RecordCommandBuffer(GraphicsCommandBuffer commandBuffer) {
+		if (vertexBuffer == null || graphicsPipeline == null) { return; }
+
+		commandBuffer.CmdBindGraphicsPipeline(graphicsPipeline.Pipeline);
+
+		commandBuffer.CmdSetViewport(0, 0, SwapChain.Extent.width, SwapChain.Extent.height, 0, 1);
+		commandBuffer.CmdSetScissor(0, 0, SwapChain.Extent);
+
+		commandBuffer.CmdBindVertexBuffer(vertexBuffer, 0);
+
+		commandBuffer.CmdDraw((uint)vertices.Length);
+	}
+
+	protected override void CopyBuffers(float delta) { }
 }

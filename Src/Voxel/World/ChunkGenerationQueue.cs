@@ -1,67 +1,67 @@
 using Engine3.Test.Voxel.Blocks;
 using JetBrains.Annotations;
 
-namespace Engine3.Test.Voxel.World {
-	public class ChunkGenerationQueue {
-		public uint ChunkCount => (uint)chunksToGenerate.Count;
-		public bool ShouldGenerateChunks => ChunkCount != 0;
+namespace Engine3.Test.Voxel.World;
 
-		private readonly World world;
-		private readonly HashSet<ChunkPos> chunksToGenerate = new();
+public class ChunkGenerationQueue {
+	public uint ChunkCount => (uint)chunksToGenerate.Count;
+	public bool ShouldGenerateChunks => ChunkCount != 0;
 
-		public ChunkGenerationQueue(World world) => this.world = world;
+	private readonly World world;
+	private readonly HashSet<ChunkPos> chunksToGenerate = new();
 
-		public void Enqueue(ChunkPos position) => chunksToGenerate.Add(position);
+	public ChunkGenerationQueue(World world) => this.world = world;
 
-		[MustUseReturnValue]
-		internal Chunk[] GenerateChunks() { // TODO multithread
-			Chunk[] chunks = chunksToGenerate.AsValueEnumerable().Select(pos => GenerateChunk(world, pos)).ToArray();
-			chunksToGenerate.Clear();
-			return chunks;
-		}
+	public void Enqueue(ChunkPos position) => chunksToGenerate.Add(position);
 
-		[MustUseReturnValue]
-		private static Chunk GenerateChunk(World world, ChunkPos chunkPos) {
-			if (chunkPos.Y > 10) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
+	[MustUseReturnValue]
+	internal Chunk[] GenerateChunks() { // TODO multithread
+		Chunk[] chunks = chunksToGenerate.AsValueEnumerable().Select(pos => GenerateChunk(world, pos)).ToArray();
+		chunksToGenerate.Clear();
+		return chunks;
+	}
 
-			BlockState[] blocks = new BlockState[Chunk.ArraySize];
+	[MustUseReturnValue]
+	private static Chunk GenerateChunk(World world, ChunkPos chunkPos) {
+		if (chunkPos.Y > 10) { return new(world, chunkPos); } // skip if we know it'll be air only. remove/update later
 
-			bool isEmpty = true;
+		BlockState[] blocks = new BlockState[Chunk.ArraySize];
 
-			int chunkXOffset = chunkPos.X * Chunk.Size;
-			int chunkYOffset = chunkPos.Y * Chunk.Size;
-			int chunkZOffset = chunkPos.Z * Chunk.Size;
+		bool isEmpty = true;
 
-			Random random = new(); // TODO remove
+		int chunkXOffset = chunkPos.X * Chunk.Size;
+		int chunkYOffset = chunkPos.Y * Chunk.Size;
+		int chunkZOffset = chunkPos.Z * Chunk.Size;
 
-			for (byte x = 0; x < Chunk.Size; x++) {
-				int newX = chunkXOffset + x;
+		Random random = new(); // TODO remove
 
-				for (byte z = 0; z < Chunk.Size; z++) {
-					int newZ = chunkZOffset + z;
-					int height = world.HeightMap.GetBlockHeightAt(newX, newZ);
+		for (byte x = 0; x < Chunk.Size; x++) {
+			int newX = chunkXOffset + x;
 
-					for (byte y = 0; y < Chunk.Size; y++) {
-						int newY = chunkYOffset + y;
+			for (byte z = 0; z < Chunk.Size; z++) {
+				int newZ = chunkZOffset + z;
+				int height = world.HeightMap.GetBlockHeightAt(newX, newZ);
 
-						Block block = Blocks.Blocks.Air;
-						if (newY < height) {
-							block = random.Next(3) switch {
-									0 => Blocks.Blocks.Stone,
-									1 => Blocks.Blocks.Dirt,
-									2 => Blocks.Blocks.Grass,
-									_ => throw new ArgumentOutOfRangeException(),
-							};
+				for (byte y = 0; y < Chunk.Size; y++) {
+					int newY = chunkYOffset + y;
 
-							isEmpty = false;
-						}
+					Block block = Blocks.Blocks.Air;
+					if (newY < height) {
+						block = random.Next(3) switch {
+								0 => Blocks.Blocks.Stone,
+								1 => Blocks.Blocks.Dirt,
+								2 => Blocks.Blocks.Grass,
+								_ => throw new ArgumentOutOfRangeException(),
+						};
 
-						blocks[Chunk.ToIndex(x, y, z)] = new(block, BlockStateFlags.WasGenerated);
+						isEmpty = false;
 					}
+
+					blocks[Chunk.ToIndex(x, y, z)] = new(block, BlockStateFlags.WasGenerated);
 				}
 			}
-
-			return new(world, chunkPos, blocks, isEmpty);
 		}
+
+		return new(world, chunkPos, blocks, isEmpty);
 	}
 }

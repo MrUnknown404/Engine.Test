@@ -11,85 +11,85 @@ using NLog;
 using OpenTK.Graphics.Vulkan;
 using StbiSharp;
 
-namespace Engine3.Test.Voxel.Graphics {
-	public unsafe class BlockTextureAtlas {
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+namespace Engine3.Test.Voxel.Graphics;
 
-		public VulkanImage Image { get; }
+public unsafe class BlockTextureAtlas {
+	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		public byte TextureSize { get; }
-		public byte AtlasSize { get; }
-		public ushort AtlasSizeInPixels { get; }
-		public float TextureSizeInUVs { get; }
+	public VulkanImage Image { get; }
 
-		private readonly FrozenDictionary<Block, Vector2> blockUVMap;
+	public byte TextureSize { get; }
+	public byte AtlasSize { get; }
+	public ushort AtlasSizeInPixels { get; }
+	public float TextureSizeInUVs { get; }
 
-		public BlockTextureAtlas(VulkanResourceProvider graphicsResourceProvider, SurfaceCapablePhysicalGpu physicalGpu, LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, BakedMasterRegistry<Block> blocks,
-			byte textureSize) {
-			const byte ColorChannels = 4;
+	private readonly FrozenDictionary<Block, Vector2> blockUVMap;
 
-			Block[] validBlocks = blocks.AllObjectsOrdered.Where(static b => b.Properties.SolidFaceMask != BlockFaceMask.None).ToArray();
+	public BlockTextureAtlas(VulkanResourceProvider graphicsResourceProvider, SurfaceCapablePhysicalGpu physicalGpu, LogicalGpu logicalGpu, TransferCommandPool transferCommandPool, BakedMasterRegistry<Block> blocks,
+		byte textureSize) {
+		const byte ColorChannels = 4;
 
-			TextureSize = textureSize;
-			AtlasSize = (byte)(validBlocks.Length == 1 ? 1 : (uint)MathF.Sqrt(validBlocks.Length) + 1);
-			AtlasSizeInPixels = (ushort)(AtlasSize * TextureSize);
-			TextureSizeInUVs = (float)TextureSize / (AtlasSize * TextureSize);
+		Block[] validBlocks = blocks.AllObjectsOrdered.Where(static b => b.Properties.SolidFaceMask != BlockFaceMask.None).ToArray();
 
-			Dictionary<Block, Vector2> blockUVMap = new();
+		TextureSize = textureSize;
+		AtlasSize = (byte)(validBlocks.Length == 1 ? 1 : (uint)MathF.Sqrt(validBlocks.Length) + 1);
+		AtlasSizeInPixels = (ushort)(AtlasSize * TextureSize);
+		TextureSizeInUVs = (float)TextureSize / (AtlasSize * TextureSize);
 
-			Logger.Debug($"Creating atlas of size {AtlasSize}");
+		Dictionary<Block, Vector2> blockUVMap = new();
 
-			byte[] imageData = new byte[AtlasSizeInPixels * AtlasSizeInPixels * ColorChannels];
+		Logger.Debug($"Creating atlas of size {AtlasSize}");
 
-			ushort x = 0;
-			ushort y = (ushort)(AtlasSize - 1);
+		byte[] imageData = new byte[AtlasSizeInPixels * AtlasSizeInPixels * ColorChannels];
 
-			foreach (Block block in validBlocks) {
-				if (block.Properties.SolidFaceMask == BlockFaceMask.None) { continue; }
+		ushort x = 0;
+		ushort y = (ushort)(AtlasSize - 1);
 
-				blockUVMap[block] = new((float)x / AtlasSize, (float)y / AtlasSize);
+		foreach (Block block in validBlocks) {
+			if (block.Properties.SolidFaceMask == BlockFaceMask.None) { continue; }
 
-				using (StbiImage stbiImage = AssetH.LoadImage($"Voxel.Blocks.{block.RegistryKey.Key}", "png", ColorChannels, block.RegistryKey.Source.Assembly)) {
-					Blit(ref imageData, stbiImage.Data, x, y); // TODO do on gpu?
+			blockUVMap[block] = new((float)x / AtlasSize, (float)y / AtlasSize);
 
-					x++;
+			using (StbiImage stbiImage = AssetH.LoadImage($"Voxel.Blocks.{block.RegistryKey.Key}", "png", ColorChannels, block.RegistryKey.Source.Assembly)) {
+				Blit(ref imageData, stbiImage.Data, x, y); // TODO do on gpu?
 
-					if (x == AtlasSize) {
-						x = 0;
-						y--;
-					}
-				}
-			}
+				x++;
 
-			this.blockUVMap = blockUVMap.ToFrozenDictionary();
-
-#if DEBUG
-			// TODO dump file
-#endif
-
-			Image = graphicsResourceProvider.CreateImage("Block Texture Atlas", AtlasSizeInPixels, AtlasSizeInPixels, VkFormat.FormatR8g8b8a8Srgb);
-			transferCommandPool.CopyToImage(Image, physicalGpu.QueueFamilyIndices, logicalGpu.TransferQueue, AtlasSizeInPixels, AtlasSizeInPixels, ColorChannels, imageData);
-
-			return;
-
-			void Blit(ref byte[] destination, ReadOnlySpan<byte> source, ushort x, ushort y) {
-				uint textureSizeWithColorChannels = (uint)(TextureSize * ColorChannels);
-				uint atlasSizeWithColorChannels = (uint)(AtlasSizeInPixels * ColorChannels);
-				uint yOffset = (uint)(y * TextureSize);
-
-				fixed (byte* sourcePtr = source) {
-					fixed (byte* destinationPtr = destination) {
-						for (int yi = 0; yi < TextureSize; yi++) {
-							long dstIndex = (yOffset + yi) * atlasSizeWithColorChannels + x * textureSizeWithColorChannels;
-							long yiOffset = yi * textureSizeWithColorChannels;
-
-							Buffer.MemoryCopy(sourcePtr + yiOffset, destinationPtr + dstIndex, textureSizeWithColorChannels, textureSizeWithColorChannels);
-						}
-					}
+				if (x == AtlasSize) {
+					x = 0;
+					y--;
 				}
 			}
 		}
 
-		[MustUseReturnValue] public Vector2 GetUVsForBlock(Block block) => blockUVMap[block];
+		this.blockUVMap = blockUVMap.ToFrozenDictionary();
+
+#if DEBUG
+		// TODO dump file
+#endif
+
+		Image = graphicsResourceProvider.CreateImage("Block Texture Atlas", AtlasSizeInPixels, AtlasSizeInPixels, VkFormat.FormatR8g8b8a8Srgb);
+		transferCommandPool.CopyToImage(Image, physicalGpu.QueueFamilyIndices, logicalGpu.TransferQueue, AtlasSizeInPixels, AtlasSizeInPixels, ColorChannels, imageData);
+
+		return;
+
+		void Blit(ref byte[] destination, ReadOnlySpan<byte> source, ushort x, ushort y) {
+			uint textureSizeWithColorChannels = (uint)(TextureSize * ColorChannels);
+			uint atlasSizeWithColorChannels = (uint)(AtlasSizeInPixels * ColorChannels);
+			uint yOffset = (uint)(y * TextureSize);
+
+			fixed (byte* sourcePtr = source) {
+				fixed (byte* destinationPtr = destination) {
+					for (int yi = 0; yi < TextureSize; yi++) {
+						long dstIndex = (yOffset + yi) * atlasSizeWithColorChannels + x * textureSizeWithColorChannels;
+						long yiOffset = yi * textureSizeWithColorChannels;
+
+						Buffer.MemoryCopy(sourcePtr + yiOffset, destinationPtr + dstIndex, textureSizeWithColorChannels, textureSizeWithColorChannels);
+					}
+				}
+			}
+		}
 	}
+
+	[MustUseReturnValue] public Vector2 GetUVsForBlock(Block block) => blockUVMap[block];
 }

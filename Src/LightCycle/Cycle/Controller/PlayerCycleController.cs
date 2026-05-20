@@ -1,42 +1,42 @@
-namespace Engine3.Test.LightCycle.Cycle.Controller {
-	public class PlayerCycleController : ICycleController {
-		public IPlayerInputProvider InputProvider { get; }
+namespace Engine3.Test.LightCycle.Cycle.Controller;
 
-		private bool leftHoldCheck;
-		private bool rightHoldCheck;
+public class PlayerCycleController : ICycleController {
+	public IPlayerInputProvider InputProvider { get; }
 
-		public PlayerCycleController(IPlayerInputProvider inputProvider) => InputProvider = inputProvider;
+	private bool leftHoldCheck;
+	private bool rightHoldCheck;
 
-		public Direction CheckForDirectionChange(Direction currentDirection) {
-			if (InputProvider.TurnLeft) {
-				if (!leftHoldCheck) {
-					leftHoldCheck = true;
+	public PlayerCycleController(IPlayerInputProvider inputProvider) => InputProvider = inputProvider;
 
-					return currentDirection switch {
-							Direction.Up => Direction.Left,
-							Direction.Down => Direction.Right,
-							Direction.Left => Direction.Down,
-							Direction.Right => Direction.Up,
-							_ => throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null),
-					};
-				}
-			} else { leftHoldCheck = false; }
+	public Direction CheckForDirectionChange(Direction currentDirection) {
+		if (InputProvider.TurnLeft) {
+			if (!leftHoldCheck) {
+				leftHoldCheck = true;
 
-			if (InputProvider.TurnRight) {
-				if (!rightHoldCheck) {
-					rightHoldCheck = true;
+				return currentDirection switch {
+						Direction.Up => Direction.Left,
+						Direction.Down => Direction.Right,
+						Direction.Left => Direction.Down,
+						Direction.Right => Direction.Up,
+						_ => throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null),
+				};
+			}
+		} else { leftHoldCheck = false; }
 
-					return currentDirection switch {
-							Direction.Up => Direction.Right,
-							Direction.Down => Direction.Left,
-							Direction.Left => Direction.Up,
-							Direction.Right => Direction.Down,
-							_ => throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null),
-					};
-				}
-			} else { rightHoldCheck = false; }
+		if (InputProvider.TurnRight) {
+			if (!rightHoldCheck) {
+				rightHoldCheck = true;
 
-			return currentDirection;
-		}
+				return currentDirection switch {
+						Direction.Up => Direction.Right,
+						Direction.Down => Direction.Left,
+						Direction.Left => Direction.Up,
+						Direction.Right => Direction.Down,
+						_ => throw new ArgumentOutOfRangeException(nameof(currentDirection), currentDirection, null),
+				};
+			}
+		} else { rightHoldCheck = false; }
+
+		return currentDirection;
 	}
 }

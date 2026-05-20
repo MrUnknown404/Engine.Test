@@ -9,69 +9,69 @@ using NLog;
 using OpenTK.Graphics.Vulkan;
 using OpenTK.Mathematics;
 
-namespace Engine3.Test.LightCycle {
-	public sealed class LightCycleTest : GameClient {
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+namespace Engine3.Test.LightCycle;
 
-		private Window? window;
+public sealed class LightCycleTest : GameClient {
+	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		private readonly GameManager gameManager = new();
+	private Window? window;
 
-		private readonly bool useVulkan;
+	private readonly GameManager gameManager = new();
 
-		public static float PrevCubeRotation { get; private set; }
-		public static float CubeRotation { get; private set; }
+	private readonly bool useVulkan;
 
-		public LightCycleTest(bool useVulkan) : base("Light Cycle Test", new BuildVersion(0),
-			useVulkan ?
-					new VulkanGraphicsBackend(new()) {
-							Settings = new() {
-									EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
-							},
-					} :
-					throw new NotImplementedException()) {
-			this.useVulkan = useVulkan;
+	public static float PrevCubeRotation { get; private set; }
+	public static float CubeRotation { get; private set; }
 
-			OnSetupFinishedEvent += OnSetupFinished;
-		}
+	public LightCycleTest(bool useVulkan) : base("Light Cycle Test", new BuildVersion(0),
+		useVulkan ?
+				new VulkanGraphicsBackend(new()) {
+						Settings = new() {
+								EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
+						},
+				} :
+				throw new NotImplementedException()) {
+		this.useVulkan = useVulkan;
 
-		private void OnSetupFinished() {
-			Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
-
-			Renderer renderer;
-
-			Logger.Debug("Making Window...");
-			if (useVulkan) {
-				VulkanGraphicsBackend backend = GraphicsBackend as VulkanGraphicsBackend ?? throw new UnreachableException();
-				window = new VulkanWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
-				renderer = new VulkanLightCycleRenderer(backend, (VulkanWindow)window, gameManager);
-			} else {
-				OpenGLGraphicsBackend backend = GraphicsBackend as OpenGLGraphicsBackend ?? throw new UnreachableException();
-				window = new OpenGLWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
-				renderer = new OpenGLLightCycleRenderer(backend, (OpenGLWindow)window);
-			}
-
-			window.OnCloseWindowEvent += RequestShutdown;
-
-			AddWindow(window);
-			AddRenderer(renderer);
-
-			Logger.Info($"Setting up {nameof(GameManager)}");
-			gameManager.Setup(window.KeyboardManager);
-
-			Logger.Info("Setup done. Showing windows");
-
-			window.Show();
-		}
-
-		protected override void Update() {
-			PrevCubeRotation = CubeRotation;
-			CubeRotation += 0.01f;
-			CubeRotation %= 360;
-
-			gameManager.Update();
-		}
-
-		protected override void Cleanup() { }
+		OnSetupFinishedEvent += OnSetupFinished;
 	}
+
+	private void OnSetupFinished() {
+		Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
+
+		Renderer renderer;
+
+		Logger.Debug("Making Window...");
+		if (useVulkan) {
+			VulkanGraphicsBackend backend = GraphicsBackend as VulkanGraphicsBackend ?? throw new UnreachableException();
+			window = new VulkanWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
+			renderer = new VulkanLightCycleRenderer(backend, (VulkanWindow)window, gameManager);
+		} else {
+			OpenGLGraphicsBackend backend = GraphicsBackend as OpenGLGraphicsBackend ?? throw new UnreachableException();
+			window = new OpenGLWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
+			renderer = new OpenGLLightCycleRenderer(backend, (OpenGLWindow)window);
+		}
+
+		window.OnCloseWindowEvent += RequestShutdown;
+
+		AddWindow(window);
+		AddRenderer(renderer);
+
+		Logger.Info($"Setting up {nameof(GameManager)}");
+		gameManager.Setup(window.KeyboardManager);
+
+		Logger.Info("Setup done. Showing windows");
+
+		window.Show();
+	}
+
+	protected override void Update() {
+		PrevCubeRotation = CubeRotation;
+		CubeRotation += 0.01f;
+		CubeRotation %= 360;
+
+		gameManager.Update();
+	}
+
+	protected override void Cleanup() { }
 }

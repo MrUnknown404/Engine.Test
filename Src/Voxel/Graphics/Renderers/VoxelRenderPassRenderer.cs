@@ -12,59 +12,59 @@ using Engine3.Test.Voxel.Graphics.ImGui;
 using ImGuiNET;
 using OpenTK.Graphics.Vulkan;
 
-namespace Engine3.Test.Voxel.Graphics.Renderers {
-	public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
-		internal WorldRenderPass WorldRenderPass { get; }
-		internal ChunkOutlineRenderPass ChunkOutlineRenderPass { get; }
+namespace Engine3.Test.Voxel.Graphics.Renderers;
 
-		private readonly DescriptorBuffers cameraUniformBuffer;
+public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
+	internal WorldRenderPass WorldRenderPass { get; }
+	internal ChunkOutlineRenderPass ChunkOutlineRenderPass { get; }
 
-		private readonly VoxelTest game;
-		private readonly Camera camera;
+	private readonly DescriptorBuffers cameraUniformBuffer;
 
-		public VoxelRenderPassRenderer(VoxelTest game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
-			this.game = game;
+	private readonly VoxelTest game;
+	private readonly Camera camera;
 
-			cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
-				VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
+	public VoxelRenderPassRenderer(VoxelTest game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+		this.game = game;
 
-			CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
-			ImGuiBackend = backend;
-			ImGuiRenderer = renderer;
-			UseImGui = true;
+		cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
+			VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
-			ImGuiBackend.ShowDebugUI = true;
-			ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, };
+		CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
+		ImGuiBackend = backend;
+		ImGuiRenderer = renderer;
+		UseImGui = true;
 
-			this.camera = camera;
+		ImGuiBackend.ShowDebugUI = true;
+		ImGuiBackend.DebugUIImGui = new DebugUIImGui(game, window) { AddExtraDebugUI = AddExtraDebugUI, };
 
-			WorldRenderPass = new(game, this, assembly, cameraUniformBuffer);
-			ChunkOutlineRenderPass = new(game, this, assembly, cameraUniformBuffer);
+		this.camera = camera;
 
-			AddRenderPass(WorldRenderPass);
-			AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
+		WorldRenderPass = new(game, this, assembly, cameraUniformBuffer);
+		ChunkOutlineRenderPass = new(game, this, assembly, cameraUniformBuffer);
 
-			AddRenderPass(ChunkOutlineRenderPass);
-			AddRenderPass(new XyzGizmoRenderPass(this, assembly, camera));
-		}
+		AddRenderPass(WorldRenderPass);
+		AddRenderPass(new CubeRenderPass(this, assembly, cameraUniformBuffer));
 
-		private void AddExtraDebugUI(float indentAmount) {
-			ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
+		AddRenderPass(ChunkOutlineRenderPass);
+		AddRenderPass(new XyzGizmoRenderPass(this, assembly, camera));
+	}
 
-			if (game.World != null) { ImGuiH.IndentedCollapsingHeader("World", indentAmount, DrawWorld, ImGuiTreeNodeFlags.DefaultOpen); }
+	private void AddExtraDebugUI(float indentAmount) {
+		ImGuiH.IndentedCollapsingHeader("Camera", indentAmount, DrawCamera);
 
-			ImGuiNet.Text("test");
+		if (game.World != null) { ImGuiH.IndentedCollapsingHeader("World", indentAmount, DrawWorld, ImGuiTreeNodeFlags.DefaultOpen); }
 
-			return;
+		ImGuiNet.Text("test");
 
-			void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
-			void DrawWorld() => WorldImGuiMaker.ShowImGui(game.World);
-		}
+		return;
 
-		protected override void CopyBuffers(float delta) {
-			cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex); // TODO lerp camera position & rotation
+		void DrawCamera() => CameraImGuiMaker.ShowImGui(camera); // this should be faster than a lambda?
+		void DrawWorld() => WorldImGuiMaker.ShowImGui(game.World);
+	}
 
-			base.CopyBuffers(delta);
-		}
+	protected override void CopyBuffers(float delta) {
+		cameraUniformBuffer.Copy(new ProjectionView(camera.Projection, camera.View), FrameIndex); // TODO lerp camera position & rotation
+
+		base.CopyBuffers(delta);
 	}
 }

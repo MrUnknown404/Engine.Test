@@ -1,18 +1,18 @@
 using Engine3.Client;
 
-namespace Engine3.Test.LightCycle {
-	public class GameManager {
-		public Map? Map { get; private set; }
+namespace Engine3.Test.LightCycle;
 
-		public void Setup(KeyboardManager keyboardManager) {
-			Map = new("Test Map", 10, new(1));
-			Map.AddCycles(keyboardManager);
-		}
+public class GameManager {
+	public Map? Map { get; private set; }
 
-		public void Update() {
-			if (Map == null) { return; }
+	public void Setup(KeyboardManager keyboardManager) {
+		Map = new("Test Map", 10, new(1));
+		Map.AddCycles(keyboardManager);
+	}
 
-			Map.Update();
-		}
+	public void Update() {
+		if (Map == null) { return; }
+
+		Map.Update();
 	}
 }

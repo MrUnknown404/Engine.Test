@@ -12,40 +12,40 @@ using NLog;
 using Engine3.Debug;
 #endif
 
-namespace Engine3.Test {
-	public static class Entry {
-		private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+namespace Engine3.Test;
 
-		private const TestType TestType = Core.Test.TestType.Voxel;
+public static class Entry {
+	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-		[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
-		private static void Main() { // TODO args to change api
+	private const TestType TestType = Core.Test.TestType.Voxel;
+
+	[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
+	private static void Main() { // TODO args to change api
 #if DEBUG
-			LoggerH.ConsoleLogLevel = LogLevel.Trace;
+		LoggerH.ConsoleLogLevel = LogLevel.Trace;
 
-			StructLayoutDumper.AddStructs += static () => {
-				StructLayoutDumper.AddStruct<XyzGizmoPushConstants>();
-				StructLayoutDumper.AddStruct<PerChunkData>();
-				StructLayoutDumper.AddStruct<ChunkPos>();
-				StructLayoutDumper.AddStruct<LocalBlockPos>();
-				StructLayoutDumper.AddStruct<GlobalBlockPos>();
-			};
+		StructLayoutDumper.AddStructs += static () => {
+			StructLayoutDumper.AddStruct<XyzGizmoPushConstants>();
+			StructLayoutDumper.AddStruct<PerChunkData>();
+			StructLayoutDumper.AddStruct<ChunkPos>();
+			StructLayoutDumper.AddStruct<LocalBlockPos>();
+			StructLayoutDumper.AddStruct<GlobalBlockPos>();
+		};
 #endif
 
-			GameClient gameClient = TestType switch {
-					// tests
-					TestType.VulkanGraphicsTest => new VulkanTest(),
-					TestType.OpenGLGraphicsTest => new OpenGLTest(),
-					TestType.ConsoleGraphicsTest => new ConsoleTest(),
+		GameClient gameClient = TestType switch {
+				// tests
+				TestType.VulkanGraphicsTest => new VulkanTest(),
+				TestType.OpenGLGraphicsTest => new OpenGLTest(),
+				TestType.ConsoleGraphicsTest => new ConsoleTest(),
 
-					// games
-					TestType.LightCycle => new LightCycleTest(true),
-					TestType.Voxel => new VoxelTest(true),
-					_ => throw new ArgumentOutOfRangeException(),
-			};
+				// games
+				TestType.LightCycle => new LightCycleTest(true),
+				TestType.Voxel => new VoxelTest(true),
+				_ => throw new ArgumentOutOfRangeException(),
+		};
 
-			gameClient.Start(gameClient, new());
-			Logger.Info("Entry Exit");
-		}
+		gameClient.Start(new());
+		Logger.Info("Entry Exit");
 	}
 }

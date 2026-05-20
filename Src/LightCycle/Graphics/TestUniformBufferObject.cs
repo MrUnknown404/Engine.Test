@@ -1,28 +1,28 @@
 using System.Numerics;
 
-namespace Engine3.Test.LightCycle.Graphics {
-	[Obsolete]
-	public class TestUniformBufferObject {
-		private static unsafe uint MatrixSize { get; } = (uint)sizeof(Matrix4x4);
-		public static uint Size { get; } = MatrixSize * 3;
+namespace Engine3.Test.LightCycle.Graphics;
 
-		public Matrix4x4 Projection { get; set; } = Matrix4x4.Identity;
-		public Matrix4x4 View { get; set; } = Matrix4x4.Identity;
-		public Matrix4x4 Model { get; set; } = Matrix4x4.Identity;
+[Obsolete]
+public class TestUniformBufferObject {
+	private static unsafe uint MatrixSize { get; } = (uint)sizeof(Matrix4x4);
+	public static uint Size { get; } = MatrixSize * 3;
 
-		public unsafe byte[] CollectBytes() {
-			byte[] bytes = new byte[Size];
+	public Matrix4x4 Projection { get; set; } = Matrix4x4.Identity;
+	public Matrix4x4 View { get; set; } = Matrix4x4.Identity;
+	public Matrix4x4 Model { get; set; } = Matrix4x4.Identity;
 
-			CollectBytes(ref bytes, 0, Projection);
-			CollectBytes(ref bytes, MatrixSize, View);
-			CollectBytes(ref bytes, MatrixSize * 2, Model);
+	public unsafe byte[] CollectBytes() {
+		byte[] bytes = new byte[Size];
 
-			return bytes;
+		CollectBytes(ref bytes, 0, Projection);
+		CollectBytes(ref bytes, MatrixSize, View);
+		CollectBytes(ref bytes, MatrixSize * 2, Model);
 
-			static void CollectBytes<T>(ref byte[] bytes, uint offset, T value) where T : unmanaged {
-				byte* pointer = (byte*)&value;
-				for (int i = 0; i < sizeof(T); i++) { bytes[offset + i] = pointer[i]; }
-			}
+		return bytes;
+
+		static void CollectBytes<T>(ref byte[] bytes, uint offset, T value) where T : unmanaged {
+			byte* pointer = (byte*)&value;
+			for (int i = 0; i < sizeof(T); i++) { bytes[offset + i] = pointer[i]; }
 		}
 	}
 }

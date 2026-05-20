@@ -1,54 +1,54 @@
 using System.Numerics;
 using Engine3.Test.LightCycle.Cycle.Controller;
 
-namespace Engine3.Test.LightCycle.Cycle {
-	public class Cycle {
-		private static readonly uint TargetUpdateCount = Engine3.GameInstance.TargetUps;
+namespace Engine3.Test.LightCycle.Cycle;
 
-		public Guid Uuid { get; }
-		public CycleTransform PreviousTransform { get; } = CycleTransform.Zero; // TODO how do i want to handle previous transforms? i'd like it to be automatic? should i store a previous transform or previous values in transform
-		public CycleTransform Transform { get; } = CycleTransform.Zero;
-		public Direction Direction { get; private set; }
+public class Cycle {
+	private static readonly uint TargetUpdateCount = Engine3.GameInstance.TargetUps;
 
-		public bool IsDead { get; private set; }
+	public Guid Uuid { get; }
+	public CycleTransform PreviousTransform { get; } = CycleTransform.Zero; // TODO how do i want to handle previous transforms? i'd like it to be automatic? should i store a previous transform or previous values in transform
+	public CycleTransform Transform { get; } = CycleTransform.Zero;
+	public Direction Direction { get; private set; }
 
-		private readonly ICycleController controller;
-		private readonly Map.CycleProperties properties;
+	public bool IsDead { get; private set; }
 
-		public Cycle(Guid uuid, ICycleController controller, Map.CycleProperties properties, Direction direction = Direction.Up) {
-			Uuid = uuid;
-			this.controller = controller;
-			this.properties = properties;
-			Direction = direction;
-		}
+	private readonly ICycleController controller;
+	private readonly Map.CycleProperties properties;
 
-		public void Update() {
-			if (IsDead) { return; }
+	public Cycle(Guid uuid, ICycleController controller, Map.CycleProperties properties, Direction direction = Direction.Up) {
+		Uuid = uuid;
+		this.controller = controller;
+		this.properties = properties;
+		Direction = direction;
+	}
 
-			bool isDead = ShouldBeDead();
-			IsDead = isDead;
-			if (IsDead) { return; }
+	public void Update() {
+		if (IsDead) { return; }
 
-			PreviousTransform.Position = Transform.Position;
+		bool isDead = ShouldBeDead();
+		IsDead = isDead;
+		if (IsDead) { return; }
 
-			Direction = controller.CheckForDirectionChange(Direction);
-			UpdateValues();
+		PreviousTransform.Position = Transform.Position;
 
-			return;
+		Direction = controller.CheckForDirectionChange(Direction);
+		UpdateValues();
 
-			bool ShouldBeDead() => false; // TODO impl later
+		return;
 
-			void UpdateValues() {
-				Vector2 moveVector = Direction switch {
-						Direction.Up => Vector2.UnitY, // why does Y need to be flipped?
-						Direction.Down => -Vector2.UnitY,
-						Direction.Left => -Vector2.UnitX,
-						Direction.Right => Vector2.UnitX,
-						_ => throw new ArgumentOutOfRangeException(),
-				};
+		bool ShouldBeDead() => false; // TODO impl later
 
-				Transform.Position += moveVector * properties.Speed / TargetUpdateCount; // TODO impl acceleration
-			}
+		void UpdateValues() {
+			Vector2 moveVector = Direction switch {
+					Direction.Up => Vector2.UnitY, // why does Y need to be flipped?
+					Direction.Down => -Vector2.UnitY,
+					Direction.Left => -Vector2.UnitX,
+					Direction.Right => Vector2.UnitX,
+					_ => throw new ArgumentOutOfRangeException(),
+			};
+
+			Transform.Position += moveVector * properties.Speed / TargetUpdateCount; // TODO impl acceleration
 		}
 	}
 }

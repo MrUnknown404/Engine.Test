@@ -41,7 +41,7 @@ public unsafe class VulkanLightCycleRenderer : VulkanRendererBase {
 
 	private readonly TestUniformBufferObject cubeUniformBufferObject = new();
 
-	public VulkanLightCycleRenderer(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window, true) {
+	public VulkanLightCycleRenderer(VulkanBackend graphicsBackend, VulkanWindow window, GameManager gameManager) : base(graphicsBackend, window, true) {
 		this.gameManager = gameManager;
 
 		camera = Camera.CreatePerspective((float)SwapChain.Extent.width / SwapChain.Extent.height, 90, 0.01f, 10f);
@@ -111,8 +111,7 @@ public unsafe class VulkanLightCycleRenderer : VulkanRendererBase {
 		TransferCommandPool.CopyToBuffers([ TransferCommandPool.CopyDataToBufferInfo.Copy(cubeVertexBuffer, cubeVertices), TransferCommandPool.CopyDataToBufferInfo.Copy(cubeIndexBuffer, cubeIndices), ]);
 
 		ulong bufferSize = TestUniformBufferObject.Size;
-		cubeUniformBuffers = GraphicsResourceProvider.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
-			VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
+		cubeUniformBuffers = GraphicsResourceProvider.CreateDescriptorBuffers("Cube Uniform Buffers", bufferSize, MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer, VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 
 		Logger.Debug("Created uniform buffers");
 	}

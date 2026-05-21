@@ -19,7 +19,7 @@ public unsafe class VulkanRenderer2 : VulkanRendererBase {
 	private readonly VertexXyzRgb[] vertices = [ new(0, 0.5f, 0, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 0, 0, 1), ];
 	private readonly Assembly gameAssembly;
 
-	public VulkanRenderer2(VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, false) {
+	public VulkanRenderer2(VulkanBackend graphicsBackend, VulkanWindow window, Assembly gameAssembly) : base(graphicsBackend, window, false) {
 		this.gameAssembly = gameAssembly;
 
 		VulkanShader vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderLanguage.Hlsl, ShaderType.Vertex, gameAssembly);

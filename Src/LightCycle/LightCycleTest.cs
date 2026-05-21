@@ -25,7 +25,7 @@ public sealed class LightCycleTest : GameClient {
 
 	public LightCycleTest(bool useVulkan) : base("Light Cycle Test", new BuildVersion(0),
 		useVulkan ?
-				new VulkanGraphicsBackend(new()) {
+				new VulkanBackend(new()) {
 						Settings = new() {
 								EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 						},
@@ -43,11 +43,11 @@ public sealed class LightCycleTest : GameClient {
 
 		Logger.Debug("Making Window...");
 		if (useVulkan) {
-			VulkanGraphicsBackend backend = GraphicsBackend as VulkanGraphicsBackend ?? throw new UnreachableException();
+			VulkanBackend backend = GraphicsBackend as VulkanBackend ?? throw new UnreachableException();
 			window = new VulkanWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
 			renderer = new VulkanLightCycleRenderer(backend, (VulkanWindow)window, gameManager);
 		} else {
-			OpenGLGraphicsBackend backend = GraphicsBackend as OpenGLGraphicsBackend ?? throw new UnreachableException();
+			OpenGLBackend backend = GraphicsBackend as OpenGLBackend ?? throw new UnreachableException();
 			window = new OpenGLWindow(backend, Name, 854, 480) { ClearColor = clearColor, };
 			renderer = new OpenGLLightCycleRenderer(backend, (OpenGLWindow)window);
 		}

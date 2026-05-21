@@ -23,7 +23,7 @@ public unsafe class OpenGLRenderer2 : OpenGLRendererBase {
 	private readonly uint[] indices = [ 0, 1, 2, ];
 	private readonly Assembly gameAssembly;
 
-	public OpenGLRenderer2(OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
+	public OpenGLRenderer2(OpenGLBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
 		this.gameAssembly = gameAssembly;
 
 		vertexShader = GraphicsResourceProvider.CreateShader("Test Vertex Shader", TestShaderName, ShaderType.Vertex, gameAssembly);

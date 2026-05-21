@@ -17,7 +17,7 @@ public unsafe class TestRenderPassRenderer : VulkanRenderPassRenderer {
 
 	private readonly Camera camera;
 
-	public TestRenderPassRenderer(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+	public TestRenderPassRenderer(GameClient game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
 		cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 			VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 

@@ -23,7 +23,7 @@ public class VulkanTest : GameClient {
 	public Camera? Camera { get; set; }
 
 	internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
-		new VulkanGraphicsBackend(new()) {
+		new VulkanBackend(new()) {
 				Settings = new() { EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt, },
 		}) {
 		OnSetupFinishedEvent += OnSetupFinished;
@@ -31,7 +31,7 @@ public class VulkanTest : GameClient {
 	}
 
 	private void OnSetupFinished() {
-		if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
+		if (GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
 
 		Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
 

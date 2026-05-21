@@ -23,7 +23,7 @@ public unsafe class VoxelRenderPassRenderer : VulkanRenderPassRenderer {
 	private readonly VoxelTest game;
 	private readonly Camera camera;
 
-	public VoxelRenderPassRenderer(VoxelTest game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+	public VoxelRenderPassRenderer(VoxelTest game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
 		this.game = game;
 
 		cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,

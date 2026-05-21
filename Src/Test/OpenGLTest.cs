@@ -19,13 +19,13 @@ public class OpenGLTest : GameClient {
 	public static float PrevCubeRotation { get; private set; }
 	public static float CubeRotation { get; private set; }
 
-	internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLGraphicsBackend(new()) { Settings = new() { DisabledCallbackIds = [ 131185, ], }, }) {
+	internal OpenGLTest() : base("OpenGL Test", new Version4Interweaved(0, 0, 0), new OpenGLBackend(new()) { Settings = new() { DisabledCallbackIds = [ 131185, ], }, }) {
 		OnSetupFinishedEvent += OnSetupFinished;
 		PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
 	}
 
 	private void OnSetupFinished() {
-		if (GraphicsBackend is not OpenGLGraphicsBackend graphicsBackend) { throw new UnreachableException(); }
+		if (GraphicsBackend is not OpenGLBackend graphicsBackend) { throw new UnreachableException(); }
 
 		Color4<Rgba> clearColor = new(0.1f, 0.1f, 0.1f, 1);
 

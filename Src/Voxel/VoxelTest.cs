@@ -52,7 +52,7 @@ public class VoxelTest : GameClient {
 	}
 
 	private void OnSetupFinished() {
-		if (GraphicsBackend is not VulkanGraphicsBackend { VkInstance: not null, } graphicsBackend) { throw new IllegalStateException(); }
+		if (GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new IllegalStateException(); }
 
 		Logger.Debug("Making Window...");
 		Window = new(graphicsBackend, Name, 854, 480) { ClearColor = new(0.01f, 0.01f, 0.01f, 1), };

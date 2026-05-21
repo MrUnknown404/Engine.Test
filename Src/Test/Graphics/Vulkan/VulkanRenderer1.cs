@@ -66,7 +66,7 @@ public unsafe class VulkanRenderer1 : VulkanRendererBase {
 
 	private readonly Assembly gameAssembly;
 
-	public VulkanRenderer1(GameClient game, VulkanGraphicsBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window, true) {
+	public VulkanRenderer1(GameClient game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window, true) {
 		this.camera = camera;
 		this.gameAssembly = gameAssembly;
 

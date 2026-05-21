@@ -32,7 +32,7 @@ public unsafe class OpenGLRenderer1 : OpenGLRendererBase {
 	private readonly VertexXyzUvRgb[] vertices = [ new(0, 0.5f, 0, 0.5f, 1, 1, 0, 0), new(-0.5f, -0.5f, 0, 0, 0, 0, 1, 0), new(0.5f, -0.5f, 0, 1, 0, 0, 0, 1), ];
 	private readonly uint[] indices = [ 0, 1, 2, ];
 
-	public OpenGLRenderer1(GameClient game, OpenGLGraphicsBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
+	public OpenGLRenderer1(GameClient game, OpenGLBackend graphicsBackend, OpenGLWindow window, Assembly gameAssembly) : base(graphicsBackend, window) {
 		CreateImGui(out ImGuiBackend backend, out ImGuiRenderer renderer);
 		ImGuiBackend = backend;
 		ImGuiRenderer = renderer;

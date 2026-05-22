@@ -1,15 +1,12 @@
 using System.Numerics;
 using Engine3.Client;
-using Engine3.Client.Graphics.ImGui;
 using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.World;
 using ImGuiNET;
 
 namespace Engine3.Test.Voxel.Graphics.ImGui;
 
-public unsafe class WorldImGuiMaker : IImGuiMaker<World.World> {
-	private WorldImGuiMaker() { }
-
+public static unsafe class WorldImGuiMaker {
 	public static void ShowImGui(World.World world) {
 		if (ImGuiNet.BeginTable("Values", 2)) {
 			DrawProperty("Chunk Count", world.ChunkCount.ToString());

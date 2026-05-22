@@ -4,6 +4,8 @@ public enum TestType {
 	VulkanGraphicsTest,
 	OpenGLGraphicsTest,
 	ConsoleGraphicsTest,
-	LightCycle,
+	LightCycleOpenGL,
+	LightCycleVulkan,
 	Voxel,
+	Automated,
 }

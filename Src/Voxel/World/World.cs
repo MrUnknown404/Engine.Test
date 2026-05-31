@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using Engine3.Client;
+using Engine3.Client.Client;
 using Engine3.Test.Voxel.Blocks;
 using Engine3.Test.Voxel.Graphics.Renderers;
 using NLog;

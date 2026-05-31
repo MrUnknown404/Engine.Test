@@ -1,12 +1,11 @@
 using System.Reflection;
-using Engine3.Client;
-using Engine3.Client.Graphics.DataStructs;
-using Engine3.Client.Graphics.ImGui;
-using Engine3.Client.Graphics.ImGui.Makers;
-using Engine3.Client.Graphics.ImGui.Providers;
-using Engine3.Client.Graphics.Vulkan;
-using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Client.Graphics.Vulkan.Renderers;
+using Engine3.Client.Client;
+using Engine3.Client.Client.Graphics.DataStructs;
+using Engine3.Client.Client.ImGui;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Client.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Client.Graphics.Vulkan.Renderers;
+using Engine3.Core;
 using ImGuiNET;
 using OpenTK.Graphics.Vulkan;
 
@@ -17,7 +16,7 @@ public unsafe class TestRenderPassRenderer : VulkanRenderPassRenderer {
 
 	private readonly Camera camera;
 
-	public TestRenderPassRenderer(GameClient game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
+	public TestRenderPassRenderer(EngineGame game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly assembly) : base(graphicsBackend, window, true) {
 		cameraUniformBuffer = GraphicsResourceProvider.CreateDescriptorBuffers("Camera Uniform Buffer", (ulong)sizeof(ProjectionView), MaxFramesInFlight, VkDescriptorType.DescriptorTypeUniformBuffer,
 			VkBufferUsageFlagBits.BufferUsageUniformBufferBit);
 

@@ -2,17 +2,16 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Engine3.Client;
-using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.DataStructs;
-using Engine3.Client.Graphics.ImGui;
-using Engine3.Client.Graphics.ImGui.Makers;
-using Engine3.Client.Graphics.ImGui.Providers;
-using Engine3.Client.Graphics.VertexLayouts;
-using Engine3.Client.Graphics.Vulkan;
-using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Client.Graphics.Vulkan.Renderers;
-using Engine3.Utility;
+using Engine3.Client.Client;
+using Engine3.Client.Client.Graphics;
+using Engine3.Client.Client.Graphics.DataStructs;
+using Engine3.Client.Client.ImGui;
+using Engine3.Client.Client.Graphics.VertexLayouts;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Client.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Client.Graphics.Vulkan.Renderers;
+using Engine3.Client.Utility;
+using Engine3.Core;
 using ImGuiNET;
 using NLog;
 using OpenTK.Graphics.Vulkan;
@@ -66,7 +65,7 @@ public unsafe class VulkanRenderer1 : VulkanRendererBase {
 
 	private readonly Assembly gameAssembly;
 
-	public VulkanRenderer1(GameClient game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window, true) {
+	public VulkanRenderer1(EngineGame game, VulkanBackend graphicsBackend, VulkanWindow window, Camera camera, Assembly gameAssembly) : base(graphicsBackend, window, true) {
 		this.camera = camera;
 		this.gameAssembly = gameAssembly;
 

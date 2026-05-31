@@ -1,34 +1,34 @@
-using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.Vulkan;
-using Engine3.Utility.Versions;
+using Engine3.Client;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Core;
+using Engine3.Core.Utility.Versions;
 using NLog;
 
 namespace Engine3.Test.Tests;
 
 // TODO automate some tests
-public class AutomatedTests : GameClient {
+public class AutomatedTests : EngineGame {
 	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-	private AutomatedTests(EngineGraphicsBackend graphicsBackend) : base(nameof(AutomatedTests), new BuildVersion(0), graphicsBackend) { }
+	private AutomatedTests() : base(nameof(AutomatedTests), new BuildVersion(0)) { }
 
 	internal static void AutomatedEntryTests() {
-		using Engine3 engine = new(Client.Graphics.GraphicsBackend.Vulkan);
-		engine.Initialize(new());
+		using Engine3Client engine = new(new VulkanBackend(new()));
 
-		Logger.Info("Beginning first test");
-		AutomatedTests tests = new(new VulkanBackend(new()));
+		Logger.Info("Creating first test");
+		AutomatedTests tests = new();
 
 		Logger.Debug("Starting first test");
-		engine.StartGame(tests);
+		engine.Start(tests);
 
 		Logger.Debug("Shutting down first test");
 		tests.RequestShutdown();
 
-		Logger.Info("Beginning second test");
-		tests = new(new VulkanBackend(new()));
+		Logger.Info("Creating second test");
+		tests = new();
 
 		Logger.Debug("Starting second test");
-		engine.StartGame(tests);
+		engine.Start(tests);
 
 		Logger.Debug("Shutting down second test");
 		tests.RequestShutdown();

@@ -1,18 +1,18 @@
 using Engine3.Client;
-using Engine3.Client.Graphics.Vulkan;
-using Engine3.Exceptions;
+using Engine3.Client.Client;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Core;
+using Engine3.Core.Utility.Exceptions;
+using Engine3.Core.Utility.Versions;
 using Engine3.Test.Voxel.Blocks;
-using Engine3.Test.Voxel.Graphics;
 using Engine3.Test.Voxel.Graphics.Renderers;
 using Engine3.Test.Voxel.Registries;
-using Engine3.Utility.Versions;
 using NLog;
-using OpenTK.Graphics.Vulkan;
 using ModSource = Engine3.Test.Voxel.Modding.ModSource;
 
 namespace Engine3.Test.Voxel;
 
-public class VoxelTest : GameClient {
+public class VoxelTest : EngineGame {
 	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 	public static ModSource ModSource { get; } = new("voxel_test", typeof(VoxelTest).Assembly);
@@ -29,17 +29,8 @@ public class VoxelTest : GameClient {
 
 	public BakedRegistry<Block> BlockRegistry { get; }
 
-	internal VoxelTest(bool useVulkan) : base("Voxel Test", new BuildVersion(),
-		useVulkan ?
-				new VoxelGraphicsBackend(new()) {
-						Settings = new() {
-								EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
-						},
-				} :
-				throw new NotImplementedException()) {
+	internal VoxelTest() : base("Voxel Test", new BuildVersion()) {
 		OnSetupFinishedEvent += OnSetupFinished;
-
-		PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
 
 		Logger.Info("Baking registries");
 
@@ -52,14 +43,13 @@ public class VoxelTest : GameClient {
 	}
 
 	private void OnSetupFinished() {
-		if (GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new IllegalStateException(); }
+		Engine3Client engine = (Engine3Client)Engine3.Core.Engine3.Engine;
+		if (engine.GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new IllegalStateException(); }
 
 		Logger.Debug("Making Window...");
 		Window = new(graphicsBackend, Name, 854, 480) { ClearColor = new(0.01f, 0.01f, 0.01f, 1), };
 		Window.OnCloseWindowEvent += RequestShutdown;
 		Window.OnResize += (w, h) => Camera?.PerspectiveAspectRatio = (float)w / h;
-
-		AddWindow(Window);
 
 		Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 1000f);
 		Camera.Position = new(0, 0, 2.5f);
@@ -67,7 +57,9 @@ public class VoxelTest : GameClient {
 		CameraController = new(Window, Camera);
 
 		Renderer = new(this, graphicsBackend, Window, Camera, Assembly);
-		AddRenderer(Renderer);
+
+		engine.AddWindow(Window, Renderer);
+		engine.AddRenderer(Renderer);
 
 		Logger.Debug("Creating World");
 		World = new(new() { Seed = 1, }, Camera, Renderer.WorldRenderPass, Renderer.ChunkOutlineRenderPass);

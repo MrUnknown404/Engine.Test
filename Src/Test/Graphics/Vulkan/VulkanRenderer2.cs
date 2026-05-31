@@ -1,10 +1,10 @@
 using System.Reflection;
-using Engine3.Client;
-using Engine3.Client.Graphics;
-using Engine3.Client.Graphics.VertexLayouts;
-using Engine3.Client.Graphics.Vulkan;
-using Engine3.Client.Graphics.Vulkan.Objects;
-using Engine3.Client.Graphics.Vulkan.Renderers;
+using Engine3.Client.Client;
+using Engine3.Client.Client.Graphics;
+using Engine3.Client.Client.Graphics.VertexLayouts;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Client.Client.Graphics.Vulkan.Objects;
+using Engine3.Client.Client.Graphics.Vulkan.Renderers;
 using OpenTK.Graphics.Vulkan;
 
 namespace Engine3.Test.Test.Graphics.Vulkan;

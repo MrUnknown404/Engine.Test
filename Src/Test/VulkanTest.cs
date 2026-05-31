@@ -1,16 +1,17 @@
 using System.Diagnostics;
 using Engine3.Client;
-using Engine3.Client.Graphics.Vulkan;
+using Engine3.Client.Client;
+using Engine3.Client.Client.Graphics.Vulkan;
+using Engine3.Core;
+using Engine3.Core.Utility;
+using Engine3.Core.Utility.Versions;
 using Engine3.Test.Test.Graphics.Vulkan;
-using Engine3.Utility.Versions;
 using NLog;
-using OpenTK.Graphics.Vulkan;
-using OpenTK.Mathematics;
 using VulkanRenderer2 = Engine3.Test.Test.Graphics.Vulkan.VulkanRenderer2;
 
 namespace Engine3.Test.Test;
 
-public class VulkanTest : GameClient {
+public class VulkanTest : EngineGame {
 	private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
 	public static float PrevCubeRotation { get; private set; }
@@ -22,18 +23,13 @@ public class VulkanTest : GameClient {
 
 	public Camera? Camera { get; set; }
 
-	internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0),
-		new VulkanBackend(new()) {
-				Settings = new() { EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt, },
-		}) {
-		OnSetupFinishedEvent += OnSetupFinished;
-		PerformanceMonitor = new() { CalculateMinMaxAverage = true, StoreTimesForGraph = true, LastFrameTimeSize = 1000, };
-	}
+	internal VulkanTest() : base("Vulkan Test", new Version4Interweaved(0, 0, 0)) => OnSetupFinishedEvent += OnSetupFinished;
 
 	private void OnSetupFinished() {
-		if (GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
+		Engine3Client engine = (Engine3Client)Engine3.Core.Engine3.Engine;
+		if (engine.GraphicsBackend is not VulkanBackend { VkInstance: not null, } graphicsBackend) { throw new UnreachableException(); }
 
-		Color4<Rgba> clearColor = new(0.01f, 0.01f, 0.01f, 1);
+		Color4 clearColor = new(0.01f, 0.01f, 0.01f, 1);
 
 		Logger.Debug("Making Window 1...");
 		Window1 = new(graphicsBackend, Name, 854, 480) { ClearColor = clearColor, };
@@ -46,10 +42,6 @@ public class VulkanTest : GameClient {
 		Logger.Debug("Making Window 3...");
 		Window3 = new(graphicsBackend, "Window 3", 500, 500) { ClearColor = clearColor, };
 
-		AddWindow(Window1);
-		AddWindow(Window2);
-		AddWindow(Window3);
-
 		Camera = Camera.CreatePerspective(854f / 480f, 90, 0.01f, 100f);
 		Camera.Position = new(0, 0, 2.5f);
 
@@ -57,9 +49,13 @@ public class VulkanTest : GameClient {
 		VulkanRenderer2 renderer2 = new(graphicsBackend, Window2, Assembly);
 		TestRenderPassRenderer renderer3 = new(this, graphicsBackend, Window3, Camera, Assembly);
 
-		AddRenderer(renderer1);
-		AddRenderer(renderer2);
-		AddRenderer(renderer3);
+		engine.AddWindow(Window1, renderer1);
+		engine.AddWindow(Window2, renderer2);
+		engine.AddWindow(Window3, renderer3);
+
+		engine.AddRenderer(renderer1);
+		engine.AddRenderer(renderer2);
+		engine.AddRenderer(renderer3);
 
 		Logger.Info("Setup done. Showing windows");
 

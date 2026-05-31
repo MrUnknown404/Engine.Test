@@ -1,4 +1,4 @@
-using Engine3.Client.Graphics.VertexLayouts;
+using Engine3.Client.Client.Graphics.VertexLayouts;
 using Engine3.Test.Voxel.World;
 using JetBrains.Annotations;
 

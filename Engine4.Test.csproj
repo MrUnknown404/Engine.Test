@@ -21,7 +21,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 
-		<ProjectReference Include="..\Engine4\Engine4\Engine4.csproj"/>
+		<ProjectReference Include="..\Engine4\Engine4.Graphics\Engine4.Graphics.csproj"/>
 
 		<EmbeddedResource Include="Assets\**"/>
 	</ItemGroup>

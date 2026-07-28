@@ -6,8 +6,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<WarningsAsErrors>nullable</WarningsAsErrors>
-		<RootNamespace>Engine3.Test</RootNamespace>
-		<AssemblyName>Engine3.Test</AssemblyName>
+		<RootNamespace>Engine4.Test</RootNamespace>
+		<AssemblyName>Engine4.Test</AssemblyName>
 		<DebugType>embedded</DebugType>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
@@ -16,13 +16,12 @@
 	<!-- Includes -->
 	<ItemGroup>
 		<PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all"/>
-		<PackageReference Include="Udun.FastNoiseLite" Version="1.0.1" />
 		<PackageReference Include="ZLinq.DropInGenerator" Version="1.5.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 
-		<ProjectReference Include="..\Engine3\Engine3.csproj"/>
+		<ProjectReference Include="..\Engine4\Engine4\Engine4.csproj"/>
 
 		<EmbeddedResource Include="Assets\**"/>
 	</ItemGroup>

@@ -1,7 +1,6 @@
 using Engine4.Graphics;
 using Engine4.Graphics.Rendering;
 using Engine4.Graphics.Windowing;
-using Engine4.IO;
 
 namespace Engine4.Test;
 
@@ -10,7 +9,7 @@ public class TestGame : GameClient {
 	public Renderer Renderer { get => field ?? throw new NullReferenceException(); private set; }
 	public TestRenderPass RenderPass { get => field ?? throw new NullReferenceException(); private set; }
 
-	public TestGame(Engine engine) : base(engine, new OpenTKEventHandler()) => OnSetupDoneEvent += OnSetupDone;
+	public TestGame(Engine engine) : base(engine) => OnSetupDoneEvent += OnSetupDone;
 
 	private void OnSetupDone() {
 		Console.WriteLine("done");

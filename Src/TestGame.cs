@@ -24,11 +24,11 @@ public class TestGame : GameClient {
 		OpenGLWindow = CreateWindow(GraphicsApi.OpenGL, "opengl. title goes here", 854, 480); // TODO this action requires OpenTK. how do i handle that? opentk flag?
 		WindowRenderTarget openglRenderTarget = new(this, OpenGLWindow);
 
-		VulkanWindowRenderPass = new();
-		OpenGLWindowRenderPass = new();
-
-		VulkanWindowRenderer = CreateRenderer(vulkanRenderTarget, VulkanWindowRenderPass);
-		OpenGLWindowRenderer = CreateRenderer(openglRenderTarget, OpenGLWindowRenderPass);
+		// VulkanWindowRenderPass = new();
+		// OpenGLWindowRenderPass = new();
+		//
+		// VulkanWindowRenderer = CreateRenderer(vulkanRenderTarget, VulkanWindowRenderPass);
+		// OpenGLWindowRenderer = CreateRenderer(openglRenderTarget, OpenGLWindowRenderPass);
 
 		VulkanWindow.Show();
 		OpenGLWindow.Show();

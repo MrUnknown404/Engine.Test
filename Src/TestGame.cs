@@ -1,6 +1,6 @@
-using Engine4.Graphics;
-using Engine4.Graphics.Rendering;
-using Engine4.Graphics.Windowing;
+using Engine4.Client;
+using Engine4.Client.Graphics;
+using Engine4.Client.Rendering;
 
 namespace Engine4.Test;
 
@@ -18,10 +18,10 @@ public class TestGame : GameClient {
 	private void OnSetupDone() {
 		Console.WriteLine("done");
 
-		VulkanWindow = CreateWindow(GraphicsApi.Vulkan, "vulkan. title goes here", 854, 480); // TODO this action requires OpenTK. how do i handle that? opentk flag?
+		VulkanWindow = CreateWindow(GraphicsApi.Vulkan, "vulkan. title goes here", 854, 480);
 		WindowRenderTarget vulkanRenderTarget = new(this, VulkanWindow);
 
-		OpenGLWindow = CreateWindow(GraphicsApi.OpenGL, "opengl. title goes here", 854, 480); // TODO this action requires OpenTK. how do i handle that? opentk flag?
+		OpenGLWindow = CreateWindow(GraphicsApi.OpenGL, "opengl. title goes here", 854, 480);
 		WindowRenderTarget openglRenderTarget = new(this, OpenGLWindow);
 
 		// VulkanWindowRenderPass = new();
@@ -39,6 +39,6 @@ public class TestGame : GameClient {
 	}
 
 	protected override void Update() {
-		//
+		if (ReadonlyWindows.Count == 0) { RequestShutdown(); }
 	}
 }

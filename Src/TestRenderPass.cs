@@ -1,5 +1,5 @@
-using Engine4.Graphics;
-using Engine4.Graphics.Rendering;
+using Engine4.Client.Graphics;
+using Engine4.Client.Rendering;
 using JetBrains.Annotations;
 
 namespace Engine4.Test;

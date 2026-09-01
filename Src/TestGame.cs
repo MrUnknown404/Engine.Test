@@ -13,25 +13,47 @@ public class TestGame : GameClient {
 	public Renderer OpenGLWindowRenderer { get => field ?? throw new NullReferenceException(); private set; }
 	public TestRenderPass OpenGLWindowRenderPass { get => field ?? throw new NullReferenceException(); private set; }
 
+	public Window SoftwareWindow { get => field ?? throw new NullReferenceException(); private set; }
+	public Renderer SoftwareWindowRenderer { get => field ?? throw new NullReferenceException(); private set; }
+	public TestRenderPass SoftwareWindowRenderPass { get => field ?? throw new NullReferenceException(); private set; }
+
+	public Window EmptyWindow { get => field ?? throw new NullReferenceException(); private set; }
+	public Renderer EmptyWindowRenderer { get => field ?? throw new NullReferenceException(); private set; }
+	public TestRenderPass EmptyWindowRenderPass { get => field ?? throw new NullReferenceException(); private set; }
+
 	public TestGame(Engine engine) : base(engine, "Test Game", GraphicsApis.Vulkan | GraphicsApis.OpenGL, true) => OnSetupDoneEvent += OnSetupDone;
 
 	private void OnSetupDone() {
 		Console.WriteLine("done");
 
-		VulkanWindow = CreateWindow(GraphicsApi.Vulkan, "vulkan. title goes here", 854, 480);
-		WindowRenderTarget vulkanRenderTarget = new(this, VulkanWindow);
+		const string Title = "title goes here";
 
-		OpenGLWindow = CreateWindow(GraphicsApi.OpenGL, "opengl. title goes here", 854, 480);
-		WindowRenderTarget openglRenderTarget = new(this, OpenGLWindow);
+		VulkanWindow = CreateWindow(GraphicsApi.Vulkan, $"vulkan. {Title}", 854, 480);
+		WindowRenderTarget vulkanWindowRenderTarget = new(this, VulkanWindow);
 
-		// VulkanWindowRenderPass = new();
-		// OpenGLWindowRenderPass = new();
-		//
-		// VulkanWindowRenderer = CreateRenderer(vulkanRenderTarget, VulkanWindowRenderPass);
-		// OpenGLWindowRenderer = CreateRenderer(openglRenderTarget, OpenGLWindowRenderPass);
+		OpenGLWindow = CreateWindow(GraphicsApi.OpenGL, $"opengl. {Title}", 854, 480);
+		WindowRenderTarget openglWindowRenderTarget = new(this, OpenGLWindow);
+
+		// SoftwareWindow = CreateWindow(GraphicsApi.Software, $"software. {Title}", 854, 480); // TODO opentk doesn't currently support making windows without OpenGL/Vulkan. look into this
+		// WindowRenderTarget softwareWindowRenderTarget = new(this, SoftwareWindow);
+
+		// EmptyWindow = CreateWindow(GraphicsApi.None, $"none. {Title}", 854, 480);
+		// WindowRenderTarget emptyWindowRenderTarget = new(this, EmptyWindow);
+
+		VulkanWindowRenderPass = new();
+		OpenGLWindowRenderPass = new();
+		// SoftwareWindowRenderPass = new();
+		// EmptyWindowRenderPass = new();
+
+		VulkanWindowRenderer = CreateRenderer(vulkanWindowRenderTarget, VulkanWindowRenderPass);
+		OpenGLWindowRenderer = CreateRenderer(openglWindowRenderTarget, OpenGLWindowRenderPass);
+		// SoftwareWindowRenderer = CreateRenderer(softwareWindowRenderTarget, SoftwareWindowRenderPass);
+		// EmptyWindowRenderer = CreateRenderer(emptyWindowRenderTarget, EmptyWindowRenderPass);
 
 		VulkanWindow.Show();
 		OpenGLWindow.Show();
+		// SoftwareWindow.Show();
+		// EmptyWindow.Show();
 
 		Console.WriteLine("show");
 

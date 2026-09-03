@@ -21,7 +21,7 @@ public class TestGame : GameClient {
 	public Renderer EmptyWindowRenderer { get => field ?? throw new NullReferenceException(); private set; }
 	public TestRenderPass EmptyWindowRenderPass { get => field ?? throw new NullReferenceException(); private set; }
 
-	public TestGame(Engine engine) : base(engine, "Test Game", GraphicsApis.Vulkan | GraphicsApis.OpenGL, true) => OnSetupDoneEvent += OnSetupDone;
+	public TestGame(Engine engine) : base(engine, "Test Game", GraphicsApis.Vulkan | GraphicsApis.OpenGL) => OnSetupDoneEvent += OnSetupDone;
 
 	private void OnSetupDone() {
 		Console.WriteLine("done");

@@ -1,5 +1,7 @@
 using Engine4.Client;
 using Engine4.Client.Rendering;
+using Engine4.Client.Utility;
+using Engine4.Utility.Versions;
 
 namespace Engine4.Test;
 
@@ -20,7 +22,7 @@ public class TestGame : GameClient {
 	public RenderPass TestRenderPass { get; private set; } = null!;
 	public RenderPass TestConsoleRenderPass { get; private set; } = null!;
 
-	public TestGame(string[] args) : base(args, "Test Game", true, true) => OnSetupDoneEvent += OnSetupDone;
+	public TestGame() : base("Test Game", new BuildVersion(0), GameStartupFlags.UseVulkan | GameStartupFlags.UseGlfw) => OnSetupDoneEvent += OnSetupDone;
 
 	private void OnSetupDone() {
 		VulkanWindow0?.Show();
@@ -40,11 +42,11 @@ public class TestGame : GameClient {
 		// ConsoleRenderTarget = new(false);
 		// VulkanConsoleRenderTarget = new(true);
 
-		TestRenderPass = new TestRenderPass();
+		// TestRenderPass = new TestRenderPass();
 		// TestConsoleRenderPass = new TestConsoleRenderPass();
 
-		VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
-		VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
+		// VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
+		// VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
 
 		// ConsoleRenderer = CreateRenderer(ConsoleRenderTarget, TestConsoleRenderPass);
 		// TestConsoleRenderPass testConsoleRenderPass = (TestConsoleRenderPass)TestConsoleRenderPass;

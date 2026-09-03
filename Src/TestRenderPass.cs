@@ -9,4 +9,8 @@ public class TestRenderPass : RenderPass {
 
 	[MustUseReturnValue]
 	private static IGraphicsPipeline CreateGraphicsPipeline() => throw new NotImplementedException();
+
+	protected override void RecordCommandBuffer() {
+		// TODO
+	}
 }

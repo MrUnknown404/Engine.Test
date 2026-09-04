@@ -1,11 +1,14 @@
 using Engine4.Client;
 using Engine4.Client.Rendering;
-using Engine4.Client.Utility;
+using Engine4.IO;
 using Engine4.Utility.Versions;
+using NLog;
 
 namespace Engine4.Test;
 
 public class TestGame : GameClient {
+	private static readonly Logger Logger = LoggerH.GetLogger(LogSource.Game);
+
 	public Window? VulkanWindow0 { get; private set; }
 	public Window? VulkanWindow1 { get; private set; }
 
@@ -22,7 +25,7 @@ public class TestGame : GameClient {
 	public RenderPass TestRenderPass { get; private set; } = null!;
 	public RenderPass TestConsoleRenderPass { get; private set; } = null!;
 
-	public TestGame() : base("Test Game", new BuildVersion(0), GameStartupFlags.UseVulkan | GameStartupFlags.UseGlfw) => OnSetupDoneEvent += OnSetupDone;
+	public TestGame() : base("Test Game", new BuildVersion(0)) => OnSetupDoneEvent += OnSetupDone;
 
 	private void OnSetupDone() {
 		VulkanWindow0?.Show();
@@ -55,6 +58,13 @@ public class TestGame : GameClient {
 		// testConsoleRenderPass.ConsoleGraphics = (ConsoleGraphicsProvider)consoleRenderer.GraphicsProvider;
 
 		// VulkanConsoleRenderer = CreateRenderer(VulkanConsoleRenderTarget, TestRenderPass); // untested
+
+		Logger.Trace("trace test");
+		Logger.Debug("debug test");
+		Logger.Info("Info test");
+		Logger.Warn("warn test");
+		Logger.Error("error test");
+		Logger.Fatal("fatal test");
 	}
 
 	protected override void Update() { }

@@ -32,22 +32,26 @@ public class TestGame : GameClient {
 		VulkanWindow1?.Show();
 	}
 
-	protected override void Setup() {
+	protected override void SetupGame() {
 		const string Title = "title goes here";
 
-		Console.WriteLine(Title);
+		Logger.Debug(Title);
 
+		Logger.Trace("Making windows");
 		VulkanWindow0 = CreateWindow($"vulkan 0. {Title}", 854, 480);
 		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
+		Logger.Trace("Making render targets");
 		VulkanWindow0RenderTarget = new(VulkanWindow0);
 		VulkanWindow1RenderTarget = new(VulkanWindow1);
 		// ConsoleRenderTarget = new(false);
 		// VulkanConsoleRenderTarget = new(true);
 
+		Logger.Trace("Making render passes");
 		// TestRenderPass = new TestRenderPass();
 		// TestConsoleRenderPass = new TestConsoleRenderPass();
 
+		Logger.Trace("Making renderers");
 		// VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
 		// VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
 

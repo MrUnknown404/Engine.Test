@@ -14,16 +14,11 @@ public class TestGame : GameClient {
 
 	public WindowRenderTarget VulkanWindow0RenderTarget { get; private set; } = null!;
 	public WindowRenderTarget VulkanWindow1RenderTarget { get; private set; } = null!;
-	public ConsoleRenderTarget ConsoleRenderTarget { get; private set; } = null!;
-	public ConsoleRenderTarget VulkanConsoleRenderTarget { get; private set; } = null!;
 
 	public Renderer VulkanWindow0Renderer { get; private set; } = null!;
 	public Renderer VulkanWindow1Renderer { get; private set; } = null!;
-	public Renderer ConsoleRenderer { get; private set; } = null!; // TODO only allow 1. switchable at runtime
-	public Renderer VulkanConsoleRenderer { get; private set; } = null!; // ^
 
 	public RenderPass TestRenderPass { get; private set; } = null!;
-	public RenderPass TestConsoleRenderPass { get; private set; } = null!;
 
 	public TestGame() : base("Test Game", new BuildVersion(0)) => OnSetupDoneEvent += OnSetupDone;
 
@@ -44,24 +39,14 @@ public class TestGame : GameClient {
 		Logger.Trace("Making render targets");
 		VulkanWindow0RenderTarget = new(VulkanWindow0);
 		VulkanWindow1RenderTarget = new(VulkanWindow1);
-		// ConsoleRenderTarget = new(false);
-		// VulkanConsoleRenderTarget = new(true);
 
 		Logger.Trace("Making render passes");
 		// TestRenderPass = new TestRenderPass();
-		// TestConsoleRenderPass = new TestConsoleRenderPass();
 
 		Logger.Trace("Making renderers");
 		// VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
 		// VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
-
-		// ConsoleRenderer = CreateRenderer(ConsoleRenderTarget, TestConsoleRenderPass);
-		// TestConsoleRenderPass testConsoleRenderPass = (TestConsoleRenderPass)TestConsoleRenderPass;
-		// ConsoleRenderer consoleRenderer = (ConsoleRenderer)ConsoleRenderer;
-		// testConsoleRenderPass.ConsoleRenderer = consoleRenderer;
-		// testConsoleRenderPass.ConsoleGraphics = (ConsoleGraphicsProvider)consoleRenderer.GraphicsProvider;
-
-		// VulkanConsoleRenderer = CreateRenderer(VulkanConsoleRenderTarget, TestRenderPass); // untested
+		// ConsoleRenderer = new TestConsoleRenderer();
 
 		Logger.Trace("trace test");
 		Logger.Debug("debug test");

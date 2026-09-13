@@ -1,4 +1,5 @@
 using Engine4.Client;
+using Engine4.Client.Graphics.Vulkan;
 using Engine4.Client.Rendering;
 using Engine4.IO;
 using Engine4.Utility.Versions;
@@ -15,8 +16,8 @@ public class TestGame : GameClient {
 	public WindowRenderTarget VulkanWindow0RenderTarget { get; private set; } = null!;
 	public WindowRenderTarget VulkanWindow1RenderTarget { get; private set; } = null!;
 
-	public Renderer VulkanWindow0Renderer { get; private set; } = null!;
-	public Renderer VulkanWindow1Renderer { get; private set; } = null!;
+	public VulkanRenderer VulkanWindow0Renderer { get; private set; } = null!;
+	public VulkanRenderer VulkanWindow1Renderer { get; private set; } = null!;
 
 	public RenderPass TestRenderPass { get; private set; } = null!;
 

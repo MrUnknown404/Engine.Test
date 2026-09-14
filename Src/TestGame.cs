@@ -37,6 +37,9 @@ public class TestGame : GameClient {
 	protected override void SetupGame() {
 		const string Title = "title goes here";
 
+		VulkanManager vulkanManager = VulkanManager ?? throw new Exception();
+		VulkanResourceManager resourceManager = vulkanManager.ResourceManager;
+
 		Logger.Debug(Title);
 
 		Logger.Trace("Making windows");
@@ -44,15 +47,15 @@ public class TestGame : GameClient {
 		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
 		Logger.Trace("Making render targets");
-		VulkanWindow0RenderTarget = new(VulkanWindow0);
-		VulkanWindow1RenderTarget = new(VulkanWindow1);
+		VulkanWindow0RenderTarget = resourceManager.CreateWindowRenderTarget(VulkanWindow0);
+		VulkanWindow1RenderTarget = resourceManager.CreateWindowRenderTarget(VulkanWindow1);
 
 		Logger.Trace("Making render passes");
-		// TestRenderPass = new TestRenderPass();
+		TestRenderPass = new TestRenderPass();
 
 		Logger.Trace("Making renderers");
-		// VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
-		// VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
+		VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
+		VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
 		// ConsoleRenderer = new TestConsoleRenderer();
 
 		Logger.Trace("trace test");
@@ -69,7 +72,8 @@ public class TestGame : GameClient {
 
 		// Thread.Sleep(1); // simulating lag
 
-		// if (UpdateCount == TargetUps * 3) { RequestShutdown(false); }
+		if (UpdateCount == TargetUps * 3) { VulkanWindow1?.RequestClose(false); }
+		if (UpdateCount == TargetUps * 10) { RequestShutdown(false); }
 	}
 
 	protected override void Cleanup() { }

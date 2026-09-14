@@ -66,7 +66,10 @@ public class TestGame : GameClient {
 	protected override void Update() {
 		// Logger.Trace($"Update Count: {UpdateCount}, Ups: {PerformanceMonitor?.Ups.ToString() ?? "null"}");
 		// Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor?.Fps.ToString() ?? "null"}");
+
 		// Thread.Sleep(1); // simulating lag
+
+		// if (UpdateCount == TargetUps * 3) { RequestShutdown(false); }
 	}
 
 	protected override void Cleanup() { }

@@ -21,7 +21,13 @@ public class TestGame : GameClient {
 
 	public RenderPass TestRenderPass { get; private set; } = null!;
 
-	public TestGame() : base("Test Game", new BuildVersion(0)) => OnSetupDoneEvent += OnSetupDone;
+	public TestGame() : base("Test Game", new BuildVersion(0)) {
+		PerformanceMonitor = new();
+		TargetUps = 60;
+		TargetFps = 0;
+
+		OnSetupDoneEvent += OnSetupDone;
+	}
 
 	private void OnSetupDone() {
 		VulkanWindow0?.Show();
@@ -57,7 +63,11 @@ public class TestGame : GameClient {
 		Logger.Fatal("fatal test");
 	}
 
-	protected override void Update() { }
+	protected override void Update() {
+		// Logger.Trace($"Update Count: {UpdateCount}, Ups: {PerformanceMonitor?.Ups.ToString() ?? "null"}");
+		// Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor?.Fps.ToString() ?? "null"}");
+		// Thread.Sleep(1); // simulating lag
+	}
 
 	protected override void Cleanup() { }
 }

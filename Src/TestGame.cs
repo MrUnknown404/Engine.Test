@@ -38,7 +38,6 @@ public class TestGame : GameClient {
 		const string Title = "title goes here";
 
 		VulkanManager vulkanManager = VulkanManager ?? throw new Exception();
-		VulkanResourceManager resourceManager = vulkanManager.ResourceManager;
 
 		Logger.Debug(Title);
 
@@ -47,8 +46,8 @@ public class TestGame : GameClient {
 		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
 		Logger.Trace("Making render targets");
-		VulkanWindow0RenderTarget = resourceManager.CreateWindowRenderTarget(VulkanWindow0);
-		VulkanWindow1RenderTarget = resourceManager.CreateWindowRenderTarget(VulkanWindow1);
+		VulkanWindow0RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow0);
+		VulkanWindow1RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow1);
 
 		Logger.Trace("Making render passes");
 		TestRenderPass = new TestRenderPass();

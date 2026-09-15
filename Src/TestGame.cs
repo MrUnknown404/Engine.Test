@@ -2,6 +2,7 @@ using Engine4.Client;
 using Engine4.Client.Graphics.Vulkan;
 using Engine4.Client.Rendering;
 using Engine4.IO;
+using Engine4.Utility.Math;
 using Engine4.Utility.Versions;
 using NLog;
 
@@ -43,18 +44,19 @@ public class TestGame : GameClient {
 
 		Logger.Trace("Making windows");
 		VulkanWindow0 = CreateWindow($"vulkan 0. {Title}", 854, 480);
-		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
+		// VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
 		Logger.Trace("Making render targets");
-		VulkanWindow0RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow0);
-		VulkanWindow1RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow1);
+		Color3 clearColor = new(0.005f, 0.005f, 0.005f);
+		VulkanWindow0RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow0, clearColor);
+		// VulkanWindow1RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow1, clearColor);
 
 		Logger.Trace("Making render passes");
 		TestRenderPass = new TestRenderPass();
 
 		Logger.Trace("Making renderers");
-		VulkanWindow0Renderer = CreateRenderer(VulkanWindow0RenderTarget, TestRenderPass);
-		VulkanWindow1Renderer = CreateRenderer(VulkanWindow1RenderTarget, TestRenderPass);
+		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0RenderTarget, TestRenderPass);
+		// VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1RenderTarget, TestRenderPass);
 		// ConsoleRenderer = new TestConsoleRenderer();
 
 		Logger.Trace("trace test");
@@ -70,6 +72,13 @@ public class TestGame : GameClient {
 		// Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor?.Fps.ToString() ?? "null"}");
 
 		// Thread.Sleep(1); // simulating lag
+
+		if (!AnyWindowsExist) {
+			RequestShutdown(true);
+			return;
+		}
+
+		if (UpdateCount % TargetUps == 0) { Logger.Debug($"hello world {UpdateCount / TargetUps}"); }
 
 		if (UpdateCount == TargetUps * 3) { VulkanWindow1?.RequestClose(false); }
 		if (UpdateCount == TargetUps * 10) { RequestShutdown(false); }

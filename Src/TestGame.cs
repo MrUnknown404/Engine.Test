@@ -14,9 +14,6 @@ public class TestGame : GameClient {
 	public Window? VulkanWindow0 { get; private set; }
 	public Window? VulkanWindow1 { get; private set; }
 
-	public WindowRenderTarget VulkanWindow0RenderTarget { get; private set; } = null!;
-	public WindowRenderTarget VulkanWindow1RenderTarget { get; private set; } = null!;
-
 	public VulkanRenderer VulkanWindow0Renderer { get; private set; } = null!;
 	public VulkanRenderer VulkanWindow1Renderer { get; private set; } = null!;
 
@@ -37,26 +34,19 @@ public class TestGame : GameClient {
 
 	protected override void SetupGame() {
 		const string Title = "title goes here";
-
-		VulkanManager vulkanManager = VulkanManager ?? throw new Exception();
-
 		Logger.Debug(Title);
 
 		Logger.Trace("Making windows");
 		VulkanWindow0 = CreateWindow($"vulkan 0. {Title}", 854, 480);
-		// VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
-
-		Logger.Trace("Making render targets");
-		Color3 clearColor = new(0.005f, 0.005f, 0.005f);
-		VulkanWindow0RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow0, clearColor);
-		// VulkanWindow1RenderTarget = vulkanManager.CreateWindowRenderTarget(VulkanWindow1, clearColor);
+		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
 		Logger.Trace("Making render passes");
 		TestRenderPass = new TestRenderPass();
 
 		Logger.Trace("Making renderers");
-		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0RenderTarget, TestRenderPass);
-		// VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1RenderTarget, TestRenderPass);
+		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
+		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor, TestRenderPass);
+		VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor, TestRenderPass);
 		// ConsoleRenderer = new TestConsoleRenderer();
 
 		Logger.Trace("trace test");
@@ -80,8 +70,8 @@ public class TestGame : GameClient {
 
 		if (UpdateCount % TargetUps == 0) { Logger.Debug($"hello world {UpdateCount / TargetUps}"); }
 
-		if (UpdateCount == TargetUps * 3) { VulkanWindow1?.RequestClose(false); }
-		if (UpdateCount == TargetUps * 10) { RequestShutdown(false); }
+		// if (UpdateCount == TargetUps * 3) { VulkanWindow1?.RequestClose(false); }
+		// if (UpdateCount == TargetUps * 10) { RequestShutdown(false); }
 	}
 
 	protected override void Cleanup() { }

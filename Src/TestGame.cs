@@ -43,6 +43,59 @@ public class TestGame : GameClient {
 		Logger.Trace("Making render passes");
 		TestRenderPass = new TestRenderPass();
 
+// 		Action<RenderGraph> setupRenderGraph = static graph => {
+// 			const uint Size = 0; // TODO
+// 			const ushort Width = 1920, Height = 1080;
+//
+// 			RenderGraph.BufferHandle vertexBuffer = graph.AddBuffer("vertex buffer", Size, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit); // TODO what if we want to resize later? auto resize behind the scenes?
+// 			RenderGraph.BufferHandle indexBuffer = graph.AddBuffer("index buffer", Size, VkBufferUsageFlagBits2.BufferUsage2IndexBufferBit);
+// 			// RenderGraph.ImageHandle swapchainImage = graph.AddTexture("swapchain image", Width, Height, format, VkImageUsageFlagBits.ImageUsageColorAttachmentBit, VkImageLayout.ImageLayoutPresentSrcKhr);
+// 			// RenderGraph.ImageHandle depthImage = graph.AddTexture("depth image", Width, Height, format, VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit, VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal);
+//
+// 			// TODO how do i set data?
+//
+// 			// RenderPassBuilder copyPassBuilder = new("test copy pass", RenderPassStage.Transfer, Exec); // compute/graphics/transfer
+// 			// copyPassBuilder.AddOutput(vertexBuffer);
+// 			// copyPassBuilder.AddOutput(indexBuffer);
+// 			// RenderGraph.RenderPassHandle testCopyPass = graph.AddPass(copyPassBuilder);
+//
+// 			RenderPassBuilder drawPassBuilder = new("test draw pass", RenderPassStage.Graphics, Exec); // compute/graphics/transfer
+// 			drawPassBuilder.AddInput(vertexBuffer);
+// 			drawPassBuilder.AddInput(indexBuffer);
+// 			// drawPassBuilder.AddOutput(swapchainImage);
+// 			// drawPassBuilder.AddOutput(depthImage);
+// 			RenderGraph.RenderPassHandle testDrawPass = graph.AddPass(drawPassBuilder);
+//
+// 			return;
+//
+// 			static void Exec(GraphicsCommandBuffer graphicsCommandBuffer) {
+// 				graphicsCommandBuffer.CmdBeginRendering(extent, colorView, clearColor, depthView, depthStencil);
+// 				// DRAW
+// 				graphicsCommandBuffer.CmdEndRendering();
+// 			}
+//
+// 			/*
+// 			private static void Test(VulkanResourceManager resourceManager) { // test example
+// 				RenderGraph renderGraph = new(resourceManager);
+//
+// 				BufferHandle vertexBuffer = renderGraph.AddBuffer("vertex buffer"); // TODO what if we want to resize later? auto resize behind the scenes?
+// 				BufferHandle indexBuffer = renderGraph.AddBuffer("index buffer");
+// 				// ImageHandle testImage = renderGraph.AddTexture("test image");
+//
+// 				RenderPassBuilder passBuilder = new("testPass", RenderPassStage.Graphics, null); // compute/graphics/transfer
+// 				passBuilder.AddInput(vertexBuffer);
+// 				passBuilder.AddInput(indexBuffer);
+// 				// passBuilder.AddInput(testImage);
+// 				RenderPassHandle testPass = renderGraph.AddPass(passBuilder);
+//
+// 				renderGraph.DisablePass(testPass);
+// 				renderGraph.EnablePass(testPass);
+//
+// 				renderGraph.RemovePass(testPass);
+// 			   }
+// 			 */
+// 		};
+
 		Logger.Trace("Making renderers");
 		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
 		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor, TestRenderPass);
@@ -63,7 +116,7 @@ public class TestGame : GameClient {
 
 		// Thread.Sleep(1); // simulating lag
 
-		if (!AnyWindowsExist) {
+		if (!AnyWindowsExist) { // TODO should i just allow window visibility?
 			RequestShutdown(true);
 			return;
 		}

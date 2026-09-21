@@ -1,10 +1,12 @@
 using Engine4.Client;
+using Engine4.Client.Graphics._Test;
 using Engine4.Client.Graphics.Vulkan;
 using Engine4.Client.Rendering;
 using Engine4.IO;
 using Engine4.Utility.Math;
 using Engine4.Utility.Versions;
 using NLog;
+using OpenTK.Graphics.Vulkan;
 
 namespace Engine4.Test;
 
@@ -98,8 +100,9 @@ public class TestGame : GameClient {
 
 		Logger.Trace("Making renderers");
 		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
-		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor, TestRenderPass);
-		VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor, TestRenderPass);
+
+		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor, SetupRenderGraph, TestRenderPass);
+		VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor, SetupRenderGraph, TestRenderPass);
 		// ConsoleRenderer = new TestConsoleRenderer();
 
 		Logger.Trace("trace test");
@@ -108,6 +111,31 @@ public class TestGame : GameClient {
 		Logger.Warn("warn test");
 		Logger.Error("error test");
 		Logger.Fatal("fatal test");
+
+		return;
+
+		static void SetupRenderGraph(RenderGraph3 graph, VulkanRenderer renderer) {
+			const ulong BufferSize = 0;
+			const ushort Width = 1920, Height = 1080;
+			Color4 clearColor = new(0.001f, 0.001f, 0.001f, 1);
+
+			RenderGraph3.BufferHandle vertexBuffer = graph.AddBuffer("vertex buffer", BufferSize, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit);
+			RenderGraph3.BufferHandle indexBuffer = graph.AddBuffer("index buffer", BufferSize, VkBufferUsageFlagBits2.BufferUsage2IndexBufferBit);
+
+			// swap chain?
+			RenderGraph3.TextureHandle colorImage = graph.AddTexture("color image", Width, Height, renderer.GetSwapChainFormat(), VkImageUsageFlagBits.ImageUsageColorAttachmentBit);
+			RenderGraph3.TextureHandle depthImage = graph.AddTexture("depth image", Width, Height, renderer.GetDepthFormat(), VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit);
+
+			TestRenderPass3 renderPass = new(vertexBuffer, indexBuffer, clearColor);
+			renderPass.SetDepthImage(depthImage, new(1, 0));
+
+			renderPass.AddInput(vertexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			renderPass.AddInput(indexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			renderPass.AddOutput(colorImage);
+			renderPass.AddOutput(depthImage);
+
+			RenderGraph3.RenderPassHandle graphicsPass = graph.AddPass("graphics pass", renderPass);
+		}
 	}
 
 	protected override void Update() {

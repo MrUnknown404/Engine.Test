@@ -16,10 +16,10 @@ public class TestGame : GameClient {
 	public Window? VulkanWindow0 { get; private set; }
 	public Window? VulkanWindow1 { get; private set; }
 
-	public VulkanRenderer VulkanWindow0Renderer { get; private set; } = null!;
-	public VulkanRenderer VulkanWindow1Renderer { get; private set; } = null!;
+	public VulkanRenderer? VulkanWindow0Renderer { get; private set; }
+	public VulkanRenderer? VulkanWindow1Renderer { get; private set; }
 
-	public RenderPass TestRenderPass { get; private set; } = null!;
+	public RenderPass? TestRenderPass { get; private set; }
 
 	public TestGame() : base("Test Game", new BuildVersion(0)) {
 		PerformanceMonitor = new();
@@ -45,59 +45,6 @@ public class TestGame : GameClient {
 		Logger.Trace("Making render passes");
 		TestRenderPass = new TestRenderPass();
 
-// 		Action<RenderGraph> setupRenderGraph = static graph => {
-// 			const uint Size = 0; // TODO
-// 			const ushort Width = 1920, Height = 1080;
-//
-// 			RenderGraph.BufferHandle vertexBuffer = graph.AddBuffer("vertex buffer", Size, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit); // TODO what if we want to resize later? auto resize behind the scenes?
-// 			RenderGraph.BufferHandle indexBuffer = graph.AddBuffer("index buffer", Size, VkBufferUsageFlagBits2.BufferUsage2IndexBufferBit);
-// 			// RenderGraph.ImageHandle swapchainImage = graph.AddTexture("swapchain image", Width, Height, format, VkImageUsageFlagBits.ImageUsageColorAttachmentBit, VkImageLayout.ImageLayoutPresentSrcKhr);
-// 			// RenderGraph.ImageHandle depthImage = graph.AddTexture("depth image", Width, Height, format, VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit, VkImageLayout.ImageLayoutDepthStencilAttachmentOptimal);
-//
-// 			// TODO how do i set data?
-//
-// 			// RenderPassBuilder copyPassBuilder = new("test copy pass", RenderPassStage.Transfer, Exec); // compute/graphics/transfer
-// 			// copyPassBuilder.AddOutput(vertexBuffer);
-// 			// copyPassBuilder.AddOutput(indexBuffer);
-// 			// RenderGraph.RenderPassHandle testCopyPass = graph.AddPass(copyPassBuilder);
-//
-// 			RenderPassBuilder drawPassBuilder = new("test draw pass", RenderPassStage.Graphics, Exec); // compute/graphics/transfer
-// 			drawPassBuilder.AddInput(vertexBuffer);
-// 			drawPassBuilder.AddInput(indexBuffer);
-// 			// drawPassBuilder.AddOutput(swapchainImage);
-// 			// drawPassBuilder.AddOutput(depthImage);
-// 			RenderGraph.RenderPassHandle testDrawPass = graph.AddPass(drawPassBuilder);
-//
-// 			return;
-//
-// 			static void Exec(GraphicsCommandBuffer graphicsCommandBuffer) {
-// 				graphicsCommandBuffer.CmdBeginRendering(extent, colorView, clearColor, depthView, depthStencil);
-// 				// DRAW
-// 				graphicsCommandBuffer.CmdEndRendering();
-// 			}
-//
-// 			/*
-// 			private static void Test(VulkanResourceManager resourceManager) { // test example
-// 				RenderGraph renderGraph = new(resourceManager);
-//
-// 				BufferHandle vertexBuffer = renderGraph.AddBuffer("vertex buffer"); // TODO what if we want to resize later? auto resize behind the scenes?
-// 				BufferHandle indexBuffer = renderGraph.AddBuffer("index buffer");
-// 				// ImageHandle testImage = renderGraph.AddTexture("test image");
-//
-// 				RenderPassBuilder passBuilder = new("testPass", RenderPassStage.Graphics, null); // compute/graphics/transfer
-// 				passBuilder.AddInput(vertexBuffer);
-// 				passBuilder.AddInput(indexBuffer);
-// 				// passBuilder.AddInput(testImage);
-// 				RenderPassHandle testPass = renderGraph.AddPass(passBuilder);
-//
-// 				renderGraph.DisablePass(testPass);
-// 				renderGraph.EnablePass(testPass);
-//
-// 				renderGraph.RemovePass(testPass);
-// 			   }
-// 			 */
-// 		};
-
 		Logger.Trace("Making renderers");
 		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
 
@@ -115,26 +62,38 @@ public class TestGame : GameClient {
 		return;
 
 		static void SetupRenderGraph(RenderGraph3 graph, VulkanRenderer renderer) {
-			const ulong BufferSize = 0;
+			const ulong BufferSize = sizeof(uint) * 10;
 			const ushort Width = 1920, Height = 1080;
 			Color4 clearColor = new(0.001f, 0.001f, 0.001f, 1);
 
-			RenderGraph3.BufferHandle vertexBuffer = graph.AddBuffer("vertex buffer", BufferSize, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit);
-			RenderGraph3.BufferHandle indexBuffer = graph.AddBuffer("index buffer", BufferSize, VkBufferUsageFlagBits2.BufferUsage2IndexBufferBit);
+			// TODO what if we want to resize later? auto resize behind the scenes?
+			RenderGraph3.BufferHandle vertexBuffer1 = graph.AddBuffer("vertex buffer 1", BufferSize, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit, 0, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit);
+			RenderGraph3.BufferHandle vertexBuffer2 = graph.AddBuffer("vertex buffer 2", BufferSize, VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit, 0, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit);
+			RenderGraph3.BufferHandle indexBuffer = graph.AddBuffer("index buffer", BufferSize, VkBufferUsageFlagBits2.BufferUsage2IndexBufferBit, 0, VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit);
+
+			// TODO upload data somehow
 
 			// swap chain?
-			RenderGraph3.TextureHandle colorImage = graph.AddTexture("color image", Width, Height, renderer.GetSwapChainFormat(), VkImageUsageFlagBits.ImageUsageColorAttachmentBit);
-			RenderGraph3.TextureHandle depthImage = graph.AddTexture("depth image", Width, Height, renderer.GetDepthFormat(), VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit);
+			// RenderGraph3.TextureHandle colorImage = graph.AddTexture("color image", Width, Height, renderer.GetSwapChainFormat(), VkImageUsageFlagBits.ImageUsageColorAttachmentBit);
+			// RenderGraph3.TextureHandle depthImage = graph.AddTexture("depth image", Width, Height, renderer.GetDepthFormat(), VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit);
 
-			TestRenderPass3 renderPass = new(vertexBuffer, indexBuffer, clearColor);
-			renderPass.SetDepthImage(depthImage, new(1, 0));
+			TestRenderPass3 renderPass1 = new(vertexBuffer1, indexBuffer, clearColor);
+			TestRenderPass3 renderPass2 = new(vertexBuffer2, indexBuffer, clearColor);
+			// renderPass1.SetDepthImage(depthImage, new(1, 0));
+			// renderPass2.SetDepthImage(depthImage, new(1, 0));
 
-			renderPass.AddInput(vertexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
-			renderPass.AddInput(indexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
-			renderPass.AddOutput(colorImage);
-			renderPass.AddOutput(depthImage);
+			renderPass1.AddInput(vertexBuffer1, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			renderPass1.AddInput(indexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			// renderPass1.AddOutput(colorImage);
+			// renderPass1.AddOutput(depthImage);
 
-			RenderGraph3.RenderPassHandle graphicsPass = graph.AddPass("graphics pass", renderPass);
+			renderPass2.AddInput(vertexBuffer2, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			renderPass2.AddInput(indexBuffer, VkPipelineStageFlagBits2.PipelineStage2AllGraphicsBit);
+			// renderPass2.AddOutput(colorImage);
+			// renderPass2.AddOutput(depthImage);
+
+			RenderGraph3.RenderPassHandle graphicsPass1 = graph.AddPass("graphics pass 1", renderPass1);
+			RenderGraph3.RenderPassHandle graphicsPass2 = graph.AddPass("graphics pass 2", renderPass2);
 		}
 	}
 

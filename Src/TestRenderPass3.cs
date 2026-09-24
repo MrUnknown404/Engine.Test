@@ -18,10 +18,11 @@ public class TestRenderPass3 : GraphicsRenderPass3 {
 	protected override void Execute(GraphicsCommandBuffer commandBuffer) {
 		// DRAW. bind(?)/push constants/draw indexed/etc
 
-		// TODO pipeline
-		BindBuffer(vertexBufferHandle, 0);
-		BindBuffer(indexBufferHandle, 0);
+		// TODO pipeline/draw
 
-		commandBuffer.CmdDrawIndexed(0);
+		// commandBuffer.CmdBindGraphicsPipeline();
+		commandBuffer.CmdBindVertexBuffer(RenderGraph.GetBuffer(vertexBufferHandle), 0);
+		commandBuffer.CmdBindIndexBuffer(RenderGraph.GetBuffer(indexBufferHandle), 0);
+		// commandBuffer.CmdDrawIndexed(0);
 	}
 }

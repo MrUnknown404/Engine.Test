@@ -77,8 +77,8 @@ public class TestGame : GameClient {
 			// RenderGraph3.TextureHandle colorImage = graph.AddTexture("color image", Width, Height, renderer.GetSwapChainFormat(), VkImageUsageFlagBits.ImageUsageColorAttachmentBit);
 			// RenderGraph3.TextureHandle depthImage = graph.AddTexture("depth image", Width, Height, renderer.GetDepthFormat(), VkImageUsageFlagBits.ImageUsageDepthStencilAttachmentBit);
 
-			TestRenderPass3 renderPass1 = new(vertexBuffer1, indexBuffer, clearColor);
-			TestRenderPass3 renderPass2 = new(vertexBuffer2, indexBuffer, clearColor);
+			TestRenderPass3 renderPass1 = new(renderer.GetSwapChainFormat(), vertexBuffer1, indexBuffer, clearColor);
+			TestRenderPass3 renderPass2 = new(renderer.GetSwapChainFormat(), vertexBuffer2, indexBuffer, clearColor);
 			// renderPass1.SetDepthImage(depthImage, new(1, 0));
 			// renderPass2.SetDepthImage(depthImage, new(1, 0));
 
@@ -98,8 +98,10 @@ public class TestGame : GameClient {
 	}
 
 	protected override void Update() {
-		// Logger.Trace($"Update Count: {UpdateCount}, Ups: {PerformanceMonitor?.Ups.ToString() ?? "null"}");
-		// Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor?.Fps.ToString() ?? "null"}");
+		// if (PerformanceMonitor != null) {
+		// 	Logger.Trace($"Update Count: {UpdateCount}, Ups: {PerformanceMonitor.Ups}");
+		// 	Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor.Fps}");
+		// }
 
 		// Thread.Sleep(1); // simulating lag
 
@@ -109,9 +111,6 @@ public class TestGame : GameClient {
 		}
 
 		if (UpdateCount % TargetUps == 0) { Logger.Debug($"hello world {UpdateCount / TargetUps}"); }
-
-		// if (UpdateCount == TargetUps * 3) { VulkanWindow1?.RequestClose(false); }
-		// if (UpdateCount == TargetUps * 10) { RequestShutdown(false); }
 	}
 
 	protected override void Cleanup() { }

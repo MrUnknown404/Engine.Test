@@ -46,7 +46,6 @@ public unsafe class TestRenderPass : RenderPass {
 			TestVertex.GetAttributeDescriptions(0), TestVertex.GetBindingDescriptions(0)) {
 				EnableDepthTest = true, //
 				EnableDepthWrite = true,
-				CullMode = VkCullModeFlagBits.CullModeNone,
 		});
 
 		// TODO destroy shaders

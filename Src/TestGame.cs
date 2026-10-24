@@ -38,20 +38,20 @@ public class TestGame : GameClient {
 
 		Logger.Trace("Making windows");
 		VulkanWindow0 = CreateWindow($"vulkan 0. {Title}", 854, 480);
-		// VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
+		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
 
 		Logger.Trace("Making renderers");
 		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
 
 		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor);
-		// VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor);
+		VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor);
 
 		Logger.Trace("Making render passes");
 		TestRenderPass0 = new(VulkanWindow0Renderer);
-		// TestRenderPass1 = new(VulkanWindow1Renderer);
+		TestRenderPass1 = new(VulkanWindow1Renderer);
 
 		VulkanWindow0Renderer.AddRenderPass(TestRenderPass0);
-		// VulkanWindow1Renderer.AddRenderPass(TestRenderPass1);
+		VulkanWindow1Renderer.AddRenderPass(TestRenderPass1);
 
 		// ConsoleRenderer = new TestConsoleRenderer();
 

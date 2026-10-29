@@ -48,7 +48,8 @@ public unsafe class TestRenderPass : RenderPass {
 				EnableDepthWrite = true,
 		});
 
-		// TODO destroy shaders
+		resourceManager.EnqueueDestroy(vertexShader);
+		resourceManager.EnqueueDestroy(fragmentShader);
 
 		return graphicsPipeline;
 	}

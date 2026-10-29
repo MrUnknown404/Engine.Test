@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Engine4.Client;
 using Engine4.Client.Graphics.Vulkan;
 using Engine4.IO;
@@ -10,16 +11,22 @@ namespace Engine4.Test;
 public class TestGame : GameClient {
 	private static readonly Logger Logger = LoggerH.GetLogger(LogSource.Game);
 
-	public Window? VulkanWindow0 { get; private set; }
-	public Window? VulkanWindow1 { get; private set; }
+	private Window? vulkanWindow0;
+	private Window? vulkanWindow1;
 
-	public VulkanRenderer? VulkanWindow0Renderer { get; private set; }
-	public VulkanRenderer? VulkanWindow1Renderer { get; private set; }
+	private VulkanRenderer? vulkanWindow0Renderer;
+	private VulkanRenderer? vulkanWindow1Renderer;
+
+	public Window? VulkanWindow0 => vulkanWindow0;
+	public Window? VulkanWindow1 => vulkanWindow1;
+
+	public VulkanRenderer? VulkanWindow0Renderer => vulkanWindow0Renderer;
+	public VulkanRenderer? VulkanWindow1Renderer => vulkanWindow1Renderer;
 
 	public TestRenderPass? TestRenderPass0 { get; private set; }
 	public TestRenderPass? TestRenderPass1 { get; private set; }
 
-	public TestGame() : base("Test Game", new BuildVersion(0)) {
+	internal TestGame() : base("Test Game", new BuildVersion(0)) {
 		PerformanceMonitor = new();
 		TargetUps = 60;
 		TargetFps = 0;
@@ -32,26 +39,28 @@ public class TestGame : GameClient {
 		VulkanWindow1?.Show();
 	}
 
+	[SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
 	protected override void SetupGame() {
 		const string Title = "title goes here";
-		Logger.Debug(Title);
+		const bool CreateSecondWindow = false;
 
-		Logger.Trace("Making windows");
-		VulkanWindow0 = CreateWindow($"vulkan 0. {Title}", 854, 480);
-		VulkanWindow1 = CreateWindow($"vulkan 1. {Title}", 854, 480);
-
-		Logger.Trace("Making renderers");
 		Color4 clearColor = new(0.005f, 0.005f, 0.005f, 1);
 
-		VulkanWindow0Renderer = CreateRenderer(nameof(VulkanWindow0Renderer), VulkanWindow0, clearColor);
-		VulkanWindow1Renderer = CreateRenderer(nameof(VulkanWindow1Renderer), VulkanWindow1, clearColor);
+		Logger.Debug(Title);
 
-		Logger.Trace("Making render passes");
-		TestRenderPass0 = new(VulkanWindow0Renderer);
-		TestRenderPass1 = new(VulkanWindow1Renderer);
+		Logger.Trace("Making windows & renderers...");
 
-		VulkanWindow0Renderer.AddRenderPass(TestRenderPass0);
-		VulkanWindow1Renderer.AddRenderPass(TestRenderPass1);
+		CreateWindow($"vulkan 0. {Title}", 854, 480, nameof(VulkanWindow0Renderer), clearColor, out vulkanWindow0, out vulkanWindow0Renderer);
+		TestRenderPass0 = new(vulkanWindow0Renderer);
+		vulkanWindow0Renderer.AddRenderPass(TestRenderPass0);
+
+#pragma warning disable CS0162 // Unreachable code detected
+		if (CreateSecondWindow) { // for testing
+			CreateWindow($"vulkan 1. {Title}", 854, 480, nameof(VulkanWindow1Renderer), clearColor, out vulkanWindow1, out vulkanWindow1Renderer);
+			TestRenderPass1 = new(vulkanWindow1Renderer);
+			vulkanWindow1Renderer.AddRenderPass(TestRenderPass1);
+		}
+#pragma warning restore CS0162 // Unreachable code detected
 
 		// ConsoleRenderer = new TestConsoleRenderer();
 
@@ -101,19 +110,10 @@ public class TestGame : GameClient {
 	}
 
 	protected override void Update() {
-		// if (PerformanceMonitor != null) {
-		// 	Logger.Trace($"Update Count: {UpdateCount}, Ups: {PerformanceMonitor.Ups}");
-		// 	Logger.Trace($"Frame Count: {FrameCount}, Fps: {PerformanceMonitor.Fps}");
-		// }
-
-		// Thread.Sleep(1); // simulating lag
-
 		if (!AnyWindowsExist) { // TODO should i just allow window visibility?
 			RequestShutdown(true);
 			return;
 		}
-
-		if (UpdateCount % TargetUps == 0) { Logger.Debug($"hello world {UpdateCount / TargetUps}"); }
 	}
 
 	protected override void Cleanup() { }

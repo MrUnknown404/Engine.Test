@@ -10,7 +10,7 @@ public static class Entry {
 		game.Start(args,
 			new ClientStartupSettings {
 					LoggingSettings = new() { TimeSource = new AccurateUtcTimeSource(), },
-					LoadGlfw = true,
+					EnableGlfw = true,
 					VulkanSettings = new() {
 							EnabledDebugMessageSeverities = VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityWarningBitExt | VkDebugUtilsMessageSeverityFlagBitsEXT.DebugUtilsMessageSeverityErrorBitExt,
 					},

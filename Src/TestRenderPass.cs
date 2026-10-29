@@ -17,7 +17,6 @@ public unsafe class TestRenderPass : RenderPass {
 
 	public TestRenderPass(VulkanRenderer renderer) : base(CreateGraphicsPipeline(renderer.ResourceManager, renderer.GetSwapChainFormat(), typeof(TestRenderPass).Assembly)) {
 		this.renderer = renderer;
-		VulkanResourceManager resourceManager = renderer.ResourceManager;
 
 		TestVertex[] vertices = [ // xyz rgb
 				new(0, -0.5f, 0, 1, 0, 0), //
@@ -26,6 +25,8 @@ public unsafe class TestRenderPass : RenderPass {
 		];
 
 		uint[] indices = [ 0, 1, 2, ];
+
+		VulkanResourceManager resourceManager = renderer.ResourceManager;
 
 		vertexBuffer = resourceManager.CreateBuffer($"{nameof(TestRenderPass)} Vertex Buffer", (ulong)(vertices.Length * sizeof(TestVertex)), VkBufferUsageFlagBits2.BufferUsage2VertexBufferBit, 0,
 			VkMemoryPropertyFlagBits.MemoryPropertyHostVisibleBit);

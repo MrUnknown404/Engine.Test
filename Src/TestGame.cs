@@ -49,7 +49,6 @@ public class TestGame : GameClient {
 		Logger.Debug(Title);
 
 		Logger.Trace("Making windows & renderers...");
-
 		CreateWindow($"vulkan 0. {Title}", 854, 480, nameof(VulkanWindow0Renderer), clearColor, out vulkanWindow0, out vulkanWindow0Renderer);
 		TestRenderPass0 = new(vulkanWindow0Renderer);
 		vulkanWindow0Renderer.AddRenderPass(TestRenderPass0);

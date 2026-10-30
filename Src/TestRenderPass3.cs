@@ -22,8 +22,8 @@ public class TestRenderPass3 : GraphicsRenderPass3 {
 		// graphics pipeline TODO can this be more automated? should this be created elsewhere and then passes into here?
 
 		Assembly assembly = GetType().Assembly;
-		VulkanShader vertexShader = ResourceManager.CreateShader($"{nameof(TestRenderPass3)} Vertex Shader", assembly, "Test", ShaderLanguage.Glsl, ShaderType.Vertex);
-		VulkanShader fragmentShader = ResourceManager.CreateShader($"{nameof(TestRenderPass3)} Fragment Shader", assembly, "Test", ShaderLanguage.Glsl, ShaderType.Fragment);
+		Shader vertexShader = ResourceManager.CreateShader($"{nameof(TestRenderPass3)} Vertex Shader", assembly, "Test", ShaderLanguage.Glsl, ShaderType.Vertex);
+		Shader fragmentShader = ResourceManager.CreateShader($"{nameof(TestRenderPass3)} Fragment Shader", assembly, "Test", ShaderLanguage.Glsl, ShaderType.Fragment);
 
 		graphicsPipeline = ResourceManager.CreateGraphicsPipeline(new GraphicsPipeline.Settings($"{nameof(TestRenderPass3)} Graphics Pipeline", swapChainImageFormat, [ vertexShader, fragmentShader, ],
 			TestVertex.GetAttributeDescriptions(0), TestVertex.GetBindingDescriptions(0)) {

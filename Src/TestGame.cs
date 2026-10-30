@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Engine4.Client;
-using Engine4.Client.Graphics.Vulkan;
+using Engine4.Client.Graphics.Rendering;
+using Engine4.Client.Windowing;
 using Engine4.IO;
 using Engine4.Utility.Math;
 using Engine4.Utility.Versions;
@@ -14,14 +15,14 @@ public class TestGame : GameClient {
 	private Window? vulkanWindow0;
 	private Window? vulkanWindow1;
 
-	private VulkanRenderer? vulkanWindow0Renderer;
-	private VulkanRenderer? vulkanWindow1Renderer;
+	private Renderer? vulkanWindow0Renderer;
+	private Renderer? vulkanWindow1Renderer;
 
 	public Window? VulkanWindow0 => vulkanWindow0;
 	public Window? VulkanWindow1 => vulkanWindow1;
 
-	public VulkanRenderer? VulkanWindow0Renderer => vulkanWindow0Renderer;
-	public VulkanRenderer? VulkanWindow1Renderer => vulkanWindow1Renderer;
+	public Renderer? VulkanWindow0Renderer => vulkanWindow0Renderer;
+	public Renderer? VulkanWindow1Renderer => vulkanWindow1Renderer;
 
 	public TestRenderPass? TestRenderPass0 { get; private set; }
 	public TestRenderPass? TestRenderPass1 { get; private set; }
@@ -49,13 +50,13 @@ public class TestGame : GameClient {
 		Logger.Debug(Title);
 
 		Logger.Trace("Making windows & renderers...");
-		CreateWindow($"vulkan 0. {Title}", 854, 480, nameof(VulkanWindow0Renderer), clearColor, out vulkanWindow0, out vulkanWindow0Renderer);
+		CreateWindow($"vulkan 0. {Title}", 854, 480, clearColor, out vulkanWindow0, out vulkanWindow0Renderer);
 		TestRenderPass0 = new(vulkanWindow0Renderer);
 		vulkanWindow0Renderer.AddRenderPass(TestRenderPass0);
 
 #pragma warning disable CS0162 // Unreachable code detected
 		if (CreateSecondWindow) { // for testing
-			CreateWindow($"vulkan 1. {Title}", 854, 480, nameof(VulkanWindow1Renderer), clearColor, out vulkanWindow1, out vulkanWindow1Renderer);
+			CreateWindow($"vulkan 1. {Title}", 854, 480, clearColor, out vulkanWindow1, out vulkanWindow1Renderer);
 			TestRenderPass1 = new(vulkanWindow1Renderer);
 			vulkanWindow1Renderer.AddRenderPass(TestRenderPass1);
 		}

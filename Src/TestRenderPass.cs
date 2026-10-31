@@ -26,10 +26,10 @@ public unsafe class TestRenderPass : RenderPass {
 		this.renderer = renderer;
 
 		TestVertex[] vertices = [ // xyz uv rgb
-				new(-0.5f, -0.5f, 0, 0, 0, 0, 0, 0), // top left
-				new(-0.5f, 0.5f, 0, 1, 0, 0, 0, 0), // bottom left
-				new(0.5f, -0.5f, 0, 0, 1, 0, 0, 0), // top right
-				new(0.5f, 0.5f, 0, 1, 1, 0, 0, 0), // bottom right
+				new(-0.5f, -0.5f, 0, 0, 0, 1, 0, 0), // top left
+				new(-0.5f, 0.5f, 0, 1, 0, 0, 1, 0), // bottom left
+				new(0.5f, -0.5f, 0, 0, 1, 0, 0, 1), // top right
+				new(0.5f, 0.5f, 0, 1, 1, 1, 1, 1), // bottom right
 		];
 
 		uint[] indices = [

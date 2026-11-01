@@ -1,6 +1,5 @@
 using System.Reflection;
 using Engine4.Client.Graphics;
-using Engine4.Client.Graphics._Test;
 using Engine4.Client.Graphics.Rendering;
 using Engine4.Client.Graphics.Vulkan;
 using Engine4.Client.Graphics.Vulkan.Objects;
@@ -40,6 +39,7 @@ public unsafe class TestRenderPass : RenderPass {
 
 		VulkanSettings vulkanSettings = renderer.VulkanManager.VulkanSettings;
 		VulkanResourceManager resourceManager = renderer.ResourceManager;
+		TransferCommandPool transferCommandPool = renderer.TransferCommandPool;
 		SurfaceReadyPhysicalGpu physicalGpu = renderer.PhysicalGpu;
 		LogicalGpu logicalGpu = renderer.LogicalGpu;
 
@@ -52,14 +52,10 @@ public unsafe class TestRenderPass : RenderPass {
 		vertexBuffer.Copy(vertices);
 		indexBuffer.Copy(indices);
 
+		byte[] pixelData = new byte[64 * 64 * 4]; // TODO load from file
+		Array.Fill(pixelData, byte.MaxValue);
 		testTexture = resourceManager.CreateTexture($"{nameof(TestRenderPass)} Test Texture", 64, 64, VkFormat.FormatR8g8b8a8Srgb);
-
-		byte[] pixelData = new byte[64 * 64 * 4]; // test
-		Array.Fill(pixelData, byte.MaxValue); // TODO Something isn't working here. image is still black
-
-		renderer.TransferCommandPool.CopyToImage(testTexture, 64, 64, 4, pixelData);
-
-		// TODO copy data to texture
+		transferCommandPool.CopyToImage(testTexture, 4, pixelData);
 
 		samplerDescriptors = new(resourceManager, physicalGpu, logicalGpu,
 		[

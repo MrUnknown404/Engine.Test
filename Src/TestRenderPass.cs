@@ -3,8 +3,10 @@ using Engine4.Client.Graphics;
 using Engine4.Client.Graphics.Rendering;
 using Engine4.Client.Graphics.Vulkan;
 using Engine4.Client.Graphics.Vulkan.Objects;
+using Engine4.Client.Utility;
 using JetBrains.Annotations;
 using OpenTK.Graphics.Vulkan;
+using StbiSharp;
 
 namespace Engine4.Test;
 
@@ -26,9 +28,9 @@ public unsafe class TestRenderPass : RenderPass {
 		this.renderer = renderer;
 
 		TestVertex[] vertices = [ // xyz uv rgb
-				new(-0.5f, -0.5f, 0, 0, 0, 1, 0, 0), // top left
-				new(-0.5f, 0.5f, 0, 1, 0, 0, 1, 0), // bottom left
-				new(0.5f, -0.5f, 0, 0, 1, 0, 0, 1), // top right
+				new(-0.5f, -0.5f, 0, 0, 0, 1, 1, 1), // top left
+				new(-0.5f, 0.5f, 0, 0, 1, 1, 1, 1), // bottom left
+				new(0.5f, -0.5f, 0, 1, 0, 1, 1, 1), // top right
 				new(0.5f, 0.5f, 0, 1, 1, 1, 1, 1), // bottom right
 		];
 
@@ -52,16 +54,14 @@ public unsafe class TestRenderPass : RenderPass {
 		vertexBuffer.Copy(vertices);
 		indexBuffer.Copy(indices);
 
-		byte[] pixelData = new byte[64 * 64 * 4]; // TODO load from file
-		Array.Fill(pixelData, byte.MaxValue);
 		testTexture = resourceManager.CreateTexture($"{nameof(TestRenderPass)} Test Texture", 64, 64, VkFormat.FormatR8g8b8a8Srgb);
-		transferCommandPool.CopyToImage(testTexture, 4, pixelData);
+		using (StbiImage stbiImage = AssetH.LoadImage("Test.64x64", "png", 4, typeof(TestGame).Assembly)) { transferCommandPool.CopyToImage(testTexture, stbiImage); }
 
 		samplerDescriptors = new(resourceManager, physicalGpu, logicalGpu,
 		[
 				new() {
-						minFilter = VkFilter.FilterLinear,
-						magFilter = VkFilter.FilterLinear,
+						minFilter = VkFilter.FilterNearest,
+						magFilter = VkFilter.FilterNearest,
 						addressModeU = VkSamplerAddressMode.SamplerAddressModeRepeat,
 						addressModeV = VkSamplerAddressMode.SamplerAddressModeRepeat,
 						addressModeW = VkSamplerAddressMode.SamplerAddressModeRepeat,
